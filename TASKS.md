@@ -6,7 +6,7 @@
 - [ ] P3 Write build tasks B1–Bn below
 
 ## Build (Opus, Claude Code)
-- [ ] B1 Repo skeleton: models.py, Makefile (`make check`), pytest, .env.example
+- [x] B1 Repo skeleton: models.py, Makefile (`make check`), pytest, .env.example
 - [ ] B2 First scraper (easiest venue from P1) + fixture + test
 - [ ] B3 TMDB enrichment with cache
 - [ ] B4 Static JSON export + minimal page with filters
