@@ -8,7 +8,8 @@ a single page for this (Paris Ciné Info); Sydney does not.
 One page. Every current and upcoming showing in Greater Sydney, enriched with year,
 director and ratings, filterable by: film, director, film type (new release /
 retrospective / festival / special), showing date, release date. Grouped views:
-"new this week", "retrospectives", "last chance".
+"new this week" (new releases first seen in our data within the last 7 days) and
+"retrospectives". "Last chance" was dropped (see DECISIONS.md 2026-10-15).
 
 ## Not in v1
 Accounts, saved lists, notifications, reviews, non-Sydney cities, mobile app.
