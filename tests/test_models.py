@@ -1,4 +1,3 @@
-import dataclasses
 from datetime import datetime
 from zoneinfo import ZoneInfo
 
@@ -9,23 +8,47 @@ from models import Showing
 SYDNEY = ZoneInfo("Australia/Sydney")
 
 
-def test_showing_holds_fields():
-    s = Showing(
-        venue="Ritz Randwick",
-        title="Paris, Texas",
-        starts_at=datetime(2026, 10, 20, 19, 30, tzinfo=SYDNEY),
-        booking_url="https://example.com/book/1",
+def make(**overrides):
+    fields = dict(
+        venue_slug="ritz-randwick",
+        venue_name="Ritz Randwick",
+        film_title="Paris, Texas",
+        start=datetime(2026, 10, 20, 19, 30, tzinfo=SYDNEY),
     )
-    assert s.venue == "Ritz Randwick"
-    assert s.starts_at.tzinfo is SYDNEY
+    return Showing(**(fields | overrides))
 
 
-def test_booking_url_optional():
-    s = Showing("Hayden Orpheum", "Stalker", datetime(2026, 10, 21, 18, 0, tzinfo=SYDNEY))
+def test_scraped_fields():
+    s = make(session_id="123", booking_url="https://example.com/book/123", attributes=["Retro"])
+    assert s.session_id == "123"
+    assert s.attributes == ["Retro"]
+
+
+def test_optional_fields_default_empty():
+    s = make()
+    assert s.session_id is None
     assert s.booking_url is None
+    assert s.attributes == []
+    assert s.vista_movie_id is None
+    assert (s.tmdb_id, s.year, s.director, s.rating) == (None, None, None, None)
+
+
+def test_attributes_not_shared_between_instances():
+    a, b = make(), make()
+    assert a.attributes is not b.attributes
 
 
 def test_showing_is_immutable():
-    s = Showing("Chauvel", "Ran", datetime(2026, 10, 22, 20, 0, tzinfo=SYDNEY))
-    with pytest.raises(dataclasses.FrozenInstanceError):
-        s.title = "Kagemusha"
+    s = make()
+    with pytest.raises(AttributeError):
+        s.film_title = "Kagemusha"
+
+
+def test_naive_start_rejected():
+    with pytest.raises(ValueError):
+        make(start=datetime(2026, 10, 20, 19, 30))
+
+
+def test_non_sydney_start_rejected():
+    with pytest.raises(ValueError):
+        make(start=datetime(2026, 10, 20, 8, 30, tzinfo=ZoneInfo("UTC")))
