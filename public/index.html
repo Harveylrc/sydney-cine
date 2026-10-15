@@ -224,7 +224,6 @@
       <select name="sort" data-default="popular">
         <option value="popular">Popular</option>
         <option value="az">A–Z</option>
-        <option value="newest">Newest release</option>
       </select>
     </label>
     <button type="reset" class="reset">Clear filters</button>
@@ -303,7 +302,6 @@
   const ORDERS = {
     popular: (a, b) => b.score - a.score || byTitle(a, b),
     az: byTitle,
-    newest: (a, b) => (b.film.year ?? -Infinity) - (a.film.year ?? -Infinity) || byTitle(a, b),
   };
 
   function orderFilms(films, sort) {
