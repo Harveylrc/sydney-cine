@@ -28,6 +28,7 @@ class Showing:
     year: int | None = None
     director: str | None = None
     rating: float | None = None
+    vote_count: int | None = None  # TMDB votes: a popularity signal for sorting
 
     def __post_init__(self):
         if self.start.tzinfo is None or str(self.start.tzinfo) != SYDNEY_TZ:

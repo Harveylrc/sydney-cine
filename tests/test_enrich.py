@@ -423,3 +423,24 @@ def test_seeded_overrides_file():
         "JIFF: Lansky: The Jewish Godfather": None,
         "JIFF: Who Are We: The Story of the Ajax Football Club": None,
     }
+
+
+# --- B4b: vote_count -----------------------------------------------------------
+
+
+def test_vote_count_filled(tmdb, cache):
+    [s] = run([showing("35mm Léon: The Professional (1994)")], tmdb, cache)
+    assert s.vote_count == 15000
+
+
+def test_unrated_film_has_zero_votes_and_no_rating(tmdb, cache):
+    [s] = run([showing("JIFF: Where To?")], tmdb, cache)
+    assert (s.vote_count, s.rating) == (0, None)
+
+
+def test_vote_count_survives_cache(tmdb, tmp_path):
+    run([showing("La Bola Negra")], tmdb, Cache(tmp_path / "db.sqlite"))
+    tmdb.calls.clear()
+    [s] = run([showing("La Bola Negra")], tmdb, Cache(tmp_path / "db.sqlite"))
+    assert s.vote_count == 40
+    assert tmdb.calls == []

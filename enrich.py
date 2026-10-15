@@ -50,6 +50,7 @@ class Match:
     year: int | None = None
     director: str | None = None
     rating: float | None = None
+    vote_count: int | None = None
 
 
 def search_terms(film_title: str) -> tuple[str, int | None]:
@@ -124,6 +125,7 @@ class TMDBClient:
             year=release_year(movie),
             director=", ".join(directors) or None,
             rating=movie["vote_average"] if movie.get("vote_count") else None,
+            vote_count=movie.get("vote_count"),
         )
 
 
@@ -136,21 +138,22 @@ class Cache:
             CREATE TABLE IF NOT EXISTS lookups (
                 -- "vista:HO000…", "title:<title>|<year>[|recent]" or "tmdb:<id>"
                 key TEXT PRIMARY KEY,
-                tmdb_id INTEGER, year INTEGER, director TEXT, rating REAL
+                tmdb_id INTEGER, year INTEGER, director TEXT, rating REAL, vote_count INTEGER
             );
             """
         )
 
     def get(self, key: str) -> Match | None:
         row = self.db.execute(
-            "SELECT tmdb_id, year, director, rating FROM lookups WHERE key = ?", (key,)
+            "SELECT tmdb_id, year, director, rating, vote_count FROM lookups WHERE key = ?",
+            (key,),
         ).fetchone()
         return Match(*row) if row else None
 
     def put(self, key: str, match: Match) -> None:
         self.db.execute(
-            "INSERT OR REPLACE INTO lookups VALUES (?, ?, ?, ?, ?)",
-            (key, match.tmdb_id, match.year, match.director, match.rating),
+            "INSERT OR REPLACE INTO lookups VALUES (?, ?, ?, ?, ?, ?)",
+            (key, match.tmdb_id, match.year, match.director, match.rating, match.vote_count),
         )
         self.db.commit()
 
@@ -221,6 +224,7 @@ def enrich(
                     year=match.year,
                     director=match.director,
                     rating=match.rating,
+                    vote_count=match.vote_count,
                 )
             )
     return enriched

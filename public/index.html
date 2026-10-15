@@ -220,6 +220,13 @@
         <input type="number" name="to" inputmode="numeric" placeholder="To" min="1890" max="2100">
       </span>
     </label>
+    <label>Sort
+      <select name="sort" data-default="popular">
+        <option value="popular">Popular</option>
+        <option value="az">A–Z</option>
+        <option value="newest">Newest release</option>
+      </select>
+    </label>
     <button type="reset" class="reset">Clear filters</button>
   </form>
 
@@ -285,7 +292,27 @@
       day: f.get("day"),
       from: year(f.get("from")),
       to: year(f.get("to")),
+      sort: f.get("sort"),
     };
+  }
+
+  // Popular: sessions that day + POPULARITY_WEIGHT × ln(TMDB votes + 1).
+  const POPULARITY_WEIGHT = 2;
+  const score = (film, sessions) => sessions + POPULARITY_WEIGHT * Math.log((film.vote_count || 0) + 1);
+  const byTitle = (a, b) => a.film.title.localeCompare(b.film.title, "en", { sensitivity: "base" });
+  const ORDERS = {
+    popular: (a, b) => b.score - a.score || byTitle(a, b),
+    az: byTitle,
+    newest: (a, b) => (b.film.year ?? -Infinity) - (a.film.year ?? -Infinity) || byTitle(a, b),
+  };
+
+  function orderFilms(films, sort) {
+    return [...films]
+      .map(([id, showings]) => {
+        const film = filmsById.get(id);
+        return { film, showings, score: score(film, showings.length) };
+      })
+      .sort(ORDERS[sort] || ORDERS.popular);
   }
 
   function matches(s, film, f) {
@@ -303,7 +330,7 @@
 
   function markActive() {
     for (const field of form.querySelectorAll("input, select")) {
-      field.classList.toggle("active", field.value !== "");
+      field.classList.toggle("active", field.value !== (field.dataset.default || ""));
     }
   }
 
@@ -367,7 +394,7 @@
     listings.replaceChildren();
     for (const [day, films] of [...days].sort(([a], [b]) => a.localeCompare(b))) {
       const section = el("section", { class: "day" }, el("h2", { text: dayHeading(day) }));
-      for (const [id, showings] of films) section.append(filmEntry(filmsById.get(id), showings));
+      for (const { film, showings } of orderFilms(films, f.sort)) section.append(filmEntry(film, showings));
       listings.append(section);
     }
 

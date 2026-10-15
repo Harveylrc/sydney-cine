@@ -70,6 +70,7 @@ def build_data(showings: list[Showing], previous: dict | None, today: date) -> d
                 "year": s.year,
                 "director": s.director,
                 "rating": s.rating,
+                "vote_count": s.vote_count,
             },
         )
         rows.append(

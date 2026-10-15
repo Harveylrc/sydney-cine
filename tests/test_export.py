@@ -223,3 +223,9 @@ def test_fixture_day_exports(tmp_path):
 
 def test_missing_previous_is_none(tmp_path):
     assert load_previous(tmp_path / "nope.json") is None
+
+
+def test_film_carries_vote_count():
+    s = showing("Akira (1988)", at(LAUNCH, 19), tmdb_id=149, year=1988, vote_count=5200)
+    [film] = build_data([s], None, LAUNCH)["films"]
+    assert film["vote_count"] == 5200
