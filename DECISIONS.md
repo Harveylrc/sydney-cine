@@ -44,3 +44,5 @@ Three of the big sources (Hoyts, Palace, Orpheum) are Vista-backed with `HO000â€
 - **Event UA:** confirm the print view is identical for a normal browser UA.
 - **Palace buildId:** `_next/data` route breaks on each deploy â€” scrape the HTML page and parse the `__NEXT_DATA__` tag rather than hard-coding buildId.
 - **TMDB cache expiry (from B3):** cached lookups never expire, so ratings go stale. In B6, re-fetch rating for hits older than 30 days (keep tmdb_id/director/year).
+- **TMDB logo (from B4):** TMDB's free terms ask for their logo as well as the text notice. B4 shows only the text notice ("This product uses the TMDB API but is not endorsed or certified by TMDB.") because the page brief says no images. Add the logo in the footer, or keep text only?
+- **First-seen history in B6 (from B4):** `export.py` reads the previous `public/data.json` to carry each film's first-seen dates forward. `public/data.json` is gitignored, so the nightly job must start from the live copy (download it from the deployed site before exporting), or every night looks like launch day and nothing is ever "new this week".

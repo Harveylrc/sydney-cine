@@ -1,0 +1,433 @@
+<!doctype html>
+<html lang="en-AU">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sydney Ciné Info</title>
+<meta name="description" content="Every showing at Sydney cinemas on one page, filterable by film, director, type and date.">
+<style>
+  :root {
+    --bg: #181D3B;        /* page background */
+    --inset: #131934;     /* inset fields */
+    --divider: #0E1227;   /* rules between entries */
+    --heading: #F2EAF1;   /* headings and key figures */
+    --label: #CAD0E5;     /* labels and body text */
+    --border: #4D5884;    /* field and button borders */
+    --accent: #E8B86D;    /* links and the active filter */
+
+    --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+    --gutter: 16px;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { color-scheme: dark; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--label);
+    font-family: var(--font);
+    font-size: 16px;
+    line-height: 1.45;
+  }
+
+  a { color: var(--accent); }
+  a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 2px solid var(--accent);
+    outline-offset: 2px;
+  }
+
+  .page {
+    max-width: 46rem;
+    margin: 0 auto;
+    padding: 28px var(--gutter) 48px;
+  }
+
+  /* Masthead */
+  header { border-bottom: 1px solid var(--border); padding-bottom: 14px; }
+  h1 {
+    margin: 0;
+    color: var(--heading);
+    font-size: 2rem;
+    font-weight: 800;
+    letter-spacing: -0.01em;
+  }
+  .standfirst { margin: 4px 0 0; }
+
+  /* Views and filters */
+  .views {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin: 18px 0 12px;
+  }
+  .views button, .filters button {
+    font: inherit;
+    font-size: 0.9rem;
+    color: var(--label);
+    background: transparent;
+    border: 1px solid var(--border);
+    border-radius: 999px;
+    padding: 5px 14px;
+    cursor: pointer;
+  }
+  .views button[aria-pressed="true"] {
+    color: var(--bg);
+    background: var(--accent);
+    border-color: var(--accent);
+    font-weight: 600;
+  }
+
+  .filters {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+    gap: 10px 12px;
+    padding: 14px 0 18px;
+    border-bottom: 1px solid var(--border);
+  }
+  .filters label {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .filters input, .filters select {
+    font: inherit;
+    font-size: 0.95rem;
+    text-transform: none;
+    letter-spacing: normal;
+    color: var(--heading);
+    background: var(--inset);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    padding: 6px 8px;
+    width: 100%;
+    min-width: 0;
+  }
+  .filters .active { border-color: var(--accent); }
+  .years { display: flex; gap: 6px; align-items: center; }
+  .filters .reset { align-self: end; justify-self: start; }
+
+  .summary { margin: 14px 0 0; font-size: 0.9rem; }
+
+  /* Listings */
+  .day { margin-top: 28px; }
+  .day h2 {
+    margin: 0;
+    padding-bottom: 6px;
+    color: var(--heading);
+    font-size: 1.35rem;
+    font-weight: 800;
+    border-bottom: 2px solid var(--heading);
+  }
+  .film {
+    padding: 12px 0;
+    border-bottom: 1px solid var(--divider);
+  }
+  .film h3 {
+    margin: 0;
+    color: var(--heading);
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+  .meta { margin: 2px 0 0; font-size: 0.9rem; }
+  .meta .rating { color: var(--heading); font-weight: 600; }
+  .kind {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .venue-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 4px 14px;
+    margin-top: 6px;
+  }
+  .venue { font-size: 0.85rem; min-width: 8.5rem; }
+  .times {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 4px 16px;
+    margin: 0;
+    padding: 0;
+    list-style: none;
+  }
+  .times a, .times .no-link {
+    font-weight: 600;
+    font-variant-numeric: tabular-nums;
+    text-decoration: none;
+  }
+  .times a:hover { text-decoration: underline; }
+  .times .no-link { color: var(--heading); }
+  .times .late, .times .tags { font-size: 0.75rem; color: var(--label); }
+  .times .tags { margin-left: 4px; }
+
+  @media (max-width: 480px) {
+    .venue-row { flex-direction: column; gap: 2px; }
+  }
+
+  .empty { margin-top: 28px; }
+
+  footer {
+    margin-top: 40px;
+    padding-top: 14px;
+    border-top: 1px solid var(--border);
+    font-size: 0.8rem;
+  }
+  footer p { margin: 4px 0; }
+</style>
+</head>
+<body>
+<div class="page">
+  <header>
+    <h1>Sydney Ciné Info</h1>
+    <p class="standfirst">What's on at Sydney cinemas, on one page.</p>
+  </header>
+
+  <nav class="views" aria-label="Views">
+    <button type="button" data-view="all" aria-pressed="true">All showings</button>
+    <button type="button" data-view="new" aria-pressed="false">New this week</button>
+    <button type="button" data-view="retro" aria-pressed="false">Retrospectives</button>
+  </nav>
+
+  <form class="filters" id="filters" autocomplete="off">
+    <label>Film
+      <input type="search" name="film" placeholder="Any film">
+    </label>
+    <label>Director
+      <input type="search" name="director" list="directors" placeholder="Any director">
+      <datalist id="directors"></datalist>
+    </label>
+    <label>Type
+      <select name="type">
+        <option value="">Any type</option>
+        <option value="new_release">New release</option>
+        <option value="retrospective">Retrospective</option>
+        <option value="festival">Festival</option>
+        <option value="special">Special</option>
+      </select>
+    </label>
+    <label>Date
+      <select name="day"><option value="">Any date</option></select>
+    </label>
+    <label>Released
+      <span class="years">
+        <input type="number" name="from" inputmode="numeric" placeholder="From" min="1890" max="2100">
+        <input type="number" name="to" inputmode="numeric" placeholder="To" min="1890" max="2100">
+      </span>
+    </label>
+    <button type="reset" class="reset">Clear filters</button>
+  </form>
+
+  <p class="summary" id="summary" aria-live="polite">Loading showings…</p>
+  <main id="listings"></main>
+
+  <footer>
+    <p id="updated"></p>
+    <p>Film details from <a href="https://www.themoviedb.org/">TMDB</a>. This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+    <p>Times link to each cinema's own booking page. Check there before you go.</p>
+  </footer>
+</div>
+
+<script>
+(() => {
+  const TYPE_LABELS = {
+    new_release: "New release",
+    retrospective: "Retrospective",
+    festival: "Festival",
+    special: "Special",
+  };
+
+  const $ = (sel) => document.querySelector(sel);
+  const form = $("#filters");
+  const listings = $("#listings");
+  const summary = $("#summary");
+  let data = null;
+  let filmsById = new Map();
+  let view = "all";
+
+  // Element helper: text is always set as text, never parsed as HTML.
+  function el(tag, attrs = {}, ...children) {
+    const node = document.createElement(tag);
+    for (const [key, value] of Object.entries(attrs)) {
+      if (key === "text") node.textContent = value;
+      else node.setAttribute(key, value);
+    }
+    for (const child of children) if (child) node.append(child);
+    return node;
+  }
+
+  const fold = (s) => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
+
+  const dayHeading = (iso) =>
+    new Date(iso + "T00:00:00Z").toLocaleDateString("en-AU", {
+      weekday: "long", day: "numeric", month: "long", timeZone: "UTC",
+    });
+
+  const dayShort = (iso) =>
+    new Date(iso + "T00:00:00Z").toLocaleDateString("en-AU", {
+      weekday: "short", day: "numeric", month: "short", timeZone: "UTC",
+    });
+
+  const safeUrl = (url) => (url && /^https?:\/\//.test(url) ? url : null);
+
+  function currentFilters() {
+    const f = new FormData(form);
+    const year = (v) => (v ? Number(v) : null);
+    return {
+      film: fold(f.get("film").trim()),
+      director: fold(f.get("director").trim()),
+      type: f.get("type"),
+      day: f.get("day"),
+      from: year(f.get("from")),
+      to: year(f.get("to")),
+    };
+  }
+
+  function matches(s, film, f) {
+    if (view === "new" && !(film.new_this_week && s.type === "new_release")) return false;
+    if (view === "retro" && s.type !== "retrospective") return false;
+    if (f.film && !fold(film.title).includes(f.film) && !fold(s.title).includes(f.film)) return false;
+    if (f.director && !fold(film.director).includes(f.director)) return false;
+    if (f.type && s.type !== f.type) return false;
+    if (f.day && s.day !== f.day) return false;
+    if ((f.from || f.to) && film.year == null) return false;
+    if (f.from && film.year < f.from) return false;
+    if (f.to && film.year > f.to) return false;
+    return true;
+  }
+
+  function markActive() {
+    for (const field of form.querySelectorAll("input, select")) {
+      field.classList.toggle("active", field.value !== "");
+    }
+  }
+
+  function filmEntry(film, showings) {
+    const meta = el("p", { class: "meta" });
+    const parts = [];
+    if (film.year) parts.push(String(film.year));
+    if (film.director) parts.push(film.director);
+    parts.forEach((p, i) => meta.append((i ? " · " : "") + p));
+    if (film.rating != null) {
+      meta.append(parts.length ? " · " : "", el("span", { class: "rating", text: film.rating.toFixed(1) }), " TMDB");
+    }
+    const types = [...new Set(showings.map((s) => s.type).filter(Boolean))];
+    if (types.length) {
+      meta.append(parts.length || film.rating != null ? " · " : "",
+        el("span", { class: "kind", text: types.map((t) => TYPE_LABELS[t]).join(", ") }));
+    }
+
+    const byVenue = new Map();
+    for (const s of showings) {
+      if (!byVenue.has(s.venue)) byVenue.set(s.venue, []);
+      byVenue.get(s.venue).push(s);
+    }
+
+    const entry = el("article", { class: "film" }, el("h3", { text: film.title }));
+    if (meta.childNodes.length) entry.append(meta);
+    for (const [slug, venueShowings] of byVenue) {
+      const times = el("ul", { class: "times" });
+      for (const s of venueShowings) {
+        const url = safeUrl(s.booking_url);
+        const label = url
+          ? el("a", { href: url, rel: "noopener", target: "_blank", text: s.time })
+          : el("span", { class: "no-link", text: s.time });
+        const item = el("li", {}, label);
+        if (s.late) item.append(" ", el("span", { class: "late", text: "(late)" }));
+        if (s.attributes.length) item.append(el("span", { class: "tags", text: s.attributes.join(" · ") }));
+        if (s.title !== film.title) item.title = s.title;
+        times.append(item);
+      }
+      const venueName = (data.venues[slug] && data.venues[slug].name) || slug;
+      entry.append(el("div", { class: "venue-row" }, el("span", { class: "venue", text: venueName }), times));
+    }
+    return entry;
+  }
+
+  function render() {
+    markActive();
+    const f = currentFilters();
+    const days = new Map(); // day -> film id -> showings, in start order
+    let count = 0;
+    for (const s of data.showings) {
+      const film = filmsById.get(s.film);
+      if (!film || !matches(s, film, f)) continue;
+      count++;
+      if (!days.has(s.day)) days.set(s.day, new Map());
+      const films = days.get(s.day);
+      if (!films.has(s.film)) films.set(s.film, []);
+      films.get(s.film).push(s);
+    }
+
+    listings.replaceChildren();
+    for (const [day, films] of [...days].sort(([a], [b]) => a.localeCompare(b))) {
+      const section = el("section", { class: "day" }, el("h2", { text: dayHeading(day) }));
+      for (const [id, showings] of films) section.append(filmEntry(filmsById.get(id), showings));
+      listings.append(section);
+    }
+
+    const filmCount = new Set([...days.values()].flatMap((films) => [...films.keys()])).size;
+    summary.textContent = count
+      ? `${count} showing${count === 1 ? "" : "s"} of ${filmCount} film${filmCount === 1 ? "" : "s"}`
+      : "";
+    if (!count) {
+      const msg = view === "new"
+        ? "No new releases have appeared this week yet."
+        : "No showings match these filters.";
+      listings.append(el("p", { class: "empty", text: msg }));
+    }
+  }
+
+  function populateFilters() {
+    const daySelect = form.elements.day;
+    for (const day of [...new Set(data.showings.map((s) => s.day))].sort()) {
+      daySelect.append(el("option", { value: day, text: dayShort(day) }));
+    }
+    const directors = new Set();
+    for (const film of data.films) {
+      for (const name of (film.director || "").split(", ")) if (name) directors.add(name);
+    }
+    $("#directors").append(...[...directors].sort().map((name) => el("option", { value: name })));
+  }
+
+  document.querySelectorAll(".views button").forEach((button) => {
+    button.addEventListener("click", () => {
+      view = button.dataset.view;
+      document.querySelectorAll(".views button").forEach((b) =>
+        b.setAttribute("aria-pressed", String(b === button)));
+      render();
+    });
+  });
+  form.addEventListener("input", () => data && render());
+  form.addEventListener("reset", () => setTimeout(() => data && render()));
+  form.addEventListener("submit", (e) => e.preventDefault());
+
+  fetch("data.json", { cache: "no-cache" })
+    .then((r) => {
+      if (!r.ok) throw new Error(r.status);
+      return r.json();
+    })
+    .then((json) => {
+      data = json;
+      filmsById = new Map(data.films.map((f) => [f.id, f]));
+      const updated = new Date(data.generated_at).toLocaleString("en-AU", {
+        timeZone: "Australia/Sydney", weekday: "short", day: "numeric", month: "short",
+        hour: "numeric", minute: "2-digit",
+      });
+      $("#updated").textContent = `Updated ${updated}. Cinemas: ${
+        Object.values(data.venues).map((v) => v.name).join(", ")}.`;
+      populateFilters();
+      render();
+    })
+    .catch(() => {
+      summary.textContent = "Couldn't load showings. Try again later.";
+    });
+})();
+</script>
+</body>
+</html>
