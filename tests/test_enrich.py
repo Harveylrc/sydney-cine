@@ -4,7 +4,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from enrich import Cache, Match, TMDBClient, enrich, search_terms
+from enrich import OVERRIDES_PATH, Cache, Match, TMDBClient, enrich, load_overrides, search_terms
 from models import Showing
 
 SYDNEY = ZoneInfo("Australia/Sydney")
@@ -118,17 +118,19 @@ def cache(tmp_path):
     return Cache(tmp_path / "tmdb.sqlite")
 
 
-def run(showings, tmdb, cache):
-    return enrich(showings, TMDBClient("token", session=tmdb), cache)
+def run(showings, tmdb, cache, overrides=None):
+    client = TMDBClient("token", session=tmdb, this_year=2026)
+    return enrich(showings, client, cache, overrides)
 
 
-def showing(title, vista_movie_id=None, hour=19):
+def showing(title, vista_movie_id=None, hour=19, film_type=None):
     return Showing(
         venue_slug="ritz-randwick",
         venue_name="Ritz Randwick",
         film_title=title,
         start=datetime(2026, 10, 16, hour, 0, tzinfo=SYDNEY),
         vista_movie_id=vista_movie_id,
+        film_type=film_type,
     )
 
 
@@ -251,3 +253,167 @@ def test_accents_ignored_in_title_match():
     }
     tmdb = FakeTMDB(search={"De Gaulle: Resistance": [resistance]}, movies={1165366: resistance})
     assert TMDBClient("token", session=tmdb).find("De Gaulle: Resistance", None).tmdb_id == 1165366
+
+
+# --- B3b: no-year tiebreak and overrides --------------------------------------
+
+BARBARA_WALTERS = {
+    "id": 1309019,
+    "title": "Barbara Walters: Tell Me Everything",
+    "release_date": "2025-03-21",
+}
+TELL_ME_UNDATED = {
+    "id": 1485945,
+    "title": "Tell Me Everything",
+    "original_title": "Tell Me Everything",
+    "release_date": "",
+    "vote_count": 0,
+    "credits": {"crew": [{"job": "Director", "name": "Jeremy Chevillotte"}]},
+}
+TELL_ME_2026 = {
+    "id": 1404400,
+    "title": "Tell Me Everything",
+    "original_title": "עצמאות",
+    "release_date": "2026-02-01",
+    "vote_average": 7.0,
+    "vote_count": 3,
+    "credits": {"crew": [{"job": "Director", "name": "Israeli Director"}]},
+}
+SEA_1978 = {
+    "id": 1749174,
+    "title": "The Sea",
+    "release_date": "1978-01-01",
+    "vote_count": 0,
+    "credits": {"crew": [{"job": "Director", "name": "Jane Howell"}]},
+}
+THREE_COLORS_WHITE = {
+    "id": 109,
+    "title": "Three Colors: White",
+    "release_date": "1994-01-26",
+    "vote_average": 7.4,
+    "vote_count": 1800,
+    "credits": {"crew": [{"job": "Director", "name": "Krzysztof Kieślowski"}]},
+}
+
+
+@pytest.fixture
+def tmdb_b3b():
+    return FakeTMDB(
+        search={
+            "Tell Me Everything": [BARBARA_WALTERS, TELL_ME_UNDATED, TELL_ME_2026],
+            "The Sea": [SEA_1978],
+        },
+        movies={m["id"]: m for m in (TELL_ME_UNDATED, TELL_ME_2026, SEA_1978, THREE_COLORS_WHITE)},
+    )
+
+
+def test_festival_showing_prefers_recent_exact_match(tmdb_b3b, cache):
+    [s] = run([showing("JIFF: Tell Me Everything", film_type="festival")], tmdb_b3b, cache)
+    assert (s.tmdb_id, s.year) == (1404400, 2026)
+
+
+def test_new_release_showing_prefers_recent_exact_match(tmdb_b3b, cache):
+    [s] = run([showing("Tell Me Everything", film_type="new_release")], tmdb_b3b, cache)
+    assert s.tmdb_id == 1404400
+
+
+def test_retrospective_showing_keeps_first_exact_match(tmdb_b3b, cache):
+    [s] = run([showing("Tell Me Everything", film_type="retrospective")], tmdb_b3b, cache)
+    assert s.tmdb_id == 1485945
+
+
+def test_untyped_showing_keeps_first_exact_match(tmdb_b3b, cache):
+    [s] = run([showing("Tell Me Everything")], tmdb_b3b, cache)
+    assert s.tmdb_id == 1485945
+
+
+def test_festival_and_retrospective_same_title_resolved_separately(tmdb_b3b, cache):
+    out = run(
+        [
+            showing("JIFF: Tell Me Everything", film_type="festival"),
+            showing("Tell Me Everything", film_type="retrospective"),
+        ],
+        tmdb_b3b,
+        cache,
+    )
+    assert [s.tmdb_id for s in out] == [1404400, 1485945]
+
+
+def test_no_recent_candidate_falls_back_to_first_exact(tmdb_b3b, cache):
+    [s] = run([showing("JIFF: The Sea", film_type="festival")], tmdb_b3b, cache)
+    assert s.tmdb_id == 1749174
+
+
+def test_recent_cutoff_is_three_years():
+    old = {"id": 1, "title": "Same", "release_date": "2022-12-31"}
+    edge = {"id": 2, "title": "Same", "release_date": "2023-01-01", "credits": {"crew": []}}
+    tmdb = FakeTMDB(search={"Same": [old, edge]}, movies={2: edge})
+    client = TMDBClient("token", session=tmdb, this_year=2026)
+    assert client.find("Same", None, prefer_recent=True).tmdb_id == 2
+
+
+def test_venue_year_beats_recent_preference(tmdb, cache):
+    # A year in the title governs; the recent tiebreak only applies without one.
+    [s] = run([showing("JIFF: The Producers (1967)", film_type="festival")], tmdb, cache)
+    assert s.tmdb_id == 30197
+
+
+def test_override_id_wins_over_search(tmdb_b3b, cache):
+    title = "Three Colours: White (1994)"
+    [s] = run([showing(title)], tmdb_b3b, cache, overrides={title: 109})
+    assert (s.tmdb_id, s.year, s.director) == (109, 1994, "Krzysztof Kieślowski")
+    assert tmdb_b3b.searches() == []
+
+
+def test_override_lookup_cached(tmdb_b3b, cache):
+    title = "Three Colours: White (1994)"
+    run([showing(title)], tmdb_b3b, cache, overrides={title: 109})
+    tmdb_b3b.calls.clear()
+    run([showing(title)], tmdb_b3b, cache, overrides={title: 109})
+    assert tmdb_b3b.calls == []
+
+
+def test_override_none_is_unmatched_and_not_logged(tmdb_b3b, cache, caplog):
+    sea = showing("JIFF: The Sea", film_type="festival")
+    with caplog.at_level(logging.WARNING, logger="enrich"):
+        [s] = run([sea], tmdb_b3b, cache, overrides={"JIFF: The Sea": None})
+    assert s == sea
+    assert tmdb_b3b.calls == []
+    assert caplog.text == ""
+
+
+def test_override_matches_exact_venue_title_only(tmdb_b3b, cache):
+    out = run(
+        [showing("JIFF: The Sea"), showing("The Sea")],
+        tmdb_b3b,
+        cache,
+        overrides={"JIFF: The Sea": None},
+    )
+    assert [s.tmdb_id for s in out] == [None, 1749174]
+
+
+def test_load_overrides(tmp_path):
+    path = tmp_path / "overrides.csv"
+    path.write_text(
+        'venue_title,tmdb_id\nThree Colours: White (1994),109\n"Paris, Texas",655\nThe Sea,none\n',
+        encoding="utf-8",
+    )
+    assert load_overrides(path) == {
+        "Three Colours: White (1994)": 109,
+        "Paris, Texas": 655,
+        "The Sea": None,
+    }
+
+
+def test_load_overrides_missing_file(tmp_path):
+    assert load_overrides(tmp_path / "nope.csv") == {}
+
+
+def test_seeded_overrides_file():
+    assert load_overrides(OVERRIDES_PATH) == {
+        "Three Colours: White (1994)": 109,
+        "JIFF: For The Love of a Woman": 1143204,
+        "JIFF: Dust Bowls and Jewish Souls": 1660550,
+        "JIFF: The Wedding Entertainer (The Tale of Moishe Badhan)": 1573783,
+        "JIFF: The Sea": None,
+    }

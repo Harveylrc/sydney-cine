@@ -1,13 +1,17 @@
 """TMDB enrichment: fill tmdb_id, year, director and rating on scraped Showings.
 
-Matching order: showings that share a vista_movie_id are looked up once for the
-whole group; otherwise each distinct title is searched on TMDB and only an exact
-title match is accepted (within a year of the venue's year when the title carries
-one, e.g. "Léon: The Professional (1994)"). Every lookup, hit
-or miss, is cached in SQLite so a title is only ever queried once. Unmatched
-showings are logged and returned unchanged, never dropped.
+Matching order (policy in DECISIONS.md):
+1. tmdb_overrides.csv: a hand-kept map of exact venue title -> TMDB id or "none".
+2. Showings that share a vista_movie_id are looked up once for the whole group.
+3. Otherwise the cleaned title is searched on TMDB and only an exact title match
+   is accepted (within a year of the venue's year when the title carries one,
+   e.g. "Léon: The Professional (1994)"). With no year, a new_release or festival
+   showing prefers an exact match released in the last RECENT_YEARS years.
+Every lookup, hit or miss, is cached in SQLite so it is only ever made once.
+Unmatched showings are logged and returned unchanged, never dropped.
 """
 
+import csv
 import logging
 import os
 import re
@@ -15,6 +19,8 @@ import sqlite3
 import time
 import unicodedata
 from dataclasses import dataclass, replace
+from datetime import date
+from functools import partial
 from pathlib import Path
 
 import requests
@@ -26,6 +32,11 @@ log = logging.getLogger("enrich")
 API = "https://api.themoviedb.org/3"
 DB_PATH = Path(__file__).resolve().parent / "cache" / "tmdb.sqlite"
 ENV_PATH = Path(__file__).resolve().parent / ".env"
+OVERRIDES_PATH = Path(__file__).resolve().parent / "tmdb_overrides.csv"
+
+# No-year tiebreak: these showings prefer an exact match from the last 3 years.
+RECENT_YEARS = 3
+PREFER_RECENT_TYPES = {"new_release", "festival"}
 
 # Venue decorations that are not part of the film's title.
 TITLE_PREFIX = re.compile(r"^(?:\d{2}mm\s+|(?:JIFF|SFF):\s*)+", re.IGNORECASE)
@@ -65,7 +76,10 @@ def release_year(movie: dict) -> int | None:
 
 
 class TMDBClient:
-    def __init__(self, token: str, session: requests.Session | None = None):
+    def __init__(
+        self, token: str, session: requests.Session | None = None, this_year: int | None = None
+    ):
+        self.this_year = this_year or date.today().year
         self.session = session or requests.Session()
         self.session.headers["Authorization"] = f"Bearer {token}"
         self.session.headers["Accept"] = "application/json"
@@ -80,10 +94,12 @@ class TMDBClient:
         response.raise_for_status()
         return response.json()
 
-    def find(self, title: str, year: int | None) -> Match:
+    def find(self, title: str, year: int | None, prefer_recent: bool = False) -> Match:
         """Best TMDB result whose title matches exactly (ignoring case and
         punctuation) and, if the venue gave a year, is within a year of it —
-        venues often give the premiere year, TMDB the first release."""
+        venues often give the premiere year, TMDB the first release. With no
+        year and prefer_recent, the first exact match from the last
+        RECENT_YEARS years wins; failing that, TMDB's first exact match."""
         results = self._get("/search/movie", query=title, include_adult="false")["results"]
         wanted = normalise(title)
         candidates = [
@@ -92,9 +108,16 @@ class TMDBClient:
             if wanted in (normalise(r.get("title", "")), normalise(r.get("original_title", "")))
             and (year is None or abs((release_year(r) or 0) - year) <= 1)
         ]
+        if prefer_recent and year is None:
+            cutoff = self.this_year - RECENT_YEARS
+            recent = [r for r in candidates if (release_year(r) or 0) >= cutoff]
+            candidates = recent or candidates
         if not candidates:
             return Match(tmdb_id=None)
-        movie = self._get(f"/movie/{candidates[0]['id']}", append_to_response="credits")
+        return self.details(candidates[0]["id"])
+
+    def details(self, tmdb_id: int) -> Match:
+        movie = self._get(f"/movie/{tmdb_id}", append_to_response="credits")
         directors = [c["name"] for c in movie["credits"]["crew"] if c["job"] == "Director"]
         return Match(
             tmdb_id=movie["id"],
@@ -111,7 +134,8 @@ class Cache:
         self.db.executescript(
             """
             CREATE TABLE IF NOT EXISTS lookups (
-                key TEXT PRIMARY KEY,  -- "vista:HO000…" or "title:<title>|<year>"
+                -- "vista:HO000…", "title:<title>|<year>[|recent]" or "tmdb:<id>"
+                key TEXT PRIMARY KEY,
                 tmdb_id INTEGER, year INTEGER, director TEXT, rating REAL
             );
             """
@@ -131,32 +155,62 @@ class Cache:
         self.db.commit()
 
 
+def prefers_recent(s: Showing) -> bool:
+    return s.film_type in PREFER_RECENT_TYPES and search_terms(s.film_title)[1] is None
+
+
 def lookup_key(s: Showing) -> str:
     """Showings with the same key share one TMDB lookup."""
     if s.vista_movie_id:
         return f"vista:{s.vista_movie_id}"
     title, year = search_terms(s.film_title)
-    return f"title:{title.casefold()}|{year or ''}"
+    return f"title:{title.casefold()}|{year or ''}" + ("|recent" if prefers_recent(s) else "")
 
 
-def enrich(showings: list[Showing], client: TMDBClient, cache: Cache) -> list[Showing]:
-    def lookup(key: str, film_title: str) -> Match:
-        if (match := cache.get(key)) is None:
-            match = client.find(*search_terms(film_title))
-            cache.put(key, match)
-        return match
+def load_overrides(path: Path = OVERRIDES_PATH) -> dict[str, int | None]:
+    """venue_title -> TMDB id, or None for "none" (deliberately unmatched)."""
+    if not path.exists():
+        return {}
+    with path.open(encoding="utf-8", newline="") as f:
+        return {
+            row["venue_title"]: None if row["tmdb_id"].strip() == "none" else int(row["tmdb_id"])
+            for row in csv.DictReader(f)
+        }
 
+
+def enrich(
+    showings: list[Showing],
+    client: TMDBClient,
+    cache: Cache,
+    overrides: dict[str, int | None] | None = None,
+) -> list[Showing]:
+    overrides = overrides or {}
     matches: dict[str, Match] = {}
-    for s in showings:
-        key = lookup_key(s)
+
+    def resolve(s: Showing) -> Match:
+        if s.film_title in overrides:
+            tmdb_id = overrides[s.film_title]
+            if tmdb_id is None:
+                return Match(tmdb_id=None)  # deliberate: not a miss, not logged
+            key = f"tmdb:{tmdb_id}"
+            fetch = partial(client.details, tmdb_id)
+        else:
+            key = lookup_key(s)
+            fetch = partial(
+                client.find, *search_terms(s.film_title), prefer_recent=prefers_recent(s)
+            )
         if key not in matches:
-            matches[key] = lookup(key, s.film_title)
-            if matches[key].tmdb_id is None:
+            if (match := cache.get(key)) is None:
+                match = fetch()
+                cache.put(key, match)
+            matches[key] = match
+            if match.tmdb_id is None:
                 log.warning("No TMDB match for %r (%s)", s.film_title, key)
+        return matches[key]
 
     enriched = []
     for s in showings:
-        match = matches[lookup_key(s)]
+        match = resolve(s)
         if match.tmdb_id is None:
             enriched.append(s)
         else:
@@ -186,7 +240,7 @@ if __name__ == "__main__":
     from scrapers import ritz
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-    results = enrich(ritz.fetch(), TMDBClient(load_token()), Cache())
+    results = enrich(ritz.fetch(), TMDBClient(load_token()), Cache(), load_overrides())
     seen = set()
     for s in results:
         if s.film_title not in seen:
