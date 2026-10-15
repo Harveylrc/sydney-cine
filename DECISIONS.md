@@ -2,7 +2,37 @@
 
 ## Made
 - 2026-10-14 Project scoped per SPEC.md v0. Start with Ciné Info; Variational dashboard runs in parallel in its own repo.
+- 2026-10-15 P1 data-access audit done (below). B2 starts with **Ritz Randwick**.
+- 2026-10-15 Venue list corrections (update SPEC.md): Chauvel closed Jan 2026; Palace Verona closed Feb 2024; "Cinema Paris" is now **Palace Moore Park** (same building, 122 Lang Rd). Drop all three as separate entries.
+- 2026-10-15 **Dendy** collapses to one entity: Dendy Newtown (only Sydney site). Its data comes solely from `/graphql`, which robots.txt disallows → **not scraped in v1**; count it as uncovered in the coverage metric.
+- 2026-10-15 Browser capture pass (P4) runs **before** B1–B4. Done same day; results in the table.
+- 2026-10-15 Stack confirmed (see CLAUDE.md): Python + requests/bs4 + SQLite; GitHub Actions nightly; GitHub Pages; vanilla HTML/JS. Linter: ruff (Opus's choice in B1, accepted).
+
+## P1 — Data access per venue (audited 2026-10-15; P4 browser pass same day)
+
+| Venue | Access | How showtimes are keyed | Verdict |
+|---|---|---|---|
+| **Hoyts** | Open JSON API, no auth: `apim-aea.hoyts.com.au/cinemaapi-au-live/api/` → `cinemas/`, `movies/`, `sessions/{cinemaId}`. | cinemaId (6-char e.g. SHOWGR, BROADW), movieId (Vista `HO000…`), sessionId int, `date`/`utcDate`. Filter dates client-side. | **Easy.** robots allows. ~12 Sydney sites in one call. |
+| **Palace** (Central, Norton St, Moore Park) | **Solved in P4.** No XHR — the full forward schedule is embedded in the page's `__NEXT_DATA__` JSON (`props.pageProps.sessions`: array of movies, each with a `sessions` array). ~110 movies / all dates incl. advance events. Also available as `/_next/data/{buildId}/cinemas/{slug}.json` (buildId changes per deploy — read it from the HTML). Vista backend. | cinema slug (`/cinemas/palace-central-sydney`) + `cinema.cinemaId` ("200" for Central); movie `movieId` (Vista `HO000…`) + `slug`; session `sessionId` (string int) + `date` (**UTC ISO** — convert to Australia/Sydney); `sessionInfo[]` strings (Audio Description, Closed Captioning, No Free Tickets…); `isPlatinum`, `isSpecialEvent`. | **Easy.** One GET per cinema, parse JSON script tag. robots allows `/cinemas/*`. |
+| **Hayden Orpheum** | **Solved in P4.** Same-origin JSON API, no auth: `GET https://www.orpheum.com.au/api/movie/playing-now` → all films with embedded `sessionTimes[]` (months ahead). Also `/api/cinema/info`. Vista backend (platform "vwassets"). Session-times PDF also linked from home. | film `url` slug + `reference` (Vista `HO000…`); session `date` (YYYY-MM-DD local), `time` ("3:30pm"), `bookingLink` `web.orpheum.com.au/order/showtimes/0001-{n}/tickets` (the `0001-{n}` is the session key), `attributes[]` (70mm, NFT…), `isSoldOut`. | **Easy.** robots allows `/api/`. Don't fetch `tickets.orpheum.com.au`. |
+| **Ritz Randwick** | Server-rendered HTML, dated listing pages `/now-showing/YYYY-MM-DD` (and `/all`). Tags (Retro, NFT, Captions) in text. | film slug `/movies/{slug}`; session `/tickets?c=0000000004&s={sessionId}`. | **Easiest independent.** robots allows (only `/content/` blocked). |
+| **Golden Age** | Server-rendered `/films/now-showing`, grouped by day heading. Storyblok CMS; Ferve ticketing. | film slug + weekday/time text; no session ids. | **Easy.** Gotchas: no year; bar-closure notices interleave with rows. |
+| **Roseville** | Own site is a Next.js shell. **Veezi** page is server-rendered with weeks of sessions: `ticketing.oz.veezi.com/sessions/7feekn7gjsvsvk4xc82a21hja4`. | Veezi numeric sessionId + siteToken; purchase URL `/purchase/{sessionId}`. | **Easy via Veezi.** Veezi robots disallows `/purchase*` (link out only). |
+| **Event** | Server-rendered HTML. Best target: printable week view `/Cinema/Print/{slug}` (+ `?nextWeek=true`). No API/sitemap found. | cinema slug; sessionId int in booking links; weekday+time only (derive ISO date from Thu–Wed week). | **Easy–medium.** UA-specific markup seen (`bookingSource=aiagent`) — pin a UA in fixtures and verify output matches a normal browser. |
+| **Reading** (Rhodes, Auburn, Rouse Hill…) | **P4 inconclusive.** React SPA rendered a blank page in Chrome from Paris; no data XHR fired at all (only Forter fraud-detection + analytics). Likely geo-gated or fraud-script-gated. | unknown | **Hard / deferred.** Retry from an Australian IP (B6 host) before writing it off. |
+| **Dendy Newtown** | SPA; only data call is `POST /graphql` (robots-disallowed). INDY/Fandango platform. | unknown | **Out of v1** (decision above). |
+| **Moonlight** (seasonal) | Off-season. Headless WP at `api.moonlight.com.au`; WPGraphQL open with `movies`, `seasonGuide` (empty now). | unknown | **Defer.** Re-check Nov 2026. Westpac OpenAir and Mov'in Bed are v2 candidates. |
+| **TMDB** | v3 API, Bearer read-access token. ~40 req/s soft limit; honour 429. Free for non-commercial with attribution notice + logo. | tmdb id; search by title+year. | **Fine for v1.** Commercial licence needed if referral revenue becomes the primary purpose. |
+
+### Why Ritz for B2
+Independent, plain HTML, dated URLs, stable session ids, permissive robots. Exercises the HTML-fixture + parser pattern. Hoyts is easier but is a JSON client — do it first in B5.
+
+### B5 order (revised after P4)
+Hoyts (API) → **Palace (`__NEXT_DATA__`)** → Orpheum (API) → Golden Age → Roseville (Veezi) → Event (print view) → Reading (from AU IP) → Moonlight (summer).
+
+Three of the big sources (Hoyts, Palace, Orpheum) are Vista-backed with `HO000…` movie ids — worth a shared `vista_movie_id` field in models.py for cross-venue film matching before TMDB.
 
 ## Open
-- Stack confirmation (see CLAUDE.md)
-- Per-venue data access (see SPEC.md)
+- **Reading:** retest from an Australian IP; if it still returns nothing, treat like Dendy (uncovered).
+- **Event UA:** confirm the print view is identical for a normal browser UA.
+- **Palace buildId:** `_next/data` route breaks on each deploy — scrape the HTML page and parse the `__NEXT_DATA__` tag rather than hard-coding buildId.
