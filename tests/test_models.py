@@ -29,6 +29,7 @@ def test_optional_fields_default_empty():
     assert s.session_id is None
     assert s.booking_url is None
     assert s.attributes == []
+    assert s.film_type is None
     assert s.vista_movie_id is None
     assert (s.tmdb_id, s.year, s.director, s.rating) == (None, None, None, None)
 
@@ -52,3 +53,12 @@ def test_naive_start_rejected():
 def test_non_sydney_start_rejected():
     with pytest.raises(ValueError):
         make(start=datetime(2026, 10, 20, 8, 30, tzinfo=ZoneInfo("UTC")))
+
+
+def test_film_type_accepted():
+    assert make(film_type="retrospective").film_type == "retrospective"
+
+
+def test_unknown_film_type_rejected():
+    with pytest.raises(ValueError):
+        make(film_type="Retrospective")
