@@ -36,3 +36,4 @@ Three of the big sources (Hoyts, Palace, Orpheum) are Vista-backed with `HO000â€
 - **Reading:** retest from an Australian IP; if it still returns nothing, treat like Dendy (uncovered).
 - **Event UA:** confirm the print view is identical for a normal browser UA.
 - **Palace buildId:** `_next/data` route breaks on each deploy â€” scrape the HTML page and parse the `__NEXT_DATA__` tag rather than hard-coding buildId.
+- **Ritz film type (from B2):** the Ritz tags each session link with `data-genre` (e.g. "Drama,New Release" or "Crime,Drama,Retrospective"). Labyrinth is "Retrospective" there but has no RETRO tag, so scraping visible tags alone misses it. `Showing` has no field for film type. Should B2 also put "New Release"/"Retrospective" into `attributes`, or should `Showing` get a `film_type` field? Needed before B4 builds the type filter. Also: keep transient tags like "Selling Fast" in `attributes`, or drop them?
