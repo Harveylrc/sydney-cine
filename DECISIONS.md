@@ -42,3 +42,4 @@ Three of the big sources (Hoyts, Palace, Orpheum) are Vista-backed with `HO000â€
 - **Reading:** retest from an Australian IP; if it still returns nothing, treat like Dendy (uncovered).
 - **Event UA:** confirm the print view is identical for a normal browser UA.
 - **Palace buildId:** `_next/data` route breaks on each deploy â€” scrape the HTML page and parse the `__NEXT_DATA__` tag rather than hard-coding buildId.
+- **TMDB cache expiry (from B3):** cached lookups never expire, so ratings go stale. In B6, re-fetch rating for hits older than 30 days (keep tmdb_id/director/year).
