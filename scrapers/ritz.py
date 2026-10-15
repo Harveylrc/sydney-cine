@@ -3,7 +3,8 @@
 Each film is a div.Movie with a span.Title and one a.sessions-link per session.
 A link carries the session id (?s=), the time ("1:00 pm") and zero or more
 span.Attribute tags, some comma-joined ("NFT, Q&A"). Its data-genre lists genres
-plus "New Release" or "Retrospective", which gives film_type. Ticket links are
+plus "New Release", "Retrospective" or "Film Festival". film_type comes from
+these and the tags, in the precedence set in DECISIONS.md. Ticket links are
 only linked to, never fetched.
 """
 
@@ -22,7 +23,20 @@ VENUE_NAME = "Ritz Randwick"
 DAYS_AHEAD = 14
 # Availability notices, not properties of the session (DECISIONS.md).
 TRANSIENT_TAGS = {"selling fast", "sold out", "last chance"}
-GENRE_FILM_TYPES = {"Retrospective": "retrospective", "New Release": "new_release"}
+# film_type precedence (DECISIONS.md): festival tag > data-genre label > other tags.
+FESTIVAL_TAGS = {"jiff", "sff"}
+GENRE_FILM_TYPES = {
+    "Film Festival": "festival",
+    "Retrospective": "retrospective",
+    "New Release": "new_release",
+}
+TAG_FILM_TYPES = {
+    "retro": "retrospective",
+    "specevent": "special",
+    "livemusic": "special",
+    "stage": "special",
+    "theatre": "special",
+}
 # Sessions listed under day D that start before this belong to D+1 (DECISIONS.md).
 DAY_ROLLOVER = time(5, 0)
 
@@ -54,16 +68,23 @@ def parse_day(html: str, day: date) -> list[Showing]:
                     session_id=parse_qs(urlsplit(link["href"]).query)["s"][0],
                     booking_url=urljoin(BASE_URL, link["href"]),
                     attributes=attributes,
-                    film_type=film_type(link.get("data-genre", "")),
+                    film_type=film_type(link.get("data-genre", ""), attributes),
                 )
             )
     return showings
 
 
-def film_type(data_genre: str) -> str | None:
-    for genre in data_genre.split(","):
-        if genre.strip() in GENRE_FILM_TYPES:
-            return GENRE_FILM_TYPES[genre.strip()]
+def film_type(data_genre: str, tags: list[str]) -> str | None:
+    tags = [tag.lower() for tag in tags]
+    if any(tag in FESTIVAL_TAGS for tag in tags):
+        return "festival"
+    genres = {genre.strip() for genre in data_genre.split(",")}
+    for label, kind in GENRE_FILM_TYPES.items():
+        if label in genres:
+            return kind
+    for tag, kind in TAG_FILM_TYPES.items():
+        if tag in tags:
+            return kind
     return None
 
 

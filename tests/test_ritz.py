@@ -1,4 +1,4 @@
-from datetime import date, datetime
+from datetime import date, datetime, time
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -8,8 +8,10 @@ from models import Showing
 from scrapers.ritz import parse_day
 
 SYDNEY = ZoneInfo("Australia/Sydney")
-FIXTURE = Path(__file__).parent / "fixtures" / "ritz_2026-10-16.html"
+FIXTURES = Path(__file__).parent / "fixtures"
+FIXTURE = FIXTURES / "ritz_2026-10-16.html"
 DAY = date(2026, 10, 16)
+JIFF_DAY = date(2026, 10, 24)  # Jewish International Film Festival sessions
 
 
 @pytest.fixture(scope="module")
@@ -17,12 +19,17 @@ def showings():
     return parse_day(FIXTURE.read_text(encoding="utf-8"), DAY)
 
 
-def showing(title, hour, minute, session_id, attributes=(), film_type=None):
+@pytest.fixture(scope="module")
+def jiff_showings():
+    return parse_day((FIXTURES / "ritz_2026-10-24.html").read_text(encoding="utf-8"), JIFF_DAY)
+
+
+def showing(title, hour, minute, session_id, attributes=(), film_type=None, day=DAY):
     return Showing(
         venue_slug="ritz-randwick",
         venue_name="Ritz Randwick",
         film_title=title,
-        start=datetime(2026, 10, 16, hour, minute, tzinfo=SYDNEY),
+        start=datetime.combine(day, time(hour, minute), tzinfo=SYDNEY),
         session_id=session_id,
         booking_url=f"https://www.ritzcinemas.com.au/tickets?c=0000000004&s={session_id}",
         attributes=list(attributes),
@@ -86,6 +93,40 @@ def test_film_types(showings):
     assert counts == {"new_release": 37, "retrospective": 2, None: 1}
 
 
+def test_jiff_day_film_types(jiff_showings):
+    assert len(jiff_showings) == 17
+    jiff = [s for s in jiff_showings if s.film_title.startswith("JIFF:")]
+    assert len(jiff) == 10
+    assert all(s.film_type == "festival" for s in jiff)
+    others = [s for s in jiff_showings if s not in jiff]
+    assert all(s.film_type == "new_release" for s in others)
+
+
+@pytest.mark.parametrize(
+    "expected",
+    [
+        # Labelled "New Release" by the Ritz, but the JIFF tag wins.
+        showing("JIFF: For The Love of a Woman", 18, 0, "89114", ["JIFF"], "festival", JIFF_DAY),
+        showing(
+            "JIFF: The Producers (1967)",
+            16,
+            0,
+            "89113",
+            ["JIFF", "RETRO"],
+            "festival",
+            JIFF_DAY,
+        ),
+        # THEATRE tag, but the Ritz's own "New Release" label wins over tags.
+        showing(
+            "Fallen Angels by Noël Coward", 13, 0, "89063", ["THEATRE"], "new_release", JIFF_DAY
+        ),
+    ],
+    ids=lambda s: s.film_title,
+)
+def test_expected_jiff_day_showings(jiff_showings, expected):
+    assert expected in jiff_showings
+
+
 def test_comma_joined_tags_split(showings):
     qa = [s for s in showings if "Q&A" in s.attributes]
     assert len(qa) == 1 and qa[0].attributes == ["NFT", "Q&A"]
@@ -114,9 +155,26 @@ def test_post_midnight_rolls_to_next_day(time, expected):
     assert s.start == expected
 
 
-def test_no_genre_label_gives_no_film_type():
-    [s] = parse_day(session_page("7:00 pm", "JIFF", genre="Drama"), DAY)
-    assert s.film_type is None
+@pytest.mark.parametrize(
+    "tags, genre, expected",
+    [
+        ("JIFF", "Drama,New Release", "festival"),  # festival tag beats the label
+        ("JIFF, RETRO", "Comedy,Retrospective", "festival"),
+        ("SFF", "Drama", "festival"),
+        ("", "Drama,Film Festival", "festival"),
+        ("LiveMusic", "Fantasy,Retrospective", "retrospective"),  # label beats tags
+        ("THEATRE", "Comedy,New Release", "new_release"),
+        ("RETRO", "Drama", "retrospective"),  # no label: tags decide
+        ("SPECEVENT", "Drama", "special"),
+        ("LiveMusic", "Drama", "special"),
+        ("STAGE", "Drama", "special"),
+        ("THEATRE", "Drama", "special"),
+        ("NFT, Q&A", "Drama", None),  # no signal at all
+    ],
+)
+def test_film_type_precedence(tags, genre, expected):
+    [s] = parse_day(session_page("7:00 pm", tags, genre=genre), DAY)
+    assert s.film_type == expected
 
 
 def test_empty_page():
