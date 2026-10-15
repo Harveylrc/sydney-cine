@@ -7,6 +7,9 @@
 - 2026-10-15 **Dendy** collapses to one entity: Dendy Newtown (only Sydney site). Its data comes solely from `/graphql`, which robots.txt disallows → **not scraped in v1**; count it as uncovered in the coverage metric.
 - 2026-10-15 Browser capture pass (P4) runs **before** B1–B4. Done same day; results in the table.
 - 2026-10-15 Stack confirmed (see CLAUDE.md): Python + requests/bs4 + SQLite; GitHub Actions nightly; GitHub Pages; vanilla HTML/JS. Linter: ruff (Opus's choice in B1, accepted).
+- 2026-10-15 **Film type.** `Showing` gets `film_type: str | None` with values `new_release`, `retrospective`, `festival`, `special`. Each scraper maps its venue's own labels (Ritz: `data-genre` contains "Retrospective"/"New Release"; event/live tags → `special`; festival strands → `festival`). When a venue gives nothing, leave None; B4 falls back to a year rule (TMDB year ≤ current year − 2 → retrospective, else new_release).
+- 2026-10-15 **Transient tags** (Selling Fast, Sold Out, Last Chance…) are dropped from `attributes`. Keep format (35MM, 70mm, 4K), accessibility (Captions, Audio Description), NFT, Q&A, LiveMusic, and similar film/session properties.
+- 2026-10-15 **Post-midnight sessions.** A session listed under day D with a start time before 05:00 belongs to D+1. Apply in every scraper that lists by day.
 
 ## P1 — Data access per venue (audited 2026-10-15; P4 browser pass same day)
 
@@ -36,4 +39,3 @@ Three of the big sources (Hoyts, Palace, Orpheum) are Vista-backed with `HO000�
 - **Reading:** retest from an Australian IP; if it still returns nothing, treat like Dendy (uncovered).
 - **Event UA:** confirm the print view is identical for a normal browser UA.
 - **Palace buildId:** `_next/data` route breaks on each deploy — scrape the HTML page and parse the `__NEXT_DATA__` tag rather than hard-coding buildId.
-- **Ritz film type (from B2):** the Ritz tags each session link with `data-genre` (e.g. "Drama,New Release" or "Crime,Drama,Retrospective"). Labyrinth is "Retrospective" there but has no RETRO tag, so scraping visible tags alone misses it. `Showing` has no field for film type. Should B2 also put "New Release"/"Retrospective" into `attributes`, or should `Showing` get a `film_type` field? Needed before B4 builds the type filter. Also: keep transient tags like "Selling Fast" in `attributes`, or drop them?
