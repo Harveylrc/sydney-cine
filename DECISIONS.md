@@ -10,6 +10,8 @@
 - 2026-10-15 **Film type.** `Showing` gets `film_type: str | None` with values `new_release`, `retrospective`, `festival`, `special`. Each scraper maps its venue's own labels (Ritz: `data-genre` contains "Retrospective"/"New Release"; event/live tags → `special`; festival strands → `festival`). When a venue gives nothing, leave None; B4 falls back to a year rule (TMDB year ≤ current year − 2 → retrospective, else new_release).
 - 2026-10-15 **Transient tags** (Selling Fast, Sold Out, Last Chance…) are dropped from `attributes`. Keep format (35MM, 70mm, 4K), accessibility (Captions, Audio Description), NFT, Q&A, LiveMusic, and similar film/session properties.
 - 2026-10-15 **Post-midnight sessions.** A session listed under day D with a start time before 05:00 belongs to D+1. Apply in every scraper that lists by day.
+- 2026-10-15 **Film type precedence** (answers B2b's question). 1) a festival tag (JIFF, SFF, etc.) → `festival`, overriding everything; 2) the venue's own label (Ritz `data-genre`); 3) visible tags: RETRO → `retrospective`, SPECEVENT/LiveMusic/STAGE/THEATRE → `special`; 4) else None. A festival screening of a new film is still a festival screening — that is what the filter means.
+- 2026-10-15 **Late-night display.** Stored `start` stays the true calendar time (post-midnight rule above). In the page, sessions starting before 05:00 are grouped under the previous day's evening and the date filter treats them as that day. Apply in B4.
 
 ## P1 — Data access per venue (audited 2026-10-15; P4 browser pass same day)
 
@@ -39,4 +41,3 @@ Three of the big sources (Hoyts, Palace, Orpheum) are Vista-backed with `HO000�
 - **Reading:** retest from an Australian IP; if it still returns nothing, treat like Dendy (uncovered).
 - **Event UA:** confirm the print view is identical for a normal browser UA.
 - **Palace buildId:** `_next/data` route breaks on each deploy — scrape the HTML page and parse the `__NEXT_DATA__` tag rather than hard-coding buildId.
-- **Ritz film type from tags (from B2b):** B2b fills `film_type` from `data-genre` only, as the task says. Across the 14 live days (362 sessions): 274 new_release, 12 retrospective, **76 None** — 74 of those are JIFF festival sessions (tag "JIFF", no genre label), the rest have tags like RETRO. The decision above says festival strands → `festival` and event/live tags → `special`, but not which wins over `data-genre` (Labyrinth: Retrospective + LiveMusic; 2 JIFF sessions are labelled New Release; 3 are "JIFF, RETRO"). Proposal: `data-genre` first; if it gives nothing, JIFF → festival, RETRO → retrospective, SPECEVENT/LiveMusic/STAGE/THEATRE → special. Or should festival tags override `data-genre`?
