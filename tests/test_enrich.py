@@ -416,4 +416,10 @@ def test_seeded_overrides_file():
         "JIFF: Dust Bowls and Jewish Souls": 1660550,
         "JIFF: The Wedding Entertainer (The Tale of Moishe Badhan)": 1573783,
         "JIFF: The Sea": None,
+        "Labyrinth – 40th Anniversary Live Show & Screening": 13597,
+        "Fallen Angels by Noël Coward": 1702350,
+        "JIFF: The Heroes of the Louvre": 1208117,
+        "JIFF: Sapiro v. Ford: The Jew Who Sued Henry Ford": 1552128,
+        "JIFF: Lansky: The Jewish Godfather": None,
+        "JIFF: Who Are We: The Story of the Ajax Football Club": None,
     }
