@@ -1,0 +1,44 @@
+# Every cinema we scrape: slug (as the scrapers write it), display name, local
+# government area, region (the eight in DECISIONS.md 2026-10-18 "Regions") and
+# screen count (left blank until B7 fills it in from each cinema's own site).
+# A cinema missing here shows under no region and is logged by export.py.
+
+- {slug: ritz-randwick, name: Ritz Randwick, lga: Randwick, region: East, screens: null}
+
+- {slug: hoyts-bankstown, name: Hoyts Bankstown, lga: Canterbury-Bankstown, region: South West, screens: null}
+- {slug: hoyts-blacktown, name: Hoyts Blacktown, lga: Blacktown, region: Outer West, screens: null}
+- {slug: hoyts-broadway, name: Hoyts Broadway, lga: City of Sydney, region: City, screens: null}
+- {slug: hoyts-chatswood-mandarin, name: Hoyts Chatswood Mandarin, lga: Willoughby, region: North, screens: null}
+- {slug: hoyts-chatswood-westfield, name: Hoyts Chatswood Westfield, lga: Willoughby, region: North, screens: null}
+- {slug: hoyts-cronulla, name: Hoyts Cronulla, lga: Sutherland, region: St George & Sutherland, screens: null}
+- {slug: hoyts-eastgardens, name: Hoyts Eastgardens, lga: Bayside, region: East, screens: null}
+# Moore Park is in the City of Sydney, so City, not East.
+- {slug: hoyts-entertainment-quarter, name: Hoyts Entertainment Quarter, lga: City of Sydney, region: City, screens: null}
+- {slug: hoyts-mt-druitt, name: Hoyts Mt Druitt, lga: Blacktown, region: Outer West, screens: null}
+- {slug: hoyts-penrith, name: Hoyts Penrith, lga: Penrith, region: Outer West, screens: null}
+- {slug: hoyts-warringah-mall, name: Hoyts Warringah Mall, lga: Northern Beaches, region: North, screens: null}
+- {slug: hoyts-wetherill-park, name: Hoyts Wetherill Park, lga: Fairfield, region: South West, screens: null}
+
+- {slug: palace-central, name: Palace Central, lga: City of Sydney, region: City, screens: null}
+- {slug: palace-moore-park, name: Palace Moore Park, lga: City of Sydney, region: City, screens: null}
+- {slug: palace-norton-street, name: Palace Norton Street, lga: Inner West, region: Inner West, screens: null}
+
+- {slug: orpheum, name: Hayden Orpheum, lga: North Sydney, region: North, screens: null}
+- {slug: golden-age, name: Golden Age, lga: City of Sydney, region: City, screens: null}
+- {slug: roseville, name: Roseville Cinemas, lga: Ku-ring-gai, region: North, screens: null}
+
+- {slug: event-bondi, name: Event Bondi, lga: Waverley, region: East, screens: null}
+- {slug: event-burwood, name: Event Burwood, lga: Burwood, region: Inner West, screens: null}
+- {slug: event-campbelltown, name: Event Campbelltown, lga: Campbelltown, region: South West, screens: null}
+- {slug: event-castle-hill, name: Event Castle Hill, lga: The Hills, region: Parramatta & Hills, screens: null}
+- {slug: event-drive-in-blacktown, name: Event Drive-In Blacktown, lga: Blacktown, region: Outer West, screens: null}
+- {slug: event-ed-square, name: Event Ed Square, lga: Liverpool, region: South West, screens: null}
+- {slug: event-george-street, name: Event George Street, lga: City of Sydney, region: City, screens: null}
+- {slug: event-hornsby, name: Event Hornsby, lga: Hornsby, region: North, screens: null}
+- {slug: event-hurstville, name: Event Hurstville, lga: Georges River, region: St George & Sutherland, screens: null}
+- {slug: event-imax-sydney, name: Event IMAX Sydney, lga: City of Sydney, region: City, screens: null}
+- {slug: event-liverpool, name: Event Liverpool, lga: Liverpool, region: South West, screens: null}
+- {slug: event-macquarie, name: Event Macquarie, lga: Ryde, region: North, screens: null}
+- {slug: event-miranda, name: Event Miranda, lga: Sutherland, region: St George & Sutherland, screens: null}
+- {slug: event-parramatta, name: Event Parramatta, lga: Parramatta, region: Parramatta & Hills, screens: null}
+- {slug: event-top-ryde-city, name: Event Top Ryde City, lga: Ryde, region: North, screens: null}

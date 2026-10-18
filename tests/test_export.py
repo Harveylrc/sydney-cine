@@ -7,13 +7,16 @@ from zoneinfo import ZoneInfo
 import pytest
 
 from export import (
+    REGIONS,
     build_data,
     build_film_details,
     display_day,
     effective_type,
     load_previous,
+    load_venues,
     scrape_all,
     time_label,
+    unplaced_venues,
     write,
 )
 from models import Showing
@@ -223,7 +226,7 @@ def test_fixture_day_exports(tmp_path):
     assert len(data["films"]) == 22
     assert {r["day"] for r in data["showings"]} == {"2026-10-16"}
     assert data["venues"] == {
-        "ritz-randwick": {"name": "Ritz Randwick", "first_seen": "2026-10-16"}
+        "ritz-randwick": {"name": "Ritz Randwick", "first_seen": "2026-10-16", "region": None}
     }
     path = tmp_path / "public" / "data.json"
     write(data, path)
@@ -280,6 +283,55 @@ def test_film_details_leave_out_dropped_and_out_of_horizon_films():
         showing("Later", at(LAUNCH + timedelta(days=20), 19), runtime_min=90),
     ]
     assert build_film_details(shows, build_data(shows, None, LAUNCH), {}) == {}
+
+
+# --- regions (B12) -------------------------------------------------------------
+
+VENUE_INFO = {
+    "ritz-randwick": {"slug": "ritz-randwick", "region": "East"},
+    "orpheum": {"slug": "orpheum", "region": "North"},
+}
+
+
+def test_every_session_carries_its_venue_region():
+    shows = [showing("Film", at(LAUNCH, 18)), showing("Film", at(LAUNCH, 19), venue="orpheum")]
+    data = build_data(shows, None, LAUNCH, VENUE_INFO)
+    assert [r["region"] for r in data["showings"]] == ["East", "North"]
+    assert data["venues"]["orpheum"]["region"] == "North"
+    assert data["regions"] == ["East", "North"]  # REGIONS order, only those with sessions
+
+
+def test_venue_missing_from_yaml_has_no_region():
+    shows = [showing("Film", at(LAUNCH, 19), venue="orpheum")]
+    data = build_data(shows, None, LAUNCH, {})
+    assert data["showings"][0]["region"] is None and data["regions"] == []
+    assert unplaced_venues(shows, VENUE_INFO) == []
+    assert unplaced_venues(shows, {}) == ["orpheum"]
+
+
+def test_venues_yaml_covers_every_scraped_venue():
+    from scrapers import event, golden_age, hoyts, orpheum, palace, ritz, roseville
+
+    slugs = {f"hoyts-{hoyts.cinema_slug(c)}" for c in hoyts.CINEMAS}
+    slugs |= {f"event-{slug}" for slug in event.CINEMAS}
+    slugs |= {slug for slug, _ in palace.CINEMAS.values()}
+    slugs |= {m.VENUE_SLUG for m in (ritz, orpheum, golden_age, roseville)}
+    venues = load_venues()
+    assert set(venues) == slugs
+    assert {v["region"] for v in venues.values()} <= set(REGIONS)
+    assert all(v["lga"] for v in venues.values())
+
+
+def test_east_region_cinemas():
+    east = {slug for slug, v in load_venues().items() if v["region"] == "East"}
+    assert east == {"ritz-randwick", "hoyts-eastgardens", "event-bondi"}
+
+
+def test_unknown_region_rejected(tmp_path):
+    path = tmp_path / "venues.yaml"
+    path.write_text("- {slug: x, name: X, lga: Y, region: Westish, screens: null}\n")
+    with pytest.raises(ValueError, match="Westish"):
+        load_venues(path)
 
 
 # --- partial days (B10d) --------------------------------------------------------
