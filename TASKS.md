@@ -21,7 +21,7 @@ Each task: branch `task/<id>-<slug>`, `make check` green, tick here, one line in
 - [x] **B5a Hoyts** (JSON API, all NSW cinemas; fixture = saved `sessions/SHOWGR` JSON)
 - [x] **B4c Listing layout + horizon.** Per DECISIONS 2026-10-18: `export.py` keeps only sessions within 14 days of today (all venues) and drops "Audio Description"/"Closed Captions" from attributes. `index.html`: one entry per film per day; under it one row per session `time · cinema · tags`, sorted by time; no per-cinema grouping. ~~Footer: add the small TMDB logo beside the attribution text.~~ (dropped: no logo) The Popular score's session count is now per film per day across all cinemas. Acceptance: `make check` passes; data.json well under 1 MB; The Odyssey on a given day shows a single block with its Ritz and Hoyts times interleaved by time.
 - [x] **B4d Collapsible entries.** Per DECISIONS 2026-10-18: entries collapsed by default showing title, meta line and a right-aligned muted count; click the title (or anywhere on the header row) to expand the session rows; keyboard-accessible (button semantics, aria-expanded). Acceptance: `make check` passes; a day with 40 films fits on roughly two screens collapsed.
-- [ ] **B5b Palace** (parse `__NEXT_DATA__` from `/cinemas/{slug}` for 3 Sydney slugs; convert UTC; fixture = saved HTML)
+- [x] **B5b Palace** (parse `__NEXT_DATA__` from `/cinemas/{slug}` for 3 Sydney slugs; convert UTC; fixture = saved HTML)
 - [ ] **B5c Orpheum** (`/api/movie/playing-now`; fixture = saved JSON)
 - [ ] **B5d Golden Age** (HTML, day headings; infer year from month rollover)
 - [ ] **B5e Roseville** (Veezi sessions page; never fetch `/purchase`)

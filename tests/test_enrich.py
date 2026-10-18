@@ -123,10 +123,10 @@ def run(showings, tmdb, cache, overrides=None):
     return enrich(showings, client, cache, overrides)
 
 
-def showing(title, vista_movie_id=None, hour=19, film_type=None):
+def showing(title, vista_movie_id=None, hour=19, film_type=None, venue="ritz-randwick"):
     return Showing(
-        venue_slug="ritz-randwick",
-        venue_name="Ritz Randwick",
+        venue_slug=venue,
+        venue_name=venue.replace("-", " ").title(),
         film_title=title,
         start=datetime(2026, 10, 16, hour, 0, tzinfo=SYDNEY),
         vista_movie_id=vista_movie_id,
@@ -145,6 +145,8 @@ def showing(title, vista_movie_id=None, hour=19, film_type=None):
         ("Ranabaali (Telugu, Eng Sub)", ("Ranabaali", None)),
         ("Godzilla Minus Zero  (Japanese, Eng Sub)", ("Godzilla Minus Zero", None)),
         ("(LFF) Liste De Marriage", ("Liste De Marriage", None)),
+        ("BFF26 The Man Who Fell to Earth", ("The Man Who Fell to Earth", None)),
+        ("JFF26 1ST KISS", ("1ST KISS", None)),
         ("Avengers Endgame: Encore", ("Avengers Endgame", None)),
         (
             "Stray Kids World Tour <Run It> Live Viewing (Encore)",
@@ -200,6 +202,19 @@ def test_vista_id_shared_across_venue_titles(tmdb, cache):
     )
     assert [s.tmdb_id for s in out] == [101, 101]
     assert len(tmdb.searches()) == 1
+
+
+def test_vista_ids_are_per_chain(tmdb, cache):
+    out = run(
+        [
+            showing("Léon: The Professional", vista_movie_id="HO00001234", venue="hoyts-broadway"),
+            showing("La Bola Negra", vista_movie_id="HO00001234", venue="palace-central"),
+        ],
+        tmdb,
+        cache,
+    )
+    assert [s.tmdb_id for s in out] == [101, 202]
+    assert cache.get("vista:hoyts:HO00001234").tmdb_id == 101
 
 
 def test_unmatched_logged_and_kept(tmdb, cache, caplog):

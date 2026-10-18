@@ -2,7 +2,9 @@
 
 Matching order (policy in DECISIONS.md):
 1. tmdb_overrides.csv: a hand-kept map of exact venue title -> TMDB id or "none".
-2. Showings that share a vista_movie_id are looked up once for the whole group.
+2. Showings that share a vista_movie_id within one chain are looked up once for
+   the whole group. Vista ids are per chain (Palace's HO00011213 is not Hoyts'),
+   so the key includes the chain: the first part of venue_slug ("hoyts", "palace").
 3. Otherwise the cleaned title is searched on TMDB and only an exact title match
    is accepted (within a year of the venue's year when the title carries one,
    e.g. "Léon: The Professional (1994)"). With no year, a new_release or festival
@@ -39,7 +41,10 @@ RECENT_YEARS = 3
 PREFER_RECENT_TYPES = {"new_release", "festival"}
 
 # Venue decorations that are not part of the film's title.
-TITLE_PREFIX = re.compile(r"^(?:\d{2}mm\s+|(?:JIFF|SFF):\s*|\(LFF\)\s*)+", re.IGNORECASE)
+# "35mm ", "JIFF: ", "(LFF) ", and Palace festival codes such as "BFF26 ", "GFF26 ".
+TITLE_PREFIX = re.compile(
+    r"^(?:\d{2}mm\s+|(?:JIFF|SFF):\s*|\(LFF\)\s*|[A-Z]{1,4}FF\d{2}\s+)+", re.IGNORECASE
+)
 TITLE_SUFFIX = re.compile(
     r"\s+[-–]\s+(?:Digital|\d{2}mm|\d+(?:st|nd|rd|th) Anniversary)$"  # " - Digital"
     r"|\s*\([^()]*,\s*Eng Sub\)$"  # Hoyts language: " (Hindi, Eng Sub)"
@@ -142,7 +147,7 @@ class Cache:
         self.db.executescript(
             """
             CREATE TABLE IF NOT EXISTS lookups (
-                -- "vista:HO000…", "title:<title>|<year>[|recent]" or "tmdb:<id>"
+                -- "vista:<chain>:HO000…", "title:<title>|<year>[|recent]" or "tmdb:<id>"
                 key TEXT PRIMARY KEY,
                 tmdb_id INTEGER, year INTEGER, director TEXT, rating REAL, vote_count INTEGER
             );
@@ -171,7 +176,8 @@ def prefers_recent(s: Showing) -> bool:
 def lookup_key(s: Showing) -> str:
     """Showings with the same key share one TMDB lookup."""
     if s.vista_movie_id:
-        return f"vista:{s.vista_movie_id}"
+        chain = s.venue_slug.split("-")[0]
+        return f"vista:{chain}:{s.vista_movie_id}"
     title, year = search_terms(s.film_title)
     return f"title:{title.casefold()}|{year or ''}" + ("|recent" if prefers_recent(s) else "")
 
