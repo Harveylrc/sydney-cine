@@ -55,13 +55,30 @@ PREFER_RECENT_TYPES = {"new_release", "festival"}
 
 # Venue decorations that are not part of the film's title.
 # "35mm ", "JIFF: ", "(LFF) ", and Palace festival codes such as "BFF26 ", "GFF26 ".
+# Orpheum strands: "Hitchcock Retro - Psycho", "JFF 2026 - Pitfall".
 TITLE_PREFIX = re.compile(
-    r"^(?:\d{2}mm\s+|(?:JIFF|SFF):\s*|\(LFF\)\s*|[A-Z]{1,4}FF\d{2}\s+)+", re.IGNORECASE
+    r"^(?:\d{2}mm\s+|(?:JIFF|SFF):\s*|\(LFF\)\s*|[A-Z]{1,4}FF\d{2}\s+"
+    r"|(?:Hitchcoc?k Retro|[A-Z]{1,4}FF \d{4})\s+[-–]\s+)+",
+    re.IGNORECASE,
+)
+# How a film is presented, not part of its title (Orpheum: " - 4K Restoration",
+# " - Director Q&A Preview", " on 35mm Film"). "Live" is deliberately absent: a
+# live show named after a film ("Two of Us - … Live") must not match that film.
+PRESENTATION = (
+    r"Anniv(?:ersary)?|Restoration|Q&A|Preview|Advance Screenings?|Limited|Special Event"
+    r"|70mm|in 4K|in 3D|on 35mm|Exclusive|Sing-A-Long|Directors? Cut"
 )
 TITLE_SUFFIX = re.compile(
     r"\s+[-–]\s+(?:Digital|\d{2}mm|\d+(?:st|nd|rd|th) Anniversary)$"  # " - Digital"
     r"|\s*\([^()]*,\s*Eng Sub\)$"  # Hoyts language: " (Hindi, Eng Sub)"
-    r"|[\s:(]+Encore\)?$",  # Hoyts re-runs: ": Encore", " (Encore)"
+    r"|[\s:(]+Encore\)?$"  # Hoyts re-runs: ": Encore", " (Encore)"
+    rf"|\s+[-–]\s*[^-–]*\b(?:{PRESENTATION})\b[^-–]*$",  # " - 30th Anniversary in 4K"
+    re.IGNORECASE,
+)
+# Stripped before TITLE_SUFFIX, so "GIANT – The Play Preview Event" keeps "The Play".
+TITLE_TRAILING = re.compile(
+    r"(?<![-–\s])\s+(?:on 35mm Film|in 4K(?: Laser)?|in 3D|4K Restoration|Preview Event"
+    r"|Special Event|\d+(?:st|nd|rd|th) Anniv(?:ersary)?\b.*)$",  # "La La Land 10th Anniv + …"
     re.IGNORECASE,
 )
 TITLE_YEAR = re.compile(r"\s*\((\d{4})\)$")
@@ -79,7 +96,7 @@ class Match:
 def search_terms(film_title: str) -> tuple[str, int | None]:
     """Strip venue decorations; pull a trailing "(YYYY)" out as the year."""
     title = TITLE_PREFIX.sub("", film_title.strip())
-    while (stripped := TITLE_SUFFIX.sub("", title)) != title:
+    while (stripped := TITLE_SUFFIX.sub("", TITLE_TRAILING.sub("", title))) != title:
         title = stripped
     year = None
     if m := TITLE_YEAR.search(title):

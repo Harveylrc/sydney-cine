@@ -158,6 +158,26 @@ def showing(title, vista_movie_id=None, hour=19, film_type=None, venue="ritz-ran
         ("(LFF) Liste De Marriage", ("Liste De Marriage", None)),
         ("BFF26 The Man Who Fell to Earth", ("The Man Who Fell to Earth", None)),
         ("JFF26 1ST KISS", ("1ST KISS", None)),
+        ("Hitchcock Retro - Psycho 4K Restoration", ("Psycho", None)),
+        ("Hitchcok Retro - Rebecca 4K Restoration", ("Rebecca", None)),
+        ("JFF 2026 - Pitfall on 35mm Film", ("Pitfall", None)),
+        ("Casino Royale - 20th Anniversary 4K Restoration", ("Casino Royale", None)),
+        ("La La Land 10th Anniversary + Live Performance", ("La La Land", None)),
+        ("GIANT – The Play Preview Event", ("GIANT – The Play", None)),
+        (
+            "George Michael - The Faith Tour Special Event",
+            ("George Michael - The Faith Tour", None),
+        ),
+        ("Pressure - Preview Event", ("Pressure", None)),
+        ("Highlander - Christopher Lambert Live Q&A", ("Highlander", None)),
+        (
+            "Two of Us - The Songs of Simon & Garfunkel Live",
+            ("Two of Us - The Songs of Simon & Garfunkel Live", None),
+        ),
+        (
+            "Ozzy & Black Sabbath - Back to the Beginning",
+            ("Ozzy & Black Sabbath - Back to the Beginning", None),
+        ),
         ("Avengers Endgame: Encore", ("Avengers Endgame", None)),
         (
             "Stray Kids World Tour <Run It> Live Viewing (Encore)",

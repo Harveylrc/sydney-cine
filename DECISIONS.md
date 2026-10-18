@@ -54,3 +54,5 @@ Hoyts, Palace and Orpheum all use Vista `HO000…` movie ids, but **they are per
 - **Event UA:** confirm the print view is identical for a normal browser UA.
 - **TMDB cache expiry (from B3):** cached lookups never expire, so ratings go stale. In B6, re-fetch rating for hits older than 30 days (keep tmdb_id/director/year).
 - **Sort weight (from B4b):** popularity vs sessions weight is a guess (2); revisit once more venues are in and session counts are bigger.
+- **Palace drops NFT (from B5c):** DECISIONS 2026-10-15 says keep NFT, and Ritz and Orpheum do, but B5b's Palace scraper drops "No Free Tickets" as a pricing note. Make Palace show "NFT" too (one-line change), or drop NFT everywhere?
+- **Orpheum leftovers (from B5c):** unmatched films that look matchable: "Peter Jackson's The Frighteners - 30th Anniversary" (TMDB "The Frighteners", 1996), "Fallen Angels by Noël Coward - Preview Event" (the override covers only the title without " - Preview Event"), "Her Last Laugh - Screening & Live Q&A". Add overrides? The Orpheum also gives each film's director names, which Claude's prompt could use; not passed, since the B3d decision lists synopsis and runtime only.
