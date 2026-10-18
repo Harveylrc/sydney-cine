@@ -279,6 +279,8 @@
   const summary = $("#summary");
   let data = null;
   let filmsById = new Map();
+  let thisYear = new Date().getFullYear();
+  let unfiltered = new Map(); // day -> film id -> all that day's showings, for ranking
   let view = "all";
   let entryCount = 0;
 
@@ -321,42 +323,35 @@
     };
   }
 
-  // Popular: sessions that day + POPULARITY_WEIGHT × ln(TMDB votes + 1).
-  // Tuning knobs (B9, temporary): ?w=<weight> and ?mode=popular|az override the
-  // defaults, show in the summary line and print the first day's top 15 with scores to the console.
-  const params = new URLSearchParams(location.search);
-  const tuning = params.has("w") || params.has("mode");
-  const knobWeight = Number(params.get("w"));
-  const POPULARITY_WEIGHT = params.get("w") && Number.isFinite(knobWeight) && knobWeight >= 0 ? knobWeight : 2;
-  const score = (film, sessions) => sessions + POPULARITY_WEIGHT * Math.log((film.vote_count || 0) + 1);
+  // rank:start — Popular score (DECISIONS 2026-10-18 "Ranking formula"); tests/test_rank.py runs this block in node.
+  // Quality × familiarity, plus an age bonus, a capped share for session count and a
+  // small bump for independent cinemas. A recent film shown as a retrospective (a
+  // re-release) gets no age bonus and its votes are capped lower.
+  const CHAINS = ["hoyts-", "event-", "reading-"];
+  function rankScore(film, showings, thisYear) {
+    const rerelease = film.year != null && thisYear - film.year < 10 && showings.some((s) => s.type === "retrospective");
+    const age = film.year != null && !rerelease ? Math.max(thisYear - film.year, 0) : 0;
+    const votes = Math.min(film.vote_count || 0, rerelease ? 5000 : 30000);
+    const quality = Math.max((film.rating || 0) - 5, 0);
+    const independent = showings.filter((s) => !CHAINS.some((c) => s.venue.startsWith(c))).length;
+    return quality * Math.log(votes + 1) + 1.5 * Math.log(age + 1)
+      + 0.15 * Math.min(showings.length, 80) + 0.3 * Math.min(independent, 5);
+  }
+  // rank:end
   const byTitle = (a, b) => a.film.title.localeCompare(b.film.title, "en", { sensitivity: "base" });
   const ORDERS = {
     popular: (a, b) => b.score - a.score || byTitle(a, b),
     az: byTitle,
   };
 
-  function orderFilms(films, sort) {
+  // Ranks on all of a film's sessions that day, whatever the filters (Harvey, B9b).
+  function orderFilms(day, films, sort) {
     return [...films]
       .map(([id, showings]) => {
         const film = filmsById.get(id);
-        return { film, showings, score: score(film, showings.length) };
+        return { film, showings, score: rankScore(film, unfiltered.get(day).get(id), thisYear) };
       })
       .sort(ORDERS[sort] || ORDERS.popular);
-  }
-
-  // Start the Sort menu on ?mode=, and make it what "Clear filters" goes back to.
-  const knobMode = params.get("mode");
-  if (knobMode && [...form.elements.sort.options].some((o) => o.value === knobMode)) {
-    for (const option of form.elements.sort.options) option.defaultSelected = option.value === knobMode;
-    form.elements.sort.value = knobMode;
-    form.elements.sort.dataset.default = knobMode;
-  }
-
-  function logTop(day, ordered, sort) {
-    console.log(`${day} top 15 (sort ${sort}, w=${POPULARITY_WEIGHT}):`);
-    console.table(ordered.slice(0, 15).map(({ film, showings, score }) => ({
-      title: film.title, sessions: showings.length, votes: film.vote_count || 0, score: Number(score.toFixed(2)),
-    })));
   }
 
   function matches(s, film, f) {
@@ -459,17 +454,14 @@
     listings.replaceChildren();
     for (const [day, films] of [...days].sort(([a], [b]) => a.localeCompare(b))) {
       const section = el("section", { class: "day" }, el("h2", { text: dayHeading(day) }));
-      const ordered = orderFilms(films, f.sort);
-      for (const { film, showings } of ordered) section.append(filmEntry(film, showings));
+      for (const { film, showings } of orderFilms(day, films, f.sort)) section.append(filmEntry(film, showings));
       listings.append(section);
-      if (tuning && listings.children.length === 1) logTop(day, ordered, f.sort);
     }
 
     const filmCount = new Set([...days.values()].flatMap((films) => [...films.keys()])).size;
     summary.textContent = count
       ? `${count} showing${count === 1 ? "" : "s"} of ${filmCount} film${filmCount === 1 ? "" : "s"}`
       : "";
-    if (tuning) summary.textContent += `${count ? " · " : ""}sort ${f.sort}, w=${POPULARITY_WEIGHT}`;
     if (!count) {
       const msg = view === "new"
         ? "No new releases have appeared this week yet."
@@ -510,6 +502,13 @@
     .then((json) => {
       data = json;
       filmsById = new Map(data.films.map((f) => [f.id, f]));
+      thisYear = Number(data.generated_at.slice(0, 4)) || thisYear;
+      for (const s of data.showings) {
+        if (!unfiltered.has(s.day)) unfiltered.set(s.day, new Map());
+        const films = unfiltered.get(s.day);
+        if (!films.has(s.film)) films.set(s.film, []);
+        films.get(s.film).push(s);
+      }
       const updated = new Date(data.generated_at).toLocaleString("en-AU", {
         timeZone: "Australia/Sydney", weekday: "short", day: "numeric", month: "short",
         hour: "numeric", minute: "2-digit",
