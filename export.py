@@ -238,6 +238,7 @@ def write(data: dict, path: Path = DATA_PATH) -> None:
 
 
 if __name__ == "__main__":
+    from coverage import coverage
     from enrich import (
         Cache,
         TMDBClient,
@@ -262,6 +263,7 @@ if __name__ == "__main__":
     for slug in unplaced_venues(showings, venue_info):
         log.warning("Venue %s is not in venues.yaml: no region", slug)
     data = build_data(showings, load_previous(), datetime.now(SYDNEY).date(), venue_info)
+    data["coverage"] = coverage(venue_info, data["showings"])
     write(data)
     write(build_film_details(showings, data, details), FILMS_PATH)
     new = sum(f["new_this_week"] for f in data["films"])
