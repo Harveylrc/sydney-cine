@@ -14,6 +14,9 @@ Rules from DECISIONS.md:
   the horizon.
 - "Audio Description" and "Closed Captions" are dropped from attributes: almost
   every chain session has them, so they are noise. "Open Captions" stays.
+- Partial days (B10d): a day with fewer than half the busiest day's sessions is
+  "partial": the chains publish the next Thu–Wed week around Tuesday/Wednesday,
+  and until then the days after the current week hold only advance sessions.
 - Expanded row (B10c): poster_path and runtime from TMDB; with no TMDB runtime,
   the first venue running time we saw. They go in films.json, which the page
   loads the first time a row is opened, so data.json stays small. No synopsis.
@@ -23,6 +26,7 @@ First-seen dates are carried forward from the previous data.json.
 import json
 import logging
 import os
+from collections import Counter
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -125,8 +129,16 @@ def build_data(showings: list[Showing], previous: dict | None, today: date) -> d
         "venues": venues,
         "films": sorted(films.values(), key=lambda f: f["title"].casefold()),
         "showings": rows,
+        "days": day_status(rows),
         "seen": seen,
     }
+
+
+def day_status(rows: list[dict]) -> dict[str, dict]:
+    """Display day -> {"sessions": n, "partial": bool}, in day order."""
+    counts = Counter(row["day"] for row in rows)
+    busiest = max(counts.values(), default=0)
+    return {day: {"sessions": n, "partial": n < busiest / 2} for day, n in sorted(counts.items())}
 
 
 def build_film_details(showings: list[Showing], data: dict, details: dict[int, dict]) -> dict:
