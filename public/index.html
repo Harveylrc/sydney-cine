@@ -14,6 +14,7 @@
     --label: #CAD0E5;     /* labels and body text */
     --border: #4D5884;    /* field and button borders */
     --accent: #E8B86D;    /* links and the active filter */
+    --muted: #9AA3C7;     /* secondary figures (session counts) */
 
     --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --gutter: 32px;
@@ -123,9 +124,24 @@
     font-weight: 800;
     border-bottom: 1px solid var(--border);
   }
-  .film {
-    padding: 12px 0;
-    border-bottom: 1px solid var(--divider);
+  .film { border-bottom: 1px solid var(--divider); }
+  /* Collapsed header: title + meta on the left, count on the right; the whole row toggles. */
+  .film-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 16px;
+    padding: 7px 0;
+    cursor: pointer;
+  }
+  /* Title and meta share a line when there is room, so a long day stays short. */
+  .film-head .text {
+    flex: 1 1 20rem;
+    min-width: 0;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 0 12px;
   }
   .film h3 {
     margin: 0;
@@ -133,6 +149,24 @@
     font-size: 1.05rem;
     font-weight: 700;
   }
+  .film h3 button {
+    font: inherit;
+    color: inherit;
+    background: none;
+    border: 0;
+    padding: 0;
+    text-align: left;
+    cursor: pointer;
+  }
+  .film-head:hover h3 button { text-decoration: underline; }
+  .count {
+    margin-left: auto;
+    font-size: 0.85rem;
+    color: var(--muted);
+    white-space: nowrap;
+  }
+  .count::after { content: " ▸"; }
+  .film-head.open .count::after { content: " ▾"; }
   .meta { margin: 2px 0 0; font-size: 0.9rem; }
   .meta .rating { color: var(--heading); font-weight: 600; }
   .kind {
@@ -142,7 +176,7 @@
   }
   /* One row per session: time · cinema · tags */
   .sessions {
-    margin: 6px 0 0;
+    margin: 0 0 10px;
     padding: 0;
     list-style: none;
     font-size: 0.9rem;
@@ -246,6 +280,7 @@
   let data = null;
   let filmsById = new Map();
   let view = "all";
+  let entryCount = 0;
 
   // Element helper: text is always set as text, never parsed as HTML.
   function el(tag, attrs = {}, ...children) {
@@ -338,24 +373,52 @@
         el("span", { class: "kind", text: types.map((t) => TYPE_LABELS[t]).join(", ") }));
     }
 
-    const entry = el("article", { class: "film" }, el("h3", { text: film.title }));
-    if (meta.childNodes.length) entry.append(meta);
-    const rows = el("ul", { class: "sessions" });
+    const rowsId = `sessions-${++entryCount}`;
+    const toggle = el("button", { type: "button", "aria-expanded": "false", "aria-controls": rowsId, text: film.title });
+    const text = el("div", { class: "text" }, el("h3", {}, toggle));
+    if (meta.childNodes.length) text.append(meta);
+    const head = el("div", { class: "film-head" }, text, el("span", { class: "count", text: countLabel(showings) }));
+    const entry = el("article", { class: "film" }, head);
+
+    // Session rows are built on first open and start hidden; a new render() resets them.
+    let rows = null;
+    head.addEventListener("click", (e) => {
+      const selection = window.getSelection();
+      if (!selection.isCollapsed && head.contains(selection.anchorNode)) return; // selecting text
+      const open = toggle.getAttribute("aria-expanded") !== "true";
+      if (!rows) entry.append((rows = sessionRows(film, showings, rowsId)));
+      rows.hidden = !open;
+      toggle.setAttribute("aria-expanded", String(open));
+      head.classList.toggle("open", open);
+    });
+    return entry;
+  }
+
+  const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
+  const venueName = (slug) => (data.venues[slug] && data.venues[slug].name) || slug;
+
+  // "14 sessions · 9 cinemas"; one cinema is named: "1 session · Ritz Randwick".
+  function countLabel(showings) {
+    const venues = new Set(showings.map((s) => s.venue));
+    const where = venues.size === 1 ? venueName([...venues][0]) : plural(venues.size, "cinema");
+    return `${plural(showings.length, "session")} · ${where}`;
+  }
+
+  function sessionRows(film, showings, id) {
+    const rows = el("ul", { class: "sessions", id });
     for (const s of [...showings].sort((a, b) => a.start.localeCompare(b.start))) {
       const url = safeUrl(s.booking_url);
       const time = url
         ? el("a", { class: "time", href: url, rel: "noopener", target: "_blank", text: s.time })
         : el("span", { class: "time", text: s.time });
-      const venueName = (data.venues[s.venue] && data.venues[s.venue].name) || s.venue;
       const row = el("li", {}, time);
       if (s.late) row.append(" ", el("span", { class: "late", text: "(late)" }));
-      row.append(" · " + venueName);
+      row.append(" · " + venueName(s.venue));
       if (s.attributes.length) row.append(" · ", el("span", { class: "tags", text: s.attributes.join(", ") }));
       if (s.title !== film.title) row.title = s.title;
       rows.append(row);
     }
-    entry.append(rows);
-    return entry;
+    return rows;
   }
 
   function render() {
