@@ -9,7 +9,12 @@ Matching order (policy in DECISIONS.md):
    is accepted (within a year of the venue's year when the title carries one,
    e.g. "Léon: The Professional (1994)"). With no year, a new_release or festival
    showing prefers an exact match released in the last RECENT_YEARS years.
-Every lookup, hit or miss, is cached in SQLite so it is only ever made once.
+4. When the rules are unsure — several exact-title candidates, or none — and an
+   ANTHROPIC_API_KEY is set, Claude picks one of up to MAX_CANDIDATES TMDB
+   results (or "none") from the venue title, film type and tags. At most
+   MAX_CLAUDE_CALLS per run; when Claude can't answer, step 3's rules decide
+   and that answer is not cached, so Claude is asked again next run.
+Every final lookup, hit or miss, is cached in SQLite so it is only made once.
 Unmatched showings are logged and returned unchanged, never dropped.
 """
 
@@ -25,6 +30,7 @@ from datetime import date
 from functools import partial
 from pathlib import Path
 
+import anthropic
 import requests
 
 from models import Showing
@@ -35,6 +41,12 @@ API = "https://api.themoviedb.org/3"
 DB_PATH = Path(__file__).resolve().parent / "cache" / "tmdb.sqlite"
 ENV_PATH = Path(__file__).resolve().parent / ".env"
 OVERRIDES_PATH = Path(__file__).resolve().parent / "tmdb_overrides.csv"
+
+CLAUDE_MODEL = "claude-sonnet-5-5"
+MAX_CLAUDE_CALLS = 200  # per run: hard budget guard
+MAX_CANDIDATES = 8
+CLAUDE_MAX_TOKENS = 2000  # room to think before the final "Answer:" line
+OVERVIEW_CHARS = 300
 
 # No-year tiebreak: these showings prefer an exact match from the last 3 years.
 RECENT_YEARS = 3
@@ -95,6 +107,7 @@ class TMDBClient:
         self.session = session or requests.Session()
         self.session.headers["Authorization"] = f"Bearer {token}"
         self.session.headers["Accept"] = "application/json"
+        self._movies: dict[int, dict] = {}
 
     def _get(self, path: str, **params) -> dict:
         for _ in range(3):
@@ -106,20 +119,28 @@ class TMDBClient:
         response.raise_for_status()
         return response.json()
 
-    def find(self, title: str, year: int | None, prefer_recent: bool = False) -> Match:
-        """Best TMDB result whose title matches exactly (ignoring case and
-        punctuation) and, if the venue gave a year, is within a year of it —
-        venues often give the premiere year, TMDB the first release. With no
-        year and prefer_recent, the first exact match from the last
-        RECENT_YEARS years wins; failing that, TMDB's first exact match."""
+    def search(self, title: str, year: int | None) -> tuple[list[dict], list[dict]]:
+        """(exact, results): TMDB's results in its order, and those whose title
+        matches exactly (ignoring case and punctuation) and, if the venue gave a
+        year, are within a year of it — venues often give the premiere year,
+        TMDB the first release."""
         results = self._get("/search/movie", query=title, include_adult="false")["results"]
         wanted = normalise(title)
-        candidates = [
+        exact = [
             r
             for r in results
             if wanted in (normalise(r.get("title", "")), normalise(r.get("original_title", "")))
             and (year is None or abs((release_year(r) or 0) - year) <= 1)
         ]
+        return exact, results
+
+    def find(self, title: str, year: int | None, prefer_recent: bool = False) -> Match:
+        """The rules alone: see pick()."""
+        return self.pick(self.search(title, year)[0], year, prefer_recent)
+
+    def pick(self, candidates: list[dict], year: int | None, prefer_recent: bool) -> Match:
+        """With no year and prefer_recent, the first exact match from the last
+        RECENT_YEARS years wins; failing that, TMDB's first exact match."""
         if prefer_recent and year is None:
             cutoff = self.this_year - RECENT_YEARS
             recent = [r for r in candidates if (release_year(r) or 0) >= cutoff]
@@ -128,16 +149,122 @@ class TMDBClient:
             return Match(tmdb_id=None)
         return self.details(candidates[0]["id"])
 
+    def movie(self, tmdb_id: int) -> dict:
+        if tmdb_id not in self._movies:
+            self._movies[tmdb_id] = self._get(f"/movie/{tmdb_id}", append_to_response="credits")
+        return self._movies[tmdb_id]
+
     def details(self, tmdb_id: int) -> Match:
-        movie = self._get(f"/movie/{tmdb_id}", append_to_response="credits")
-        directors = [c["name"] for c in movie["credits"]["crew"] if c["job"] == "Director"]
+        movie = self.movie(tmdb_id)
         return Match(
             tmdb_id=movie["id"],
             year=release_year(movie),
-            director=", ".join(directors) or None,
+            director=directors(movie),
             rating=movie["vote_average"] if movie.get("vote_count") else None,
             vote_count=movie.get("vote_count"),
         )
+
+    def describe(self, result: dict) -> dict:
+        """A search result as Claude sees it: title, year, director, overview."""
+        movie = self.movie(result["id"])
+        return {
+            "tmdb_id": movie["id"],
+            "title": movie.get("title", ""),
+            "original_title": movie.get("original_title", ""),
+            "year": release_year(movie),
+            "director": directors(movie),
+            "overview": (movie.get("overview") or "")[:OVERVIEW_CHARS],
+        }
+
+
+def directors(movie: dict) -> str | None:
+    names = [c["name"] for c in movie["credits"]["crew"] if c["job"] == "Director"]
+    return ", ".join(names) or None
+
+
+ANSWER = re.compile(r"answer:\s*\**\s*(\d+|none)", re.IGNORECASE)
+
+
+class ChooserUnavailable(Exception):
+    """Claude gave no usable answer (budget spent, API error, odd reply)."""
+
+
+class ClaudeChooser:
+    """Asks Claude which TMDB candidate a venue's screening is."""
+
+    SYSTEM = (
+        "You match Sydney cinema listings to The Movie Database (TMDB). Venue titles may "
+        "carry festival codes (e.g. BFF26, JFF26), formats, languages or anniversary notes. "
+        "Decide which candidate is the film being screened, or none if no candidate is that "
+        "film; prefer none to a guess. End your reply with one line: "
+        "'Answer: <tmdb_id>' or 'Answer: none'."
+    )
+
+    def __init__(self, client, model: str = CLAUDE_MODEL, max_calls: int = MAX_CLAUDE_CALLS):
+        self.client, self.model, self.max_calls = client, model, max_calls
+        self.calls = 0
+        self.answers = {"matched": 0, "none": 0}
+        self._budget_logged = False
+
+    def choose(self, s: Showing, candidates: list[dict]) -> int | None:
+        if self.calls >= self.max_calls:
+            if not self._budget_logged:
+                log.warning("Claude budget of %d calls used; rules decide the rest", self.max_calls)
+                self._budget_logged = True
+            raise ChooserUnavailable("budget")
+        self.calls += 1
+        try:
+            response = self.client.messages.create(
+                model=self.model,
+                max_tokens=CLAUDE_MAX_TOKENS,
+                system=self.SYSTEM,
+                messages=[{"role": "user", "content": prompt(s, candidates)}],
+            )
+            # Thinking blocks may come first; the answer is in the text blocks.
+            reply = "\n".join(b.text for b in response.content if b.type == "text")
+        except Exception as error:  # network or API error
+            log.warning("Claude call failed for %r: %s", s.film_title, error)
+            raise ChooserUnavailable("error") from error
+        answers = ANSWER.findall(reply)
+        ids = {c["tmdb_id"] for c in candidates}
+        if not answers or (answers[-1].lower() != "none" and int(answers[-1]) not in ids):
+            log.warning("Claude reply for %r has no usable answer: %r", s.film_title, reply[-80:])
+            raise ChooserUnavailable("reply")
+        if answers[-1].lower() == "none":
+            self.answers["none"] += 1
+            return None
+        self.answers["matched"] += 1
+        return int(answers[-1])
+
+
+def prompt(s: Showing, candidates: list[dict]) -> str:
+    lines = [
+        "A Sydney cinema lists this screening:",
+        f"Title: {s.film_title}",
+        f"Type: {(s.film_type or 'not given').replace('_', ' ')}",
+        f"Tags: {', '.join(s.attributes) or 'none'}",
+        "",
+        "Which of these TMDB entries is the film being screened?",
+    ]
+    for c in candidates:
+        also = (
+            f" (original title: {c['original_title']})" if c["original_title"] != c["title"] else ""
+        )
+        lines.append(
+            f"- tmdb_id {c['tmdb_id']}: {c['title']}{also}, {c['year'] or 'year unknown'}, "
+            f"directed by {c['director'] or 'unknown'}. {c['overview']}"
+        )
+    lines += ["", "End with 'Answer: <tmdb_id>' or 'Answer: none'."]
+    return "\n".join(lines)
+
+
+def claude_chooser(env_path: Path = ENV_PATH) -> ClaudeChooser | None:
+    """A chooser if ANTHROPIC_API_KEY is set, else None (logged once per run)."""
+    key = load_env("ANTHROPIC_API_KEY", env_path)
+    if not key:
+        log.info("ANTHROPIC_API_KEY not set: TMDB matching uses the rules only")
+        return None
+    return ClaudeChooser(anthropic.Anthropic(api_key=key))
 
 
 class Cache:
@@ -198,9 +325,26 @@ def enrich(
     client: TMDBClient,
     cache: Cache,
     overrides: dict[str, int | None] | None = None,
+    chooser: ClaudeChooser | None = None,
 ) -> list[Showing]:
     overrides = overrides or {}
     matches: dict[str, Match] = {}
+
+    def look_up(s: Showing) -> tuple[Match, bool]:
+        """(match, final). Not final when Claude should have decided but couldn't."""
+        title, year = search_terms(s.film_title)
+        exact, results = client.search(title, year)
+        pool = (exact or results)[:MAX_CANDIDATES]
+        if chooser and len(exact) != 1 and pool:
+            try:
+                chosen = chooser.choose(s, [client.describe(r) for r in pool])
+            except ChooserUnavailable:
+                return client.pick(exact, year, prefers_recent(s)), False
+            return (client.details(chosen) if chosen else Match(tmdb_id=None)), True
+        return client.pick(exact, year, prefers_recent(s)), True
+
+    def by_override(tmdb_id: int) -> tuple[Match, bool]:
+        return client.details(tmdb_id), True
 
     def resolve(s: Showing) -> Match:
         if s.film_title in overrides:
@@ -208,16 +352,15 @@ def enrich(
             if tmdb_id is None:
                 return Match(tmdb_id=None)  # deliberate: not a miss, not logged
             key = f"tmdb:{tmdb_id}"
-            fetch = partial(client.details, tmdb_id)
+            fetch = partial(by_override, tmdb_id)
         else:
             key = lookup_key(s)
-            fetch = partial(
-                client.find, *search_terms(s.film_title), prefer_recent=prefers_recent(s)
-            )
+            fetch = partial(look_up, s)
         if key not in matches:
             if (match := cache.get(key)) is None:
-                match = fetch()
-                cache.put(key, match)
+                match, final = fetch()
+                if final:
+                    cache.put(key, match)
             matches[key] = match
             if match.tmdb_id is None:
                 log.warning("No TMDB match for %r (%s)", s.film_title, key)
@@ -242,21 +385,41 @@ def enrich(
     return enriched
 
 
+def load_env(name: str, env_path: Path = ENV_PATH) -> str | None:
+    """name from the environment, else from .env; None if unset."""
+    if value := os.environ.get(name):
+        return value
+    if env_path.exists():
+        for line in env_path.read_text().splitlines():
+            key, _, value = line.partition("=")
+            if key.strip() == name and value.strip():
+                return value.strip()
+    return None
+
+
 def load_token(env_path: Path = ENV_PATH) -> str:
-    if token := os.environ.get("TMDB_API_KEY"):
+    if token := load_env("TMDB_API_KEY", env_path):
         return token
-    for line in env_path.read_text().splitlines():
-        name, _, value = line.partition("=")
-        if name.strip() == "TMDB_API_KEY" and value.strip():
-            return value.strip()
     raise SystemExit("TMDB_API_KEY not set (environment or .env)")
+
+
+def report(chooser: ClaudeChooser | None) -> None:
+    if chooser and chooser.calls:
+        log.info(
+            "Claude asked about %d films: %d matched, %d none",
+            chooser.calls,
+            chooser.answers["matched"],
+            chooser.answers["none"],
+        )
 
 
 if __name__ == "__main__":
     from scrapers import ritz
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-    results = enrich(ritz.fetch(), TMDBClient(load_token()), Cache(), load_overrides())
+    chooser = claude_chooser()
+    results = enrich(ritz.fetch(), TMDBClient(load_token()), Cache(), load_overrides(), chooser)
+    report(chooser)
     seen = set()
     for s in results:
         if s.film_title not in seen:

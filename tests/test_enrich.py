@@ -4,7 +4,18 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from enrich import OVERRIDES_PATH, Cache, Match, TMDBClient, enrich, load_overrides, search_terms
+from enrich import (
+    OVERRIDES_PATH,
+    Cache,
+    ClaudeChooser,
+    Match,
+    TMDBClient,
+    claude_chooser,
+    enrich,
+    load_overrides,
+    lookup_key,
+    search_terms,
+)
 from models import Showing
 
 SYDNEY = ZoneInfo("Australia/Sydney")
@@ -475,3 +486,188 @@ def test_vote_count_survives_cache(tmdb, tmp_path):
     [s] = run([showing("La Bola Negra")], tmdb, Cache(tmp_path / "db.sqlite"))
     assert s.vote_count == 40
     assert tmdb.calls == []
+
+
+# --- Claude-assisted matching (B3c) -------------------------------------------
+
+BLACK_XMAS_2019 = {
+    "id": 551808,
+    "title": "Black Christmas",
+    "original_title": "Black Christmas",
+    "release_date": "2019-12-11",
+    "overview": "Sorority pledges are stalked over the Christmas break.",
+    "vote_average": 5.0,
+    "vote_count": 900,
+    "credits": {"crew": [{"job": "Director", "name": "Sophia Takal"}]},
+}
+BLACK_XMAS_1974 = BLACK_XMAS_2019 | {
+    "id": 16938,
+    "release_date": "1974-10-11",
+    "overview": "Sorority sisters receive strange phone calls.",
+    "credits": {"crew": [{"job": "Director", "name": "Bob Clark"}]},
+}
+EL_PARTIDO = CO_DIRECTED | {
+    "id": 1666712,
+    "title": "The Match",
+    "original_title": "El Partido",
+    "overview": "Argentina vs England, 1986.",
+}
+
+
+class FakeClaude:
+    """Stands in for anthropic.Anthropic(): replies from a list, records prompts."""
+
+    def __init__(self, *replies):
+        self.replies = list(replies)
+        self.prompts = []
+        self.messages = self
+
+    def create(self, **kwargs):
+        self.prompts.append(kwargs)
+        reply = self.replies.pop(0)
+        if isinstance(reply, Exception):
+            raise reply
+        if not reply.lower().startswith(("answer", "thinking")) and "answer:" not in reply.lower():
+            reply = f"Answer: {reply}"  # shorthand: FakeClaude("16938")
+
+        class Block:
+            def __init__(self, kind, text):
+                self.type, self.text = kind, text
+
+        class Response:
+            content = [Block("thinking", "Let me compare the candidates."), Block("text", reply)]
+
+        return Response()
+
+
+@pytest.fixture
+def tmdb_b3c():
+    films = [BLACK_XMAS_2019, BLACK_XMAS_1974, EL_PARTIDO, LEON]
+    return FakeTMDB(
+        search={
+            "Black Christmas": [BLACK_XMAS_2019, BLACK_XMAS_1974],
+            "The Match": [EL_PARTIDO],
+            "Léon: The Professional": [LEON],
+            "Nothing Here": [],
+        },
+        movies={m["id"]: m for m in films},
+    )
+
+
+def run_claude(showings, tmdb, cache, claude, max_calls=200, overrides=None):
+    client = TMDBClient("token", session=tmdb, this_year=2026)
+    chooser = ClaudeChooser(claude, max_calls=max_calls)
+    return enrich(showings, client, cache, overrides, chooser), chooser
+
+
+def test_several_exact_candidates_go_to_claude(tmdb_b3c, cache):
+    retro = showing("Black Christmas", film_type="retrospective")
+    [s], chooser = run_claude([retro], tmdb_b3c, cache, FakeClaude("16938"))
+    assert (s.tmdb_id, s.year, s.director) == (16938, 1974, "Bob Clark")
+    assert chooser.calls == 1 and chooser.answers == {"matched": 1, "none": 0}
+
+
+def test_prompt_carries_venue_and_candidates(tmdb_b3c, cache):
+    claude = FakeClaude("16938")
+    retro = showing("Black Christmas", film_type="retrospective")
+    retro = Showing(**{**retro.__dict__, "attributes": ["35mm", "Q&A"]})
+    run_claude([retro], tmdb_b3c, cache, claude)
+    [call] = claude.prompts
+    text = call["messages"][0]["content"]
+    assert call["model"] == "claude-sonnet-5-5"
+    assert "Title: Black Christmas" in text and "Type: retrospective" in text
+    assert "Tags: 35mm, Q&A" in text
+    assert "tmdb_id 551808: Black Christmas, 2019, directed by Sophia Takal" in text
+    assert "tmdb_id 16938: Black Christmas, 1974, directed by Bob Clark" in text
+
+
+def test_no_exact_candidate_goes_to_claude_with_all_results(tmdb_b3c, cache):
+    tmdb_b3c.search["The Match"] = [EL_PARTIDO | {"title": "El Partido"}]
+    claude = FakeClaude("1666712")
+    [s], _ = run_claude([showing("BFF26 The Match", film_type="festival")], tmdb_b3c, cache, claude)
+    assert s.tmdb_id == 1666712
+    assert (
+        "The Match (original title: El Partido), 2026"
+        in claude.prompts[0]["messages"][0]["content"]
+    )
+
+
+def test_single_exact_candidate_skips_claude(tmdb_b3c, cache):
+    claude = FakeClaude()
+    [s], chooser = run_claude([showing("Léon: The Professional")], tmdb_b3c, cache, claude)
+    assert s.tmdb_id == 101 and chooser.calls == 0
+
+
+def test_no_search_results_skips_claude(tmdb_b3c, cache):
+    [s], chooser = run_claude([showing("Nothing Here")], tmdb_b3c, cache, FakeClaude())
+    assert s.tmdb_id is None and chooser.calls == 0
+
+
+def test_override_skips_claude(tmdb_b3c, cache):
+    overrides = {"Black Christmas": 16938}
+    [s], chooser = run_claude(
+        [showing("Black Christmas")], tmdb_b3c, cache, FakeClaude(), overrides=overrides
+    )
+    assert s.tmdb_id == 16938 and chooser.calls == 0
+
+
+def test_claude_none_is_unmatched_and_cached(tmdb_b3c, cache):
+    [s], _ = run_claude([showing("Black Christmas")], tmdb_b3c, cache, FakeClaude("none"))
+    assert s.tmdb_id is None
+    [s], chooser = run_claude([showing("Black Christmas")], tmdb_b3c, cache, FakeClaude())
+    assert s.tmdb_id is None and chooser.calls == 0
+
+
+def test_claude_answer_cached_across_runs(tmdb_b3c, cache):
+    run_claude([showing("Black Christmas")], tmdb_b3c, cache, FakeClaude("16938"))
+    [s], chooser = run_claude([showing("Black Christmas")], tmdb_b3c, cache, FakeClaude())
+    assert s.tmdb_id == 16938 and chooser.calls == 0
+
+
+def test_budget_exhausted_falls_back_to_rules_uncached(tmdb_b3c, cache, caplog):
+    films = [showing("Black Christmas", film_type="retrospective"), showing("BFF26 The Match")]
+    tmdb_b3c.search["The Match"] = [EL_PARTIDO | {"title": "El Partido"}]
+    with caplog.at_level(logging.WARNING, logger="enrich"):
+        (first, second), chooser = run_claude(
+            films, tmdb_b3c, cache, FakeClaude("16938"), max_calls=1
+        )
+    assert first.tmdb_id == 16938
+    assert second.tmdb_id is None  # rules: no exact title
+    assert chooser.calls == 1 and "budget of 1 calls used" in caplog.text
+    # Next run, with budget, Claude gets the one it missed.
+    [s], chooser = run_claude([films[1]], tmdb_b3c, cache, FakeClaude("1666712"))
+    assert s.tmdb_id == 1666712 and chooser.calls == 1
+
+
+def test_answer_line_after_reasoning(tmdb_b3c, cache):
+    reply = "BFF26 is a festival code. The 1974 film fits a retrospective.\n\n**Answer: 16938**"
+    retro = showing("Black Christmas", film_type="retrospective")
+    [s], _ = run_claude([retro], tmdb_b3c, cache, FakeClaude(reply))
+    assert s.tmdb_id == 16938
+
+
+@pytest.mark.parametrize(
+    "reply",
+    [RuntimeError("overloaded"), "thinking: the second one probably", "Answer: 999"],
+)
+def test_unusable_reply_falls_back_to_rules_uncached(tmdb_b3c, cache, reply):
+    retro = showing("Black Christmas", film_type="retrospective")
+    [s], _ = run_claude([retro], tmdb_b3c, cache, FakeClaude(reply))
+    assert s.tmdb_id == 551808  # rules: TMDB's first exact match
+    assert cache.get(lookup_key(retro)) is None
+
+
+def test_no_api_key_means_no_chooser(tmp_path, monkeypatch, caplog):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    env = tmp_path / ".env"
+    env.write_text("TMDB_API_KEY=abc\n")
+    with caplog.at_level(logging.INFO, logger="enrich"):
+        assert claude_chooser(env) is None
+    assert caplog.text.count("ANTHROPIC_API_KEY not set") == 1
+
+
+def test_api_key_read_from_env_file(tmp_path, monkeypatch):
+    monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+    env = tmp_path / ".env"
+    env.write_text("TMDB_API_KEY=abc\nANTHROPIC_API_KEY=sk-test\n")
+    assert isinstance(claude_chooser(env), ClaudeChooser)

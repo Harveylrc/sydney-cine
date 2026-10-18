@@ -126,12 +126,22 @@ def write(data: dict, path: Path = DATA_PATH) -> None:
 
 
 if __name__ == "__main__":
-    from enrich import Cache, TMDBClient, enrich, load_overrides, load_token
+    from enrich import (
+        Cache,
+        TMDBClient,
+        claude_chooser,
+        enrich,
+        load_overrides,
+        load_token,
+        report,
+    )
     from scrapers import hoyts, palace, ritz
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     scraped = ritz.fetch() + hoyts.fetch() + palace.fetch()
-    showings = enrich(scraped, TMDBClient(load_token()), Cache(), load_overrides())
+    chooser = claude_chooser()
+    showings = enrich(scraped, TMDBClient(load_token()), Cache(), load_overrides(), chooser)
+    report(chooser)
     data = build_data(showings, load_previous(), datetime.now(SYDNEY).date())
     write(data)
     new = sum(f["new_this_week"] for f in data["films"])
