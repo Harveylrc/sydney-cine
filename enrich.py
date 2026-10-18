@@ -24,6 +24,8 @@ Matching order (policy in DECISIONS.md):
 Every final lookup, hit or miss, is cached in SQLite so it is only made once.
 A hit's rating and vote count are re-fetched when older than RATING_MAX_AGE (its
 TMDB id, year and director are kept).
+film_details() adds what the page's film panel shows (poster, overview, runtime),
+cached per TMDB id and re-fetched on the same schedule.
 Unmatched showings are logged and returned unchanged, never dropped.
 """
 
@@ -340,6 +342,11 @@ class Cache:
         self.db = sqlite3.connect(path)
         self.db.executescript(
             """
+            CREATE TABLE IF NOT EXISTS details (  -- per TMDB id, for the film panel (B10)
+                tmdb_id INTEGER PRIMARY KEY,
+                poster_path TEXT, overview TEXT, runtime INTEGER,
+                fetched TEXT
+            );
             CREATE TABLE IF NOT EXISTS lookups (
                 -- "vista:<chain>:HO000…", "title:<title>|<year>[|recent]" or "tmdb:<id>"
                 key TEXT PRIMARY KEY,
@@ -378,6 +385,30 @@ class Cache:
                 match.rating,
                 match.vote_count,
                 None if match.is_film is None else int(match.is_film),
+                (today or date.today()).isoformat(),
+            ),
+        )
+        self.db.commit()
+
+    def get_details(self, tmdb_id: int, today: date | None = None) -> dict | None:
+        """The cached panel fields, or None when missing or older than RATING_MAX_AGE."""
+        row = self.db.execute(
+            "SELECT poster_path, overview, runtime, fetched FROM details WHERE tmdb_id = ?",
+            (tmdb_id,),
+        ).fetchone()
+        if not row or date.fromisoformat(row[3]) < (today or date.today()) - RATING_MAX_AGE:
+            return None
+        return dict(zip(("poster_path", "overview", "runtime"), row[:3], strict=True))
+
+    def put_details(self, tmdb_id: int, details: dict, today: date | None = None) -> None:
+        self.db.execute(
+            "INSERT OR REPLACE INTO details (tmdb_id, poster_path, overview, runtime, fetched)"
+            " VALUES (?, ?, ?, ?, ?)",
+            (
+                tmdb_id,
+                details["poster_path"],
+                details["overview"],
+                details["runtime"],
                 (today or date.today()).isoformat(),
             ),
         )
@@ -522,6 +553,26 @@ def enrich(
             "Refreshed TMDB ratings older than %d days for %d films", RATING_MAX_AGE.days, refreshed
         )
     return enriched
+
+
+def film_details(
+    tmdb_ids, client: TMDBClient, cache: Cache, today: date | None = None
+) -> dict[int, dict]:
+    """tmdb id -> {poster_path, overview, runtime} for the film panel. Films looked
+    up this run are already in the client's memo, so most cost no extra request."""
+    found = {}
+    for tmdb_id in sorted(set(tmdb_ids)):
+        details = cache.get_details(tmdb_id, today)
+        if details is None:
+            movie = client.movie(tmdb_id)
+            details = {
+                "poster_path": movie.get("poster_path") or None,
+                "overview": movie.get("overview") or None,
+                "runtime": movie.get("runtime") or None,
+            }
+            cache.put_details(tmdb_id, details, today)
+        found[tmdb_id] = details
+    return found
 
 
 def load_env(name: str, env_path: Path = ENV_PATH) -> str | None:
