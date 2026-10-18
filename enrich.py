@@ -39,8 +39,13 @@ RECENT_YEARS = 3
 PREFER_RECENT_TYPES = {"new_release", "festival"}
 
 # Venue decorations that are not part of the film's title.
-TITLE_PREFIX = re.compile(r"^(?:\d{2}mm\s+|(?:JIFF|SFF):\s*)+", re.IGNORECASE)
-TITLE_SUFFIX = re.compile(r"\s+[-–]\s+(?:Digital|\d{2}mm)$", re.IGNORECASE)
+TITLE_PREFIX = re.compile(r"^(?:\d{2}mm\s+|(?:JIFF|SFF):\s*|\(LFF\)\s*)+", re.IGNORECASE)
+TITLE_SUFFIX = re.compile(
+    r"\s+[-–]\s+(?:Digital|\d{2}mm|\d+(?:st|nd|rd|th) Anniversary)$"  # " - Digital"
+    r"|\s*\([^()]*,\s*Eng Sub\)$"  # Hoyts language: " (Hindi, Eng Sub)"
+    r"|[\s:(]+Encore\)?$",  # Hoyts re-runs: ": Encore", " (Encore)"
+    re.IGNORECASE,
+)
 TITLE_YEAR = re.compile(r"\s*\((\d{4})\)$")
 
 
@@ -56,7 +61,8 @@ class Match:
 def search_terms(film_title: str) -> tuple[str, int | None]:
     """Strip venue decorations; pull a trailing "(YYYY)" out as the year."""
     title = TITLE_PREFIX.sub("", film_title.strip())
-    title = TITLE_SUFFIX.sub("", title)
+    while (stripped := TITLE_SUFFIX.sub("", title)) != title:
+        title = stripped
     year = None
     if m := TITLE_YEAR.search(title):
         year = int(m.group(1))

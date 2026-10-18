@@ -1,0 +1,1183 @@
+[
+ {
+  "id": 4756,
+  "type": "nowShowing",
+  "vistaId": "HO00011550",
+  "slug": "lff-liste-de-marriage",
+  "name": "(LFF) Liste De Marriage",
+  "summary": "Starring Rita Hayek (The Insult) and Carlos Azar, Liste de Mariage is a light-hearted Lebanese romantic comedy filled with humour, awkward encounters and unexpected chemistry.",
+  "runtime": {
+   "minutes": 85
+  },
+  "duration": 85,
+  "releaseDate": "2026-10-12T00:00:00",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/liste-de-mariage-poster-.png",
+  "gradientColour": "#cd176f",
+  "rating": {
+   "id": "MA"
+  },
+  "metaData": {},
+  "trailer": "sezjNJFBAK4",
+  "cast": [],
+  "genres": [
+   "Comedy",
+   "Romance"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 68,
+  "onSale": true,
+  "nowShowing": true,
+  "comingThisWeek": false,
+  "link": "/movies/lff-liste-de-marriage"
+ },
+ {
+  "id": 4816,
+  "type": "nowShowing",
+  "vistaId": "HO00011586",
+  "slug": "lff-patriarch-elias-god-will-provide",
+  "name": "(LFF) Patriarch Elias: God Will Provide",
+  "summary": "Recently beatified by the Catholic Church, Patriarch Elias Hoyek remains one of the most influential figures in Lebanon’s modern history.",
+  "runtime": {
+   "minutes": 85
+  },
+  "duration": 85,
+  "releaseDate": "2026-09-29T00:00:00",
+  "headerImage": "mx/headers/patriarch-elias-still.png",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/img-0443.jpg",
+  "gradientColour": "#d6b47a",
+  "rating": {
+   "id": "E"
+  },
+  "metaData": {},
+  "cast": [],
+  "genres": [],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 69,
+  "onSale": true,
+  "nowShowing": true,
+  "comingThisWeek": false,
+  "link": "/movies/lff-patriarch-elias-god-will-provide"
+ },
+ {
+  "id": 4660,
+  "type": "nowShowing",
+  "attribute": {
+   "id": "starts-day",
+   "name": "Starts Friday"
+  },
+  "vistaId": "HO00011275",
+  "slug": "ali-g-who-iz-i",
+  "name": "Ali G: Who Iz I?",
+  "summary": "After twenty years spent “chillin’, tokin’ and bonin’”, Ali G is shocked to discover that his long-term girlfriend, Julie, is 8 months pregnant. ",
+  "runtime": {
+   "minutes": 89
+  },
+  "duration": 89,
+  "releaseDate": "2026-10-23T00:00:00",
+  "headerImage": "mx/headers/ali-g-trailerthumb-1920x1080-png.png",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/ali-g-2026-main-1080x1350-oct-23-en-au.png",
+  "gradientColour": "#ffcc00",
+  "rating": {
+   "id": "MA"
+  },
+  "metaData": {},
+  "trailer": "6t7C4qaHihE",
+  "cast": [],
+  "genres": [
+   "Comedy"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 27,
+  "onSale": true,
+  "nowShowing": true,
+  "comingThisWeek": true,
+  "link": "/movies/ali-g-who-iz-i"
+ },
+ {
+  "id": 2987,
+  "type": "advanceScreening",
+  "attribute": {
+   "id": "advance-screening",
+   "name": "Advance Screenings"
+  },
+  "vistaId": "HO00008129,HO00011223",
+  "slug": "avengers-doomsday",
+  "name": "Avengers: Doomsday",
+  "summary": "The Avengers, Wakandans, Fantastic Four, New Avengers, and the original X-Men team up to face the formidable villain, Doctor Doom.",
+  "runtime": {
+   "minutes": 165
+  },
+  "duration": 165,
+  "releaseDate": "2026-12-17T00:00:00",
+  "headerImage": "mx/headers/avengers-doomsday-7ca73d44.jpg",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/avengers-doomsday-ad5c4fe7.jpg",
+  "gradientColour": "#43b950",
+  "rating": {
+   "id": "CTC"
+  },
+  "metaData": {},
+  "trailer": "7MXYz5AJr30",
+  "cast": [],
+  "genres": [
+   "Action"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 1,
+  "onSale": true,
+  "nowShowing": false,
+  "comingThisWeek": false,
+  "link": "/movies/avengers-doomsday"
+ },
+ {
+  "id": 3354,
+  "type": "nowShowing",
+  "attribute": {
+   "id": "starts-day",
+   "name": "Starts Thursday"
+  },
+  "vistaId": "HO00008349",
+  "slug": "clayface",
+  "name": "Clayface",
+  "summary": "A shape-shifting creature made of magical clay haunts Gotham City, alternating between villain and ally of Batman. ",
+  "runtime": {
+   "minutes": 108
+  },
+  "duration": 108,
+  "releaseDate": "2026-10-22T00:00:00",
+  "headerImage": "mx/headers/clayface-cf1bba20.jpg",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/clayface-3c91159f.jpg",
+  "gradientColour": "#c88a36",
+  "rating": {
+   "id": "MA"
+  },
+  "metaData": {},
+  "trailer": "QGNIlac1Ztw",
+  "cast": [],
+  "genres": [
+   "Horror",
+   "Thriller"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 29,
+  "onSale": true,
+  "nowShowing": true,
+  "comingThisWeek": true,
+  "link": "/movies/clayface"
+ },
+ {
+  "id": 4436,
+  "type": "nowShowing",
+  "vistaId": "HO00007403",
+  "slug": "coyote-vs-acme",
+  "name": "Coyote vs. Acme",
+  "summary": "After ACME products fail him one too many times in his dogged pursuit of the Roadrunner, Wile E. Coyote decides to hire a billboard lawyer to sue the ACME Corporation.",
+  "runtime": {
+   "minutes": 103
+  },
+  "duration": 103,
+  "releaseDate": "2026-09-17T00:00:00",
+  "headerImage": "mx/headers/comic-con1.tif",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/coyote-vs.-acme-a8d57456.jpg",
+  "gradientColour": "#cb2b15",
+  "rating": {
+   "id": "PG"
+  },
+  "metaData": {},
+  "trailer": "ULnOmIzfE9Q",
+  "cast": [],
+  "genres": [
+   "Action",
+   "Adventure",
+   "Animation",
+   "Comedy",
+   "Family"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 21,
+  "onSale": true,
+  "nowShowing": true,
+  "comingThisWeek": false,
+  "link": "/movies/coyote-vs-acme"
+ },
+ {
+  "id": 4189,
+  "type": "nowShowing",
+  "vistaId": "HO00010100",
+  "slug": "digger",
+  "name": "Digger",
+  "summary": "The most powerful man in the world embarks on a frantic mission to prove he is humanity's saviour before the disaster he’s unleashed destroys everything.",
+  "runtime": {
+   "minutes": 128
+  },
+  "duration": 128,
+  "releaseDate": "2026-10-01T00:00:00",
+  "headerImage": "mx/headers/digger-tos-heroswiper-3720x2094.png",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/digger-9bcae4e0.jpg",
+  "imaxPosterImage": "mx/posters/au/427d91dc-9bc6-4883-b901-d74b7ec5b327.jpg",
+  "gradientColour": "#e55a1b",
+  "rating": {
+   "id": "MA"
+  },
+  "metaData": {},
+  "trailer": "bbW1DmEECiM",
+  "cast": [],
+  "genres": [
+   "Comedy",
+   "Drama"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 25,
+  "onSale": true,
+  "nowShowing": true,
+  "comingThisWeek": false,
+  "link": "/movies/digger"
+ },
+ {
+  "id": 4841,
+  "type": "advanceSale",
+  "attribute": {
+   "id": "advance-sale",
+   "name": "Tickets On Sale"
+  },
+  "vistaId": "HO00011509",
+  "slug": "doctor-who-the-satan-pit",
+  "name": "DOCTOR WHO: THE SATAN PIT",
+  "summary": "To celebrate Doctor Who Day, the acclaimed two-part adventure The Impossible Planet and The Satan Pit ha​s been specially re-edited​ exclusively for​ cinemas.",
+  "runtime": {
+   "minutes": 119
+  },
+  "duration": 119,
+  "releaseDate": "2026-11-23T00:00:00",
+  "headerImage": "mx/headers/doctor-who-the-satan-pit-daa3eb06.jpg",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/doctor-who-the-satan-pit-87be738d.jpg",
+  "gradientColour": "#b07051",
+  "rating": {
+   "id": "M"
+  },
+  "metaData": {},
+  "trailer": "",
+  "cast": [],
+  "genres": [
+   "Drama",
+   "Fantasy",
+   "Sci Fi"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 50,
+  "onSale": true,
+  "nowShowing": false,
+  "comingThisWeek": false,
+  "link": "/movies/doctor-who-the-satan-pit"
+ },
+ {
+  "id": 3758,
+  "type": "advanceSale",
+  "attribute": {
+   "id": "advance-sale",
+   "name": "Tickets On Sale"
+  },
+  "vistaId": "HO00009500",
+  "slug": "dune-part-three",
+  "name": "Dune: Part Three",
+  "summary": "Dune: Part Three delivers the final chapter of Denis Villeneuve’s acclaimed sci‑fi trilogy.",
+  "runtime": {
+   "minutes": -1
+  },
+  "duration": -1,
+  "releaseDate": "2026-12-16T00:00:00",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/dune-part-three-25e7dad7.jpg",
+  "gradientColour": "#ea9332",
+  "rating": {
+   "id": "CTC"
+  },
+  "metaData": {},
+  "trailer": "iEpdGDM6x48",
+  "cast": [],
+  "genres": [
+   "Action",
+   "Adventure",
+   "Sci Fi"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 7,
+  "onSale": true,
+  "nowShowing": false,
+  "comingThisWeek": false,
+  "link": "/movies/dune-part-three"
+ },
+ {
+  "id": 4824,
+  "type": "advanceSale",
+  "attribute": {
+   "id": "advance-sale",
+   "name": "Tickets On Sale"
+  },
+  "vistaId": "HO00011412",
+  "slug": "festive-fun-with-peppa-cinema-experience",
+  "name": "Festive Fun with Peppa Cinema Experience",
+  "summary": "As Peppa Pig's family celebrates baby Evie's first Christmas, they look back on their most treasured festive memories in a big-screen singalong packed with classic episodes and brand-new songs.",
+  "runtime": {
+   "minutes": 60
+  },
+  "duration": 60,
+  "releaseDate": "2026-11-14T00:00:00",
+  "headerImage": "mx/headers/peppa-1920x1080-image.jpg",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/peppa-os-27x40.jpg",
+  "rating": {
+   "id": "CTC"
+  },
+  "metaData": {},
+  "cast": [],
+  "genres": [],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 24,
+  "onSale": true,
+  "nowShowing": false,
+  "comingThisWeek": false,
+  "link": "/movies/festive-fun-with-peppa-cinema-experience"
+ },
+ {
+  "id": 3605,
+  "type": "nowShowing",
+  "vistaId": "HO00008389,HO00011220",
+  "slug": "forgotten-island",
+  "name": "Forgotten Island",
+  "summary": "While celebrating their last night together, Jo and Raissa stumble upon a mysterious portal that transports them to the fantastical island of Nakali.",
+  "runtime": {
+   "minutes": 108
+  },
+  "duration": 108,
+  "releaseDate": "2026-09-17T00:00:00",
+  "headerImage": "mx/headers/forgotten-island-e6a4b430.jpg",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/forgotten-island-275e75a4.jpg",
+  "gradientColour": "#de13ee",
+  "rating": {
+   "id": "PG"
+  },
+  "metaData": {},
+  "trailer": "xRUOXd_MVQI",
+  "cast": [],
+  "genres": [
+   "Adventure",
+   "Animation",
+   "Comedy",
+   "Family Ticket"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 17,
+  "onSale": true,
+  "nowShowing": true,
+  "comingThisWeek": false,
+  "link": "/movies/forgotten-island"
+ },
+ {
+  "id": 4538,
+  "type": "advanceSale",
+  "attribute": {
+   "id": "advance-sale",
+   "name": "Tickets On Sale"
+  },
+  "vistaId": "HO00011327",
+  "slug": "george-michael-the-faith-tour",
+  "name": "George Michael: The Faith Tour",
+  "summary": "Restored concert film featuring George Michael's 1988 Faith Tour performances at Palais Omnisports de Paris-Bercy, captured on 35mm over two nights during the Euro leg.",
+  "runtime": {
+   "minutes": 115
+  },
+  "duration": 115,
+  "releaseDate": "2026-11-12T00:00:00",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/george-michael-the-faith-tour-3e1d7308.jpg",
+  "gradientColour": "#f2b748",
+  "rating": {
+   "id": "CTC"
+  },
+  "metaData": {},
+  "trailer": "F3JOyA5NY8I",
+  "cast": [],
+  "genres": [
+   "Main Stage",
+   "Music"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 22,
+  "onSale": true,
+  "nowShowing": false,
+  "comingThisWeek": false,
+  "link": "/movies/george-michael-the-faith-tour"
+ },
+ {
+  "id": 4592,
+  "type": "advanceScreening",
+  "attribute": {
+   "id": "advance-screening",
+   "name": "Advance Screenings"
+  },
+  "vistaId": "HO00011414",
+  "slug": "godzilla-minus-zero-japanese-eng-sub",
+  "name": "Godzilla Minus Zero  (Japanese, Eng Sub)",
+  "summary": "GODZILLA MINUS ZERO picks up in 1949, two years after the tumultuous events of Godzilla Minus One, and continues the story of the Shikishima family. ",
+  "runtime": {
+   "minutes": 119
+  },
+  "duration": 119,
+  "releaseDate": "2026-11-05T00:00:00",
+  "headerImage": "mx/headers/godzilla-minus-zero-bbb1843d.jpg",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/godzilla-minus-zero-290c9389.jpg",
+  "imaxPosterImage": "mx/posters/au/gmz-promo-imax-uk-1080x1920-01a.png",
+  "gradientColour": "#c27854",
+  "rating": {
+   "id": "CTC"
+  },
+  "metaData": {},
+  "trailer": "n-NDYWPXpKg",
+  "cast": [],
+  "genres": [
+   "Action",
+   "Adventure",
+   "Drama",
+   "Horror",
+   "Sci Fi"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 3,
+  "onSale": true,
+  "nowShowing": false,
+  "comingThisWeek": false,
+  "link": "/movies/godzilla-minus-zero-japanese-eng-sub"
+ },
+ {
+  "id": 4494,
+  "type": "nowShowing",
+  "vistaId": "HO00011000",
+  "slug": "heart-of-the-beast",
+  "name": "Heart of the Beast",
+  "summary": "A former Army Special Forces soldier and his retired combat dog attempt to return to civilization after suffering a catastrophic accident deep in the Alaskan wilderness.",
+  "runtime": {
+   "minutes": 100
+  },
+  "duration": 100,
+  "releaseDate": "2026-09-24T00:00:00",
+  "headerImage": "mx/headers/heart-of-the-beast-061be75e.jpg",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/heart-of-the-beast-41bcb0e8.jpg",
+  "gradientColour": "#be7a4b",
+  "rating": {
+   "id": "M"
+  },
+  "metaData": {},
+  "trailer": "zEbpmROmKBQ",
+  "cast": [],
+  "genres": [
+   "Adventure",
+   "Drama",
+   "Thriller"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 16,
+  "onSale": true,
+  "nowShowing": true,
+  "comingThisWeek": false,
+  "link": "/movies/heart-of-the-beast"
+ },
+ {
+  "id": 4638,
+  "type": "nowShowing",
+  "vistaId": "HO00011441",
+  "slug": "jailer-2-tamil-eng-sub",
+  "name": "Jailer 2 (Tamil, Eng Sub)",
+  "summary": "A retired officer's peaceful life is disrupted when a dangerous criminal organization threatens his family. He must use his skills one final time to protect his loved ones and preserve his legacy.",
+  "runtime": {
+   "minutes": 176
+  },
+  "duration": 176,
+  "releaseDate": "2026-10-15T00:00:00",
+  "headerImage": "mx/headers/dsc01756.jpg-1.jpeg",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/jailer-2-0306947c.jpg",
+  "gradientColour": "#b57d4a",
+  "rating": {
+   "id": "MA"
+  },
+  "metaData": {},
+  "trailer": "FW_PPcr1sPE",
+  "cast": [],
+  "genres": [
+   "Action",
+   "Comedy",
+   "Thriller"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 19,
+  "onSale": true,
+  "nowShowing": true,
+  "comingThisWeek": false,
+  "link": "/movies/jailer-2-tamil-eng-sub"
+ },
+ {
+  "id": 3800,
+  "type": "nowShowing",
+  "vistaId": "HO00010390",
+  "slug": "other-mommy",
+  "name": "Other Mommy",
+  "summary": "Bela, an 8-year-old girl living in a home with marital problems, confronts a sinister entity that comes out of her closet. The presence, whom she calls \"Other Mommy,\" becomes increasingly threatening to her and her family.",
+  "runtime": {
+   "minutes": 92
+  },
+  "duration": 92,
+  "releaseDate": "2026-10-08T00:00:00",
+  "headerImage": "mx/headers/other-mommy-114c4ed4.jpg",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/other-mommy-64be2b2b.jpg",
+  "gradientColour": "#9d813f",
+  "rating": {
+   "id": "MA"
+  },
+  "metaData": {},
+  "trailer": "levzZvq30rA",
+  "cast": [],
+  "genres": [
+   "Horror"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 11,
+  "onSale": true,
+  "nowShowing": true,
+  "comingThisWeek": false,
+  "link": "/movies/other-mommy"
+ },
+ {
+  "id": 3313,
+  "type": "nowShowing",
+  "vistaId": "HO00009353",
+  "slug": "paw-patrol-the-dino-movie",
+  "name": "Paw Patrol: The Dino Movie",
+  "summary": "After their ship gets caught in a mysterious storm, the PAW Patrol pups crash land on an uncharted tropical island filled with dinosaurs.",
+  "runtime": {
+   "minutes": 88
+  },
+  "duration": 88,
+  "releaseDate": "2026-09-10T00:00:00",
+  "headerImage": "mx/headers/paw-patrol---the-dino-movie-06507312.jpg",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/pp3-intl-2025x3000-online-teaser1sht-rock-nz-1920px.jpg",
+  "gradientColour": "#0565db",
+  "rating": {
+   "id": "G"
+  },
+  "metaData": {},
+  "trailer": "riqi_tnWfuY",
+  "cast": [],
+  "genres": [
+   "Action",
+   "Adventure",
+   "Animation",
+   "Comedy",
+   "Family",
+   "Family Ticket"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 20,
+  "onSale": true,
+  "nowShowing": true,
+  "comingThisWeek": false,
+  "link": "/movies/paw-patrol-the-dino-movie"
+ },
+ {
+  "id": 4800,
+  "type": "advanceSale",
+  "attribute": {
+   "id": "advance-sale",
+   "name": "Tickets On Sale"
+  },
+  "vistaId": "HO00011587",
+  "slug": "primetime",
+  "name": "Primetime",
+  "summary": "In 2006, To Catch a Predator host Chris Hansen sets out to make television history.",
+  "runtime": {
+   "minutes": 107
+  },
+  "duration": 107,
+  "releaseDate": "2026-10-29T00:00:00",
+  "headerImage": "mx/headers/gs-a24-pri-keyart-comp350.jpg",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/primetime-poster.jpg",
+  "gradientColour": "#5698c9",
+  "rating": {
+   "id": "CTC"
+  },
+  "metaData": {},
+  "trailer": "5fHXyqQOKL8",
+  "cast": [],
+  "genres": [
+   "Action",
+   "Crime",
+   "Drama",
+   "Hidden Gem"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 23,
+  "onSale": true,
+  "nowShowing": false,
+  "comingThisWeek": false,
+  "link": "/movies/primetime"
+ },
+ {
+  "id": 4770,
+  "type": "advanceSale",
+  "attribute": {
+   "id": "advance-sale",
+   "name": "Tickets On Sale"
+  },
+  "vistaId": "HO00011556,HO00011632",
+  "slug": "ramayana-hindi-eng-sub",
+  "name": "Ramayana: Rise Of A Legend (Hindi, Eng Sub)",
+  "summary": "In an age of gods and kings, the fate of worlds hangs in the balance. Rama, a prince bound by duty, sacrifice, and righteousness, must confront Ravana, an immortal ruler.",
+  "runtime": {
+   "minutes": 205
+  },
+  "duration": 205,
+  "releaseDate": "2026-11-05T00:00:00",
+  "headerImage": "mx/headers/rama-05.png",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/ramayana-rise-of-a-legend-31a03918.jpg",
+  "gradientColour": "#14adcc",
+  "rating": {
+   "id": "CTC"
+  },
+  "metaData": {},
+  "trailer": "9vfhRWq9osE",
+  "cast": [],
+  "genres": [
+   "Action",
+   "Adventure",
+   "Drama"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 18,
+  "onSale": true,
+  "nowShowing": false,
+  "comingThisWeek": false,
+  "link": "/movies/ramayana-hindi-eng-sub"
+ },
+ {
+  "id": 3529,
+  "type": "nowShowing",
+  "vistaId": "HO00010253",
+  "slug": "resident-evil",
+  "name": "Resident Evil",
+  "summary": "From the mind of visionary filmmaker Zach Cregger (Weapons, Barbarian) comes a thrilling — and terrifying — reinvention of the Resident Evil franchise.",
+  "runtime": {
+   "minutes": 94
+  },
+  "duration": 94,
+  "releaseDate": "2026-09-17T00:00:00",
+  "headerImage": "mx/headers/resident-evil-6411779c.jpg",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/resident-evil-d6c9cbf1.jpg",
+  "imaxPosterImage": "mx/posters/au/5567b9ac-58d6-4735-8d62-5ff27a7a8da5.jpg",
+  "gradientColour": "#3d7ac2",
+  "rating": {
+   "id": "MA"
+  },
+  "metaData": {},
+  "trailer": "w-pGgN4jV4Y",
+  "cast": [],
+  "genres": [
+   "Horror"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 14,
+  "onSale": true,
+  "nowShowing": true,
+  "comingThisWeek": false,
+  "link": "/movies/resident-evil"
+ },
+ {
+  "id": 4141,
+  "type": "nowShowing",
+  "vistaId": "HO00010890",
+  "slug": "sense-and-sensibility",
+  "name": "Sense and Sensibility",
+  "summary": "Sisters Elinor and Marianne Dashwood must leave their Sussex estate and move in with a distant relative, facing romance and money troubles.",
+  "runtime": {
+   "minutes": 132
+  },
+  "duration": 132,
+  "releaseDate": "2026-10-15T00:00:00",
+  "onSaleDate": "2026-10-13T10:00:00",
+  "headerImage": "mx/headers/sense-and-sensibility-822f875c.jpg",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/sense-and-sensibility-c627fd9d.jpg",
+  "gradientColour": "#85603c",
+  "rating": {
+   "id": "PG"
+  },
+  "metaData": {},
+  "trailer": "XPas2JTqspE",
+  "cast": [],
+  "genres": [
+   "Drama",
+   "Romance"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 12,
+  "onSale": true,
+  "nowShowing": true,
+  "comingThisWeek": false,
+  "link": "/movies/sense-and-sensibility"
+ },
+ {
+  "id": 4309,
+  "type": "nowShowing",
+  "vistaId": "HO00011052",
+  "slug": "shaun-the-sheep-the-beast-of-mossy-bottom",
+  "name": "Shaun the Sheep: The Beast of Mossy Bottom",
+  "summary": "Sees the residents of Mossy Bottom Farm looking forward to Halloween – until the clumsy Farmer trashes the Flock’s beloved pumpkin patch!",
+  "runtime": {
+   "minutes": 81
+  },
+  "duration": 81,
+  "releaseDate": "2026-09-17T00:00:00",
+  "headerImage": "mx/headers/shaun-the-sheep-the-beast-of-mossy-bottom-140ada8a.tiff",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/shaun-the-sheep-the-beast-of-mossy-bottom-4ffbc303.jpg",
+  "gradientColour": "#f15016",
+  "rating": {
+   "id": "G"
+  },
+  "metaData": {},
+  "trailer": "HgyOS0VroIM",
+  "cast": [],
+  "genres": [
+   "Animation",
+   "Comedy",
+   "Family",
+   "Family Ticket"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 26,
+  "onSale": true,
+  "nowShowing": true,
+  "comingThisWeek": false,
+  "link": "/movies/shaun-the-sheep-the-beast-of-mossy-bottom"
+ },
+ {
+  "id": 3561,
+  "type": "nowShowing",
+  "vistaId": "HO00010000,HO00011219",
+  "slug": "spider-man-brand-new-day",
+  "name": "Spider-Man: Brand New Day",
+  "summary": "After the record-breaking global success of Spider-Man: No Way Home, Spider-Man: Brand New Day marks an entirely new chapter for Peter Parker and Spider-Man.",
+  "runtime": {
+   "minutes": 145
+  },
+  "duration": 145,
+  "releaseDate": "2026-07-30T00:00:00",
+  "headerImage": "mx/headers/v1-0001-bnd-itlra-t-4k-rec709-full.89513.tif",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/spider-man-brand-new-day-2455f05d.jpg",
+  "gradientColour": "#e50506",
+  "rating": {
+   "id": "M"
+  },
+  "metaData": {},
+  "trailer": "siogiyIbmCs",
+  "cast": [],
+  "genres": [
+   "Action",
+   "Adventure"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 28,
+  "onSale": true,
+  "nowShowing": true,
+  "comingThisWeek": false,
+  "link": "/movies/spider-man-brand-new-day",
+  "postCreditScene": "Don't miss the post-credit scene after the credits."
+ },
+ {
+  "id": 4511,
+  "type": "nowShowing",
+  "vistaId": "HO00011292",
+  "slug": "stitch-head",
+  "name": "Stitch Head",
+  "summary": "Follows Stitch Head, a small creature awoken by a Mad Professor in a castle to protect the professor's other creations from the townspeople of Grubbers Nubbin.",
+  "runtime": {
+   "minutes": 89
+  },
+  "duration": 89,
+  "releaseDate": "2026-10-08T00:00:00",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/stitch-head-caeb32d4.jpg",
+  "gradientColour": "#f4082d",
+  "rating": {
+   "id": "PG"
+  },
+  "metaData": {},
+  "trailer": "cP5btLK4Sa8",
+  "cast": [],
+  "genres": [
+   "Adventure",
+   "Animation",
+   "Comedy",
+   "Family"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 32,
+  "onSale": true,
+  "nowShowing": true,
+  "comingThisWeek": false,
+  "link": "/movies/stitch-head"
+ },
+ {
+  "id": 2907,
+  "type": "nowShowing",
+  "vistaId": "HO00010711",
+  "slug": "street-fighter",
+  "name": "Street Fighter",
+  "summary": "Set in 1993, estranged Street Fighters Ryu (Andrew Koji) and Ken Masters (Noah Centineo) are thrown back into combat.",
+  "runtime": {
+   "minutes": 119
+  },
+  "duration": 119,
+  "releaseDate": "2026-10-15T00:00:00",
+  "headerImage": "mx/headers/sf-fp-103r.tif",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/sf-intl-2025x3000-online-teaser1sht-legendary-nz-712px.jpg",
+  "imaxPosterImage": "mx/posters/au/pm1389-intl-ea-mstr-ryu-1080x1920-eng-d-r-v01.jpg",
+  "gradientColour": "#a51a1c",
+  "rating": {
+   "id": "M"
+  },
+  "metaData": {},
+  "trailer": "0RHZ_XbT-eY",
+  "cast": [],
+  "genres": [
+   "Action"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 8,
+  "onSale": true,
+  "nowShowing": true,
+  "comingThisWeek": false,
+  "link": "/movies/street-fighter"
+ },
+ {
+  "id": 4081,
+  "type": "advanceScreening",
+  "attribute": {
+   "id": "advance-screening",
+   "name": "Advance Screenings"
+  },
+  "vistaId": "HO00010829",
+  "slug": "the-hunger-games-sunrise-on-the-reaping",
+  "name": "The Hunger Games: Sunrise on the Reaping",
+  "summary": "The Hunger Games: Sunrise on the Reaping will revisit the world of Panem twenty-four years before the events of The Hunger Games, starting on the morning of the reaping of the Fiftieth Hunger Games, also known as the Second Quarter Quell.",
+  "runtime": {
+   "minutes": 150
+  },
+  "duration": 150,
+  "releaseDate": "2026-11-19T00:00:00",
+  "headerImage": "mx/headers/the-hunger-games-sunrise-on-the-reaping-e5ce3995.jpg",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/solstice-digi-1sht-cornu-aus-p2-1920px.jpg",
+  "gradientColour": "#dba33b",
+  "rating": {
+   "id": "CTC"
+  },
+  "metaData": {},
+  "trailer": "hY6NjsnjRTw",
+  "cast": [],
+  "genres": [
+   "Action",
+   "Adventure",
+   "Fantasy"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 4,
+  "onSale": true,
+  "nowShowing": false,
+  "comingThisWeek": false,
+  "link": "/movies/the-hunger-games-sunrise-on-the-reaping"
+ },
+ {
+  "id": 3367,
+  "type": "nowShowing",
+  "vistaId": "HO00010001",
+  "slug": "the-odyssey",
+  "name": "The Odyssey",
+  "summary": "Christopher Nolan’s next film, The Odyssey, is a mythic action epic shot across the world using brand new IMAX® film technology. ",
+  "runtime": {
+   "minutes": 172
+  },
+  "duration": 172,
+  "releaseDate": "2026-07-16T00:00:00",
+  "headerImage": "mx/headers/the-odyssey-5726690a.jpg",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/the-odyssey-a7141c99.jpg",
+  "gradientColour": "#6f7788",
+  "rating": {
+   "id": "M"
+  },
+  "metaData": {},
+  "trailer": "LgOMT7ka6do",
+  "cast": [],
+  "genres": [
+   "Drama"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 31,
+  "onSale": true,
+  "nowShowing": true,
+  "comingThisWeek": false,
+  "link": "/movies/the-odyssey"
+ },
+ {
+  "id": 4030,
+  "type": "nowShowing",
+  "vistaId": "HO00010782",
+  "slug": "the-social-reckoning",
+  "name": "The Social Reckoning",
+  "summary": "A companion piece to the hit film The Social Network, Sorkin’s original screenplay - based on events that gave rise to the Wall Street Journal’s exposé The Facebook Files.",
+  "runtime": {
+   "minutes": 112
+  },
+  "duration": 112,
+  "releaseDate": "2026-10-08T00:00:00",
+  "headerImage": "mx/headers/df-01240-c.tif",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/the-social-reckoning-67322e01.jpg",
+  "gradientColour": "#86513e",
+  "rating": {
+   "id": "M"
+  },
+  "metaData": {},
+  "trailer": "ODyZl2eFXJE",
+  "cast": [],
+  "genres": [
+   "Biography",
+   "Drama"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 15,
+  "onSale": true,
+  "nowShowing": true,
+  "comingThisWeek": false,
+  "link": "/movies/the-social-reckoning"
+ },
+ {
+  "id": 4881,
+  "type": "nowShowing",
+  "attribute": {
+   "id": "starts-day",
+   "name": "Starts Thursday"
+  },
+  "vistaId": "HO00011603",
+  "slug": "songs-of-john-farnham-celebration-concert-encore",
+  "name": "The Songs of John Farnham: Celebration Concert Encore",
+  "summary": "The Songs of John Farnham: A Living Legend – The Celebration Concert brings an unforgettable night at Melbourne’s Rod Laver Arena back to the big screen for an encore season.",
+  "runtime": {
+   "minutes": 133
+  },
+  "duration": 133,
+  "releaseDate": "2026-10-22T00:00:00",
+  "headerImage": "mx/headers/edited-john-farnham-concert-image.jpg",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/tsjf-enc-largemovieposter-481x712.png",
+  "gradientColour": "#0fd2f1",
+  "rating": {
+   "id": "G"
+  },
+  "metaData": {},
+  "trailer": "5fpRV6tFFAk",
+  "cast": [],
+  "genres": [
+   "Main Stage"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 9,
+  "onSale": true,
+  "nowShowing": true,
+  "comingThisWeek": true,
+  "link": "/movies/songs-of-john-farnham-celebration-concert-encore"
+ },
+ {
+  "id": 4171,
+  "type": "nowShowing",
+  "vistaId": "HO00010923",
+  "slug": "verity",
+  "name": "Verity",
+  "summary": "Struggling writer Lowen Ashleigh is hired as a ghostwriter for renowned author Verity Crawford under mysterious circumstances, but her assignment takes a dark turn.",
+  "runtime": {
+   "minutes": 116
+  },
+  "duration": 116,
+  "releaseDate": "2026-10-01T00:00:00",
+  "headerImage": "mx/headers/verity-9b6b0489.jpg",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/largeposter.jpg",
+  "gradientColour": "#4f1624",
+  "rating": {
+   "id": "MA"
+  },
+  "metaData": {},
+  "trailer": "xdPMKhjMSFs",
+  "cast": [],
+  "genres": [
+   "Thriller"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 10,
+  "onSale": true,
+  "nowShowing": true,
+  "comingThisWeek": false,
+  "link": "/movies/verity"
+ },
+ {
+  "id": 3925,
+  "type": "nowShowing",
+  "vistaId": "HO00009722",
+  "slug": "whalefall",
+  "name": "Whalefall",
+  "summary": "A scuba diver in search of his deceased father's remains gets swallowed by an 80-foot, 60-ton sperm whale and has only one hour to escape before his oxygen runs out.",
+  "runtime": {
+   "minutes": 106
+  },
+  "duration": 106,
+  "releaseDate": "2026-10-15T00:00:00",
+  "onSaleDate": "2026-10-13T10:00:00",
+  "headerImage": "mx/headers/whalefall-8f134373.jpg",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/whalefall-7a6e3c01.jpg",
+  "gradientColour": "#13c9d0",
+  "rating": {
+   "id": "M"
+  },
+  "metaData": {},
+  "trailer": "89sJtQmzxhY",
+  "cast": [],
+  "genres": [
+   "Thriller"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 13,
+  "onSale": true,
+  "nowShowing": true,
+  "comingThisWeek": false,
+  "link": "/movies/whalefall"
+ },
+ {
+  "id": 4531,
+  "type": "advanceScreening",
+  "attribute": {
+   "id": "advance-screening",
+   "name": "Advance Screenings"
+  },
+  "vistaId": "HO00011319",
+  "slug": "wildwood",
+  "name": "Wildwood",
+  "summary": "From the makers of Coraline, Wildwood is a sweeping, darkly magical adventure about a young girl who ventures into a dangerous hidden forest to rescue her brother.",
+  "runtime": {
+   "minutes": 131
+  },
+  "duration": 131,
+  "releaseDate": "2026-10-22T00:00:00",
+  "headerImage": "mx/headers/wildwood-62e655ba.jpg",
+  "hideHeader": false,
+  "posterImage": "mx/posters/au/wildwood-e999de63.jpg",
+  "gradientColour": "#2f9bae",
+  "rating": {
+   "id": "M"
+  },
+  "metaData": {},
+  "trailer": "6NuAcvRr_vU",
+  "cast": [],
+  "genres": [
+   "Animation",
+   "Drama"
+  ],
+  "tags": [],
+  "countries": [],
+  "sessionAttributes": [],
+  "ranking": 2,
+  "onSale": true,
+  "nowShowing": true,
+  "comingThisWeek": true,
+  "link": "/movies/wildwood"
+ }
+]

@@ -142,6 +142,16 @@ def showing(title, vista_movie_id=None, hour=19, film_type=None):
         ("35mm La Bola Negra", ("La Bola Negra", None)),
         ("The Odyssey - Digital", ("The Odyssey", None)),
         ("Paris, Texas", ("Paris, Texas", None)),
+        ("Ranabaali (Telugu, Eng Sub)", ("Ranabaali", None)),
+        ("Godzilla Minus Zero  (Japanese, Eng Sub)", ("Godzilla Minus Zero", None)),
+        ("(LFF) Liste De Marriage", ("Liste De Marriage", None)),
+        ("Avengers Endgame: Encore", ("Avengers Endgame", None)),
+        (
+            "Stray Kids World Tour <Run It> Live Viewing (Encore)",
+            ("Stray Kids World Tour <Run It> Live Viewing", None),
+        ),
+        ("Rocky (1976) - 50th Anniversary", ("Rocky", 1976)),
+        ("Always Yours, Never Mine (Tagalog, Eng Sub)", ("Always Yours, Never Mine", None)),
     ],
 )
 def test_search_terms(raw, expected):
