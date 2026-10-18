@@ -29,6 +29,7 @@ NON_FILM = re.compile(
     re.IGNORECASE,
 )
 MIN_INTERVAL = 1.0  # seconds between requests to the same host
+RETRY_AFTER = 10.0  # seconds before the one retry of a request that couldn't connect
 CACHE_DIR = Path(__file__).resolve().parent.parent / "cache"
 
 
@@ -93,10 +94,17 @@ class BaseScraper:
         self.session.headers["User-Agent"] = USER_AGENT
 
     def get(self, url: str, **kwargs) -> requests.Response:
-        """GET url, throttled per host, and save the raw body under cache/."""
+        """GET url, throttled per host, and save the raw body under cache/.
+        A request that can't connect at all (a DNS hiccup, a timeout) is tried once
+        more after RETRY_AFTER seconds; an HTTP error answer is not retried."""
         host = urlsplit(url).netloc
         self._wait_for(host)
-        response = self.session.get(url, timeout=30, **kwargs)
+        try:
+            response = self.session.get(url, timeout=30, **kwargs)
+        except (requests.ConnectionError, requests.Timeout) as error:
+            log.warning("Couldn't reach %s (%s); trying again in %.0f s", host, error, RETRY_AFTER)
+            time.sleep(RETRY_AFTER)
+            response = self.session.get(url, timeout=30, **kwargs)
         BaseScraper._last_request[host] = time.monotonic()
         response.raise_for_status()
         self._save(host, url, response.content)

@@ -3,6 +3,7 @@ from datetime import date
 from unittest.mock import MagicMock
 
 import pytest
+import requests
 
 import scrapers
 from scrapers import USER_AGENT, BaseScraper, heading_dates, is_non_film
@@ -67,6 +68,33 @@ def test_raw_response_cached(scraper, tmp_path):
     files = list((tmp_path / "a.example").iterdir())
     assert len(files) == 1
     assert files[0].read_bytes() == b"<html>hi</html>"
+
+
+def test_connection_failure_retried_once(scraper, clock, caplog):
+    response = MagicMock(content=b"ok")
+    scraper.session.get = MagicMock(
+        side_effect=[requests.ConnectionError("name resolution"), response]
+    )
+    assert scraper.get("https://a.example/x") is response
+    assert scraper.session.get.call_count == 2
+    assert scrapers.RETRY_AFTER in clock.slept
+    assert "trying again" in caplog.text
+
+
+def test_second_connection_failure_raises(scraper):
+    scraper.session.get = MagicMock(side_effect=requests.Timeout("slow"))
+    with pytest.raises(requests.Timeout):
+        scraper.get("https://a.example/x")
+    assert scraper.session.get.call_count == 2
+
+
+def test_http_error_not_retried(scraper):
+    response = MagicMock()
+    response.raise_for_status.side_effect = requests.HTTPError("404")
+    scraper.session.get = MagicMock(return_value=response)
+    with pytest.raises(requests.HTTPError):
+        scraper.get("https://a.example/x")
+    assert scraper.session.get.call_count == 1
 
 
 def test_fetch_must_be_implemented(scraper):
