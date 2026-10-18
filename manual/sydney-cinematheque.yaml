@@ -1,0 +1,205 @@
+venue: sydney-cinematheque
+name: Sydney Cinémathèque
+source: https://www.artgallery.nsw.gov.au/whats-on/cinema
+updated: 2026-10-19
+sessions:
+- date: 2026-10-21
+  time: '11:00'
+  title: Hocus pocus
+- date: 2026-10-21
+  time: '14:00'
+  title: Crazy thunder road
+  tags:
+  - Free
+- date: 2026-10-21
+  time: '19:15'
+  title: Crazy thunder road
+  tags:
+  - Free
+- date: 2026-10-24
+  time: '13:00'
+  title: 8½
+  year: 1963
+- date: 2026-10-25
+  time: '14:00'
+  title: Speed racer
+  tags:
+  - 35mm
+  - Free
+- date: 2026-10-28
+  time: '14:00'
+  title: Mad Max 2
+  tags:
+  - Free
+- date: 2026-10-28
+  time: '19:15'
+  title: Mad Max 2
+  tags:
+  - Free
+- date: 2026-10-31
+  time: '14:00'
+  title: Nine
+  tags:
+  - 35mm
+- date: 2026-11-01
+  time: '14:00'
+  title: Dry ground burning
+  tags:
+  - Free
+- date: 2026-11-04
+  time: '11:00'
+  title: The rescuers down under
+- date: 2026-11-04
+  time: '14:00'
+  title: Design for living
+  tags:
+  - Free
+- date: 2026-11-04
+  time: '19:15'
+  title: Design for living
+  tags:
+  - Free
+- date: 2026-11-07
+  time: '14:00'
+  title: Model
+  tags:
+  - Free
+  year: 1980
+  director: Frederick Wiseman
+- date: 2026-11-08
+  time: '14:00'
+  title: The daughter of dawn
+  tags:
+  - Free
+- date: 2026-11-11
+  time: '14:00'
+  title: His girl Friday
+  tags:
+  - Free
+- date: 2026-11-11
+  time: '19:15'
+  title: His girl Friday
+  tags:
+  - Free
+- date: 2026-11-14
+  time: '14:00'
+  title: The store
+  tags:
+  - Free
+- date: 2026-11-15
+  time: '14:30'
+  title: His girl Friday
+  tags:
+  - Free
+- date: 2026-11-18
+  time: '11:00'
+  title: Porco Rosso
+- date: 2026-11-18
+  time: '14:00'
+  title: Brief encounters
+  tags:
+  - Free
+- date: 2026-11-18
+  time: '19:15'
+  title: Brief encounters
+  tags:
+  - Free
+- date: 2026-11-21
+  time: '12:00'
+  title: home/land
+  tags:
+  - Artist film screening
+  - Free
+- date: 2026-11-21
+  time: '13:30'
+  title: Ballet
+  tags:
+  - Free
+- date: 2026-11-25
+  time: '14:00'
+  title: La collectionneuse
+  tags:
+  - Introduced by Cate Shortland
+  - Free
+- date: 2026-11-25
+  time: '19:15'
+  title: La collectionneuse
+  tags:
+  - Introduced by Cate Shortland
+  - Free
+- date: 2026-11-28
+  time: '14:00'
+  title: Sisters with transistors
+  tags:
+  - Q&A with musician Suzanne Ciani
+- date: 2026-11-29
+  time: '14:00'
+  title: Fruit of paradise
+  tags:
+  - Free
+- date: 2026-12-02
+  time: '11:00'
+  title: Matilda
+- date: 2026-12-02
+  time: '14:00'
+  title: Fruit of paradise
+  tags:
+  - Free
+- date: 2026-12-02
+  time: '19:15'
+  title: Fruit of paradise
+  tags:
+  - Free
+- date: 2026-12-05
+  time: '14:30'
+  title: Crazy Horse
+  tags:
+  - Free
+  year: 2011
+  director: Frederick Wiseman
+- date: 2026-12-06
+  time: '14:30'
+  title: Jules et Jim
+  tags:
+  - Free
+- date: 2026-12-09
+  time: '14:00'
+  title: Jules et Jim
+  tags:
+  - Free
+- date: 2026-12-09
+  time: '19:15'
+  title: Bound
+  tags:
+  - 30th anniversary
+  - Free
+- date: 2026-12-12
+  time: '13:30'
+  title: National Gallery
+  tags:
+  - Free
+- date: 2026-12-13
+  time: '14:00'
+  title: Love serenade
+  tags:
+  - 30th anniversary
+  - Free
+- date: 2026-12-16
+  time: '11:00'
+  title: Toy story
+- date: 2026-12-16
+  time: '14:00'
+  title: Love serenade
+  tags:
+  - 30th anniversary
+  - Free
+- date: 2026-12-19
+  time: '12:30'
+  title: Menus-plaisirs – les Troisgros
+  tags:
+  - Free
+- date: 2026-12-20
+  time: '14:00'
+  title: The rules of attraction
+  tags:
+  - Free
