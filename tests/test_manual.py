@@ -57,3 +57,9 @@ def test_no_files_no_showings(tmp_path):
 @pytest.mark.parametrize("value, expected", [("19:00", (19, 0)), ("7:05", (7, 5)), (1140, (19, 0))])
 def test_clock(value, expected):
     assert (manual.clock(value).hour, manual.clock(value).minute) == expected
+
+
+def test_shipped_manual_files_parse():
+    for data in manual.load():
+        manual.parse_file(data, NOW)  # raises on a bad entry
+    assert manual.parse_file({"venue": "v", "name": "V", "sessions": []}, NOW) == []

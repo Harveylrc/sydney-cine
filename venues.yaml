@@ -12,9 +12,11 @@
 # data (EQ: 11 seen, 12 known). Not from the cinema's own site: Palace Central and
 # Norton Street (Time Out), Drive-In (EVT, its parent company), Reading, United,
 # Mount Vic Flicks, Govinda's (Cinema Treasures / Flicks / Destination NSW).
+# Richmond Regent: 1, from its venue page (a single 600-seat auditorium with a
+# digital cinema screen; B13d).
 # Uncertain: Event Macquarie (its page says 13 but lists 16), Hoyts Chatswood
 # Westfield (6, maybe 7), Reading Auburn (8 or 9). Unknown, left out of the
-# figure: Richmond Regent, Dumaresq Street, United Opera Quays (may have closed).
+# figure: Dumaresq Street, United Opera Quays (may have closed).
 
 - {slug: ritz-randwick, name: Ritz Randwick, lga: Randwick, region: East, screens: 8}
 
@@ -67,7 +69,7 @@
 - {slug: united-narellan, name: United Cinemas Narellan, lga: Camden, region: South West, screens: 8, scraped: false}
 - {slug: united-the-edge-katoomba, name: United Cinemas The Edge Katoomba, lga: Blue Mountains, region: Outer West, screens: 4, scraped: false}
 - {slug: united-opera-quays, name: United Cinemas Opera Quays, lga: City of Sydney, region: City, screens: null, scraped: false}  # 3 screens if open; may have closed
-- {slug: richmond-regent, name: Richmond Regent, lga: Hawkesbury, region: Parramatta & Hills, screens: null, scraped: false}  # reopened May 2026; count not stated
+- {slug: richmond-regent, name: Richmond Regent, lga: Hawkesbury, region: Parramatta & Hills, screens: 1, source: manual, source_url: "https://www.theregentrichmond.com.au/cinema"}  # one auditorium (venue page); B13d: sessions only on SimpleTix
 - {slug: glenbrook-cinema, name: Glenbrook Cinema, lga: Blue Mountains, region: Outer West, screens: 1}  # scraped since B13b
 - {slug: mount-vic-flicks, name: Mount Vic Flicks, lga: Blue Mountains, region: Outer West, screens: 1}  # scraped since B13c
 - {slug: dumaresq-street, name: Dumaresq Street Cinemas, lga: Campbelltown, region: South West, screens: null, scraped: false}  # count unknown; B13e
