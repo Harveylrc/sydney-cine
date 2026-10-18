@@ -255,6 +255,7 @@ if __name__ == "__main__":
         golden_age,
         hoyts,
         manual,
+        mount_vic_flicks,
         orpheum,
         palace,
         ritz,
@@ -262,7 +263,18 @@ if __name__ == "__main__":
     )
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-    scrapers = (ritz, hoyts, palace, orpheum, golden_age, roseville, event, glenbrook, manual)
+    scrapers = (
+        ritz,
+        hoyts,
+        palace,
+        orpheum,
+        golden_age,
+        roseville,
+        event,
+        glenbrook,
+        mount_vic_flicks,
+        manual,
+    )
     scraped = scrape_all(scrapers)
     chooser = claude_chooser()
     client, cache = TMDBClient(load_token()), Cache()

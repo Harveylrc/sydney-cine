@@ -69,7 +69,7 @@
 - {slug: united-opera-quays, name: United Cinemas Opera Quays, lga: City of Sydney, region: City, screens: null, scraped: false}  # 3 screens if open; may have closed
 - {slug: richmond-regent, name: Richmond Regent, lga: Hawkesbury, region: Parramatta & Hills, screens: null, scraped: false}  # reopened May 2026; count not stated
 - {slug: glenbrook-cinema, name: Glenbrook Cinema, lga: Blue Mountains, region: Outer West, screens: 1}  # scraped since B13b
-- {slug: mount-vic-flicks, name: Mount Vic Flicks, lga: Blue Mountains, region: Outer West, screens: 1, scraped: false}  # B13c
+- {slug: mount-vic-flicks, name: Mount Vic Flicks, lga: Blue Mountains, region: Outer West, screens: 1}  # scraped since B13c
 - {slug: dumaresq-street, name: Dumaresq Street Cinemas, lga: Campbelltown, region: South West, screens: null, scraped: false}  # count unknown; B13e
 - {slug: govindas, name: Govinda's Movie Room, lga: City of Sydney, region: City, screens: 1, scraped: false}  # B13f
 # Manual: the gallery's site is bot-walled, so its programme is pasted in by hand
