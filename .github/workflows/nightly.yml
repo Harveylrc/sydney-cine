@@ -1,5 +1,6 @@
 # Nightly: scrape every venue, match films on TMDB (with Claude when unsure),
-# write public/data.json and publish public/ to GitHub Pages.
+# write public/data.json (and films.json, plus directors.json monthly) and publish
+# public/ to GitHub Pages.
 #
 # GitHub's cron runs on UTC and Sydney moves between UTC+11 (AEDT) and UTC+10
 # (AEST), so there are two schedules and each run goes ahead only when Sydney's
@@ -89,6 +90,20 @@ jobs:
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python export.py
+
+      # Director suggestions (B11, ~10 min): rebuilt in Sydney on the 1st of the
+      # month, or when the site has none yet; other nights keep the published list.
+      - name: Director list
+        if: steps.clock.outputs.run == 'true'
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+        run: |
+          if [ "$(TZ=Australia/Sydney date +%d)" != "01" ] && curl -fsSL "$SITE_URL/directors.json" -o public/directors.json; then
+            echo "Kept the published directors.json"
+          elif ! python -m scripts.build_directors; then
+            echo "::warning::Director list not rebuilt; keeping the published one if there is one"
+            curl -fsSL "$SITE_URL/directors.json" -o public/directors.json || rm -f public/directors.json
+          fi
 
       - name: Save lookup cache
         if: always() && steps.clock.outputs.run == 'true' && hashFiles('cache/tmdb.sqlite') != ''
