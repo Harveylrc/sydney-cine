@@ -18,6 +18,7 @@ First-seen dates are carried forward from the previous data.json.
 
 import json
 import logging
+import os
 from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -123,6 +124,27 @@ def build_data(showings: list[Showing], previous: dict | None, today: date) -> d
     }
 
 
+def scrape_all(scrapers) -> list[Showing]:
+    """Run each scraper module's fetch(); one venue failing (site down, markup
+    changed) is logged and skipped so the rest still publish. All failing is fatal."""
+    showings, failed = [], []
+    for scraper in scrapers:
+        name = scraper.__name__.rsplit(".", 1)[-1]
+        try:
+            found = scraper.fetch()
+        except Exception:
+            log.exception("Scraper %s failed; its venues are missing tonight", name)
+            failed.append(name)
+            continue
+        log.info("Scraper %s: %d showings", name, len(found))
+        showings.extend(found)
+    if failed and os.environ.get("GITHUB_ACTIONS"):
+        print(f"::warning::Scrapers failed: {', '.join(failed)}")  # shown on the run page
+    if len(failed) == len(scrapers):
+        raise SystemExit("Every scraper failed; not writing data.json")
+    return showings
+
+
 def load_previous(path: Path = DATA_PATH) -> dict | None:
     return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
 
@@ -146,7 +168,7 @@ if __name__ == "__main__":
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
     scrapers = (ritz, hoyts, palace, orpheum, golden_age, roseville, event)
-    scraped = [showing for scraper in scrapers for showing in scraper.fetch()]
+    scraped = scrape_all(scrapers)
     chooser = claude_chooser()
     showings = enrich(scraped, TMDBClient(load_token()), Cache(), load_overrides(), chooser)
     report(chooser)

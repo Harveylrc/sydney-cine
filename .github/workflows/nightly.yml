@@ -1,0 +1,114 @@
+# Nightly: scrape every venue, match films on TMDB (with Claude when unsure),
+# write public/data.json and publish public/ to GitHub Pages.
+#
+# GitHub's cron runs on UTC and Sydney moves between UTC+11 (AEDT) and UTC+10
+# (AEST), so there are two schedules and each run goes ahead only when Sydney's
+# current offset makes it 03:00 there. Comparing offsets rather than the clock
+# still works when GitHub starts a scheduled run late.
+#
+# Needs repository secrets TMDB_API_KEY and ANTHROPIC_API_KEY, and Settings →
+# Pages → Source: GitHub Actions. "Run workflow" on the Actions tab runs it now.
+
+name: Nightly
+
+on:
+  schedule:
+    - cron: "0 16 * * *" # 03:00 in Sydney during daylight saving (UTC+11)
+    - cron: "0 17 * * *" # 03:00 in Sydney in winter (UTC+10)
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: nightly
+  cancel-in-progress: false
+
+env:
+  SITE_URL: https://harveylrc.github.io/sydney-cine
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    outputs:
+      run: ${{ steps.clock.outputs.run }}
+    steps:
+      - name: Is it 03:00 in Sydney?
+        id: clock
+        run: |
+          offset=$(TZ=Australia/Sydney date +%z)
+          case "${{ github.event_name }}|${{ github.event.schedule }}|$offset" in
+            workflow_dispatch*|"schedule|0 16 * * *|+1100"|"schedule|0 17 * * *|+1000")
+              echo "run=true" >> "$GITHUB_OUTPUT" ;;
+            *)
+              echo "Not 03:00 in Sydney (offset $offset); the other schedule covers today."
+              echo "run=false" >> "$GITHUB_OUTPUT" ;;
+          esac
+
+      - uses: actions/checkout@v4
+        if: steps.clock.outputs.run == 'true'
+
+      - uses: actions/setup-python@v5
+        if: steps.clock.outputs.run == 'true'
+        with:
+          python-version: "3.12"
+          cache: pip
+
+      - name: Install
+        if: steps.clock.outputs.run == 'true'
+        run: pip install -r requirements.txt
+
+      # The TMDB/Claude lookup cache carries over between runs, so each film is
+      # looked up (and Claude asked) once, not every night.
+      - name: Restore lookup cache
+        if: steps.clock.outputs.run == 'true'
+        uses: actions/cache/restore@v4
+        with:
+          path: cache/tmdb.sqlite
+          key: tmdb-${{ github.run_id }}
+          restore-keys: tmdb-
+
+      # First-seen dates live in the published data.json (DECISIONS 2026-10-18).
+      - name: Download the live data.json
+        if: steps.clock.outputs.run == 'true'
+        run: |
+          mkdir -p public
+          if curl -fsSL "$SITE_URL/data.json" -o public/data.json; then
+            echo "Previous data.json downloaded"
+          else
+            rm -f public/data.json
+            echo "No published data.json yet: first-seen dates start today"
+          fi
+
+      - name: Scrape, match and export
+        if: steps.clock.outputs.run == 'true'
+        env:
+          TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
+          ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
+        run: python export.py
+
+      - name: Save lookup cache
+        if: always() && steps.clock.outputs.run == 'true' && hashFiles('cache/tmdb.sqlite') != ''
+        uses: actions/cache/save@v4
+        with:
+          path: cache/tmdb.sqlite
+          key: tmdb-${{ github.run_id }}
+
+      - uses: actions/upload-pages-artifact@v3
+        if: steps.clock.outputs.run == 'true'
+        with:
+          path: public
+
+  deploy:
+    needs: build
+    if: needs.build.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

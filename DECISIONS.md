@@ -30,6 +30,8 @@
 
 - 2026-10-19 **Drive In Blacktown is included** (Harvey, after B5f): it runs year-round, so SPEC's "outdoor/seasonal until a season is live" exclusion doesn't apply. Event slug `drive-in-blacktown`.
 
+- 2026-10-19 **Nightly job (B6).** GitHub Actions, `.github/workflows/nightly.yml`: two UTC crons (16:00, 17:00) and a guard that compares Sydney's UTC offset, so exactly one run happens at 03:00 Sydney all year. Steps: restore the TMDB lookup cache (`actions/cache`, carried from run to run so Claude is asked about each film once), download the published `data.json` (first-seen dates), `python export.py`, save the cache, deploy `public/` to Pages. Ratings older than 30 days are re-fetched (id, year, director kept) — closes the B3 "cache expiry" item. A scraper that fails is logged (and shown as a warning on the run) and skipped; all failing stops the run before anything is published. The first run starts from an empty cache, so it may hit the 200-call Claude cap; titles past the cap use the rules that night and are asked on later nights.
+
 ## P1 — Data access per venue (audited 2026-10-15; P4 browser pass same day)
 
 | Venue | Access | How showtimes are keyed | Verdict |
@@ -56,6 +58,6 @@ Hoyts, Palace and Orpheum all use Vista `HO000…` movie ids, but **they are per
 
 ## Open
 - **Reading:** retest from an Australian IP; if it still returns nothing, treat like Dendy (uncovered).
-- **TMDB cache expiry (from B3):** cached lookups never expire, so ratings go stale. In B6, re-fetch rating for hits older than 30 days (keep tmdb_id/director/year).
 - **Sort weight (from B4b):** popularity vs sessions weight is a guess (2); revisit once more venues are in and session counts are bigger.
 - **Event (from B5f):** (1) UA check done 2026-10-19: George Street's print view fetched with our User-Agent and with a Chrome one is byte-identical apart from a per-request Cloudflare token; no `aiagent` markup. (2) The print view has **no booking links or session ids** (the P1 row's "sessionId int in booking links" must come from the normal cinema page), so Event showings link to `/cinema/{slug}` and carry no session id. (3) Scraped: the 14 metro cinemas (Bondi, Burwood, Campbelltown, Castle Hill, Ed Square, George Street, Hornsby, Hurstville, IMAX Sydney, Liverpool, Macquarie, Miranda, Parramatta, Top Ryde City); left out like Hoyts Erina: Glendale, Kotara, Shellharbour, Tuggerah; Moonlight Cinema Sydney is seasonal (SPEC). Bondi is closed for refurbishment (its print view lists no films) and will reappear by itself. Drive In Blacktown: included (decision below).
+- **Domain (2026-10-18):** Harvey wants `sydneycinema.com`; availability unverified. Fallbacks: `sydneycinema.guide`, `sydneycinemaguide.com`. `.com.au` needs an ABN — not for v1.

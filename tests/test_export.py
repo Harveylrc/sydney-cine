@@ -6,7 +6,15 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from export import build_data, display_day, effective_type, load_previous, time_label, write
+from export import (
+    build_data,
+    display_day,
+    effective_type,
+    load_previous,
+    scrape_all,
+    time_label,
+    write,
+)
 from models import Showing
 from scrapers.ritz import parse_day
 
@@ -271,3 +279,28 @@ def test_not_a_film_dropped_and_logged(caplog):
         data = build_data(shows, None, LAUNCH)
     assert [r["title"] for r in data["showings"]] == ["Film"]
     assert "Dropped, not a film: 'Tribute Band Live' at Ritz Randwick" in caplog.text
+
+
+class FakeScraper:
+    def __init__(self, name, result):
+        self.__name__ = f"scrapers.{name}"
+        self.result = result
+
+    def fetch(self):
+        if isinstance(self.result, Exception):
+            raise self.result
+        return self.result
+
+
+def test_one_failing_scraper_is_skipped(caplog):
+    good = FakeScraper("ritz", [showing("Film", at(LAUNCH, 19))])
+    bad = FakeScraper("event", RuntimeError("Cloudflare says no"))
+    with caplog.at_level(logging.INFO, logger="export"):
+        result = scrape_all([good, bad])
+    assert [s.film_title for s in result] == ["Film"]
+    assert "Scraper event failed" in caplog.text
+
+
+def test_all_scrapers_failing_is_fatal():
+    with pytest.raises(SystemExit):
+        scrape_all([FakeScraper("ritz", RuntimeError("down"))])

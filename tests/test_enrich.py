@@ -1,5 +1,5 @@
 import logging
-from datetime import datetime
+from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
 import pytest
@@ -873,3 +873,53 @@ def test_cache_from_before_b3e_gains_column(tmp_path):
     db.execute("INSERT INTO lookups VALUES ('title:x|', 7, 1999, 'D', 7.0, 10)")
     db.commit()
     assert Cache(path).get("title:x|") == Match(7, 1999, "D", 7.0, 10, is_film=None)
+
+
+# --- rating refresh (B6) ------------------------------------------------------
+
+
+def test_old_rating_refreshed_keeping_identity(tmdb, cache, caplog):
+    leon = showing("Léon: The Professional")
+    key = lookup_key(leon)
+    cache.put(key, Match(101, 1994, "Someone Else", 6.0, 10), today=date(2026, 9, 1))
+    client = TMDBClient("token", session=tmdb, this_year=2026)
+    with caplog.at_level(logging.INFO, logger="enrich"):
+        [s] = enrich([leon], client, cache, today=date(2026, 10, 19))
+    # rating and votes from TMDB now; id, year and director as cached
+    assert (s.tmdb_id, s.year, s.director) == (101, 1994, "Someone Else")
+    assert (s.rating, s.vote_count) == (8.3, 15000)
+    assert tmdb.searches() == []  # details only, no new search
+    assert not cache.stale(key, date(2026, 10, 19))
+    assert "Refreshed TMDB ratings older than 30 days for 1 films" in caplog.text
+
+
+def test_recent_rating_not_refreshed(tmdb, cache):
+    leon = showing("Léon: The Professional")
+    cache.put(lookup_key(leon), Match(101, 1994, "Luc Besson", 6.0, 10), today=date(2026, 10, 1))
+    client = TMDBClient("token", session=tmdb, this_year=2026)
+    [s] = enrich([leon], client, cache, today=date(2026, 10, 19))
+    assert s.rating == 6.0 and tmdb.calls == []
+
+
+def test_misses_are_not_refreshed(tmdb, cache):
+    show = showing("Unknown Film")
+    cache.put(lookup_key(show), Match(tmdb_id=None), today=date(2026, 1, 1))
+    client = TMDBClient("token", session=tmdb, this_year=2026)
+    [s] = enrich([show], client, cache, today=date(2026, 10, 19))
+    assert s.tmdb_id is None and tmdb.calls == []
+
+
+def test_undated_rows_count_as_stale(tmp_path):
+    import sqlite3
+
+    path = tmp_path / "old.sqlite"
+    db = sqlite3.connect(path)
+    db.execute(
+        "CREATE TABLE lookups (key TEXT PRIMARY KEY, tmdb_id INTEGER, year INTEGER,"
+        " director TEXT, rating REAL, vote_count INTEGER, is_film INTEGER)"
+    )
+    db.execute("INSERT INTO lookups VALUES ('title:x|', 7, 1999, 'D', 7.0, 10, NULL)")
+    db.commit()
+    cache = Cache(path)
+    assert cache.stale("title:x|", date(2026, 10, 19))
+    assert cache.get("title:x|").tmdb_id == 7

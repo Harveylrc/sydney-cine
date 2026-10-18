@@ -22,6 +22,8 @@ Matching order (policy in DECISIONS.md):
    talk), the showing is marked is_film=False and export.py drops it. With no
    TMDB results at all, Claude is asked that question alone.
 Every final lookup, hit or miss, is cached in SQLite so it is only made once.
+A hit's rating and vote count are re-fetched when older than RATING_MAX_AGE (its
+TMDB id, year and director are kept).
 Unmatched showings are logged and returned unchanged, never dropped.
 """
 
@@ -33,7 +35,7 @@ import sqlite3
 import time
 import unicodedata
 from dataclasses import dataclass, replace
-from datetime import date
+from datetime import date, timedelta
 from functools import partial
 from pathlib import Path
 
@@ -56,6 +58,7 @@ MAX_CANDIDATES = 8
 CLAUDE_MAX_TOKENS = 2000  # room to think before the final "Answer:" line
 OVERVIEW_CHARS = 300
 SYNOPSIS_CHARS = 800
+RATING_MAX_AGE = timedelta(days=30)  # ratings move; ids, years and directors don't
 
 # No-year tiebreak: these showings prefer an exact match from the last 3 years.
 RECENT_YEARS = 3
@@ -341,13 +344,15 @@ class Cache:
                 -- "vista:<chain>:HO000…", "title:<title>|<year>[|recent]" or "tmdb:<id>"
                 key TEXT PRIMARY KEY,
                 tmdb_id INTEGER, year INTEGER, director TEXT, rating REAL, vote_count INTEGER,
-                is_film INTEGER  -- 1/0 when Claude said, NULL when not asked
+                is_film INTEGER,  -- 1/0 when Claude said, NULL when not asked
+                fetched TEXT  -- ISO date the TMDB fields were fetched
             );
             """
         )
         columns = {row[1] for row in self.db.execute("PRAGMA table_info(lookups)")}
-        if "is_film" not in columns:  # caches made before B3e
-            self.db.execute("ALTER TABLE lookups ADD COLUMN is_film INTEGER")
+        for column, kind in (("is_film", "INTEGER"), ("fetched", "TEXT")):
+            if column not in columns:  # caches made before B3e / B6
+                self.db.execute(f"ALTER TABLE lookups ADD COLUMN {column} {kind}")
 
     def get(self, key: str) -> Match | None:
         row = self.db.execute(
@@ -360,9 +365,11 @@ class Cache:
         *fields, is_film = row
         return Match(*fields, is_film=None if is_film is None else bool(is_film))
 
-    def put(self, key: str, match: Match) -> None:
+    def put(self, key: str, match: Match, today: date | None = None) -> None:
         self.db.execute(
-            "INSERT OR REPLACE INTO lookups VALUES (?, ?, ?, ?, ?, ?, ?)",
+            "INSERT OR REPLACE INTO lookups"
+            " (key, tmdb_id, year, director, rating, vote_count, is_film, fetched)"
+            " VALUES (?, ?, ?, ?, ?, ?, ?, ?)",
             (
                 key,
                 match.tmdb_id,
@@ -371,9 +378,17 @@ class Cache:
                 match.rating,
                 match.vote_count,
                 None if match.is_film is None else int(match.is_film),
+                (today or date.today()).isoformat(),
             ),
         )
         self.db.commit()
+
+    def stale(self, key: str, today: date | None = None) -> bool:
+        """True when the row's TMDB fields are older than RATING_MAX_AGE (or undated)."""
+        row = self.db.execute("SELECT fetched FROM lookups WHERE key = ?", (key,)).fetchone()
+        if not row or not row[0]:
+            return True
+        return date.fromisoformat(row[0]) < (today or date.today()) - RATING_MAX_AGE
 
 
 def prefers_recent(s: Showing) -> bool:
@@ -424,8 +439,10 @@ def enrich(
     cache: Cache,
     overrides: dict[str, int | str | None] | None = None,
     chooser: ClaudeChooser | None = None,
+    today: date | None = None,
 ) -> list[Showing]:
     overrides = overrides or {}
+    refreshed = 0
     by_key = {normalise(title): tmdb_id for title, tmdb_id in overrides.items()}
     matches: dict[str, Match] = {}
 
@@ -453,6 +470,7 @@ def enrich(
         return client.details(tmdb_id), True
 
     def resolve(s: Showing) -> Match:
+        nonlocal refreshed
         found, tmdb_id = find_override(s.film_title, overrides, by_key)
         if found:
             if tmdb_id is None:
@@ -470,7 +488,12 @@ def enrich(
             if match is None or (chooser and match.tmdb_id is None and match.is_film is None):
                 match, final = fetch()
                 if final:
-                    cache.put(key, match)
+                    cache.put(key, match, today)
+            elif match.tmdb_id is not None and cache.stale(key, today):
+                fresh = client.details(match.tmdb_id)
+                match = replace(match, rating=fresh.rating, vote_count=fresh.vote_count)
+                cache.put(key, match, today)
+                refreshed += 1
             matches[key] = match
             if match.is_film is False:
                 log.info("Not a film: %r (%s)", s.film_title, key)
@@ -494,6 +517,10 @@ def enrich(
                     vote_count=match.vote_count,
                 )
             )
+    if refreshed:
+        log.info(
+            "Refreshed TMDB ratings older than %d days for %d films", RATING_MAX_AGE.days, refreshed
+        )
     return enriched
 
 
