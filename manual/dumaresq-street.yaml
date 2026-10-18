@@ -1,0 +1,9 @@
+# Stub (B13e): dscinema.com.au is an INDY app whose sessions come only from
+# /graphql, which its robots.txt disallows (as with Dendy). Fill in with
+#   pbpaste | .venv/bin/python -m scripts.paste_to_manual dumaresq-street
+# from the session times page opened in your own browser.
+venue: dumaresq-street
+name: Dumaresq Street Cinemas
+source: https://dscinema.com.au/
+updated: 2026-10-19
+sessions: []
