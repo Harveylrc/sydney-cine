@@ -581,9 +581,17 @@
     return detailsLoading;
   }
 
-  const PARTIAL_NOTE = "Most cinemas haven't published this day yet — check back after Wednesday.";
+  // Chains publish each Thu–Wed cinema week on the Wednesday before it starts: for
+  // Thu 22 to Wed 28 October that is Wednesday 21 October.
+  function publishingWednesday(iso) {
+    const date = new Date(iso + "T00:00:00Z");
+    const back = (date.getUTCDay() - 3 + 7) % 7 || 7; // Wednesday is day 3
+    date.setUTCDate(date.getUTCDate() - back);
+    return dayHeading(date.toISOString().slice(0, 10));
+  }
   const isPartial = (day) => Boolean(data.days && data.days[day] && data.days[day].partial);
-  const partialNote = () => el("p", { class: "partial-note", text: PARTIAL_NOTE });
+  const partialNote = (day) => el("p", { class: "partial-note",
+    text: `Most cinemas haven't published this day yet, check back in after ${publishingWednesday(day)}.` });
 
   const tabLabel = (iso) =>
     new Date(iso + "T00:00:00Z").toLocaleDateString("en-AU", { weekday: "short", day: "numeric", timeZone: "UTC" });
@@ -616,7 +624,7 @@
     const lists = el("div", { class: "day-sessions" });
     const buttons = days.map((d, i) => {
       const list = el("div", { role: "tabpanel", id: `${id}-day-${i}`, "aria-labelledby": `${id}-tab-${i}` });
-      if (isPartial(d)) list.append(partialNote());
+      if (isPartial(d)) list.append(partialNote(d));
       list.append(sessionRows(film, byDay.get(d)));
       lists.append(list);
       const button = el("button", { type: "button", role: "tab", id: `${id}-tab-${i}`, "aria-controls": `${id}-day-${i}`, text: tabLabel(d) });
@@ -698,7 +706,7 @@
     listings.replaceChildren();
     for (const [day, films] of [...days].sort(([a], [b]) => a.localeCompare(b))) {
       const section = el("section", { class: "day" }, el("h2", { text: dayHeading(day) }));
-      if (isPartial(day)) section.append(partialNote());
+      if (isPartial(day)) section.append(partialNote(day));
       for (const { film, showings } of orderFilms(day, films, f.sort)) section.append(filmEntry(film, showings, day));
       listings.append(section);
     }
