@@ -25,13 +25,14 @@ log = logging.getLogger("event")
 
 SITE = "https://www.eventcinemas.com.au"
 # Greater Sydney metro cinemas (slug -> name). Left out: Glendale and Kotara
-# (Newcastle), Shellharbour, Tuggerah (Central Coast), Moonlight (seasonal) and
-# Drive In Blacktown (outdoor; see DECISIONS.md).
+# (Newcastle), Shellharbour, Tuggerah (Central Coast) and Moonlight (seasonal).
+# The year-round Blacktown drive-in is in (DECISIONS 2026-10-19).
 CINEMAS = {
     "bondi": "Bondi",
     "burwood": "Burwood",
     "campbelltown": "Campbelltown",
     "castle-hill": "Castle Hill",
+    "drive-in-blacktown": "Drive-In Blacktown",
     "ed-square": "Ed Square",
     "george-street": "George Street",
     "hornsby": "Hornsby",

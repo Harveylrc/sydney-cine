@@ -8,7 +8,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from scrapers.event import codes, day_dates, labels, parse_week, week_start
+from scrapers.event import CINEMAS, codes, day_dates, labels, parse_week, week_start
 
 SYDNEY = ZoneInfo("Australia/Sydney")
 FIXTURES = Path(__file__).parent / "fixtures"
@@ -128,3 +128,11 @@ def test_labels():
         "Bring Your Baby",
     ]
     assert unknown == {"XYZ"}
+
+
+def test_cinema_list():
+    assert len(CINEMAS) == 15
+    assert CINEMAS["drive-in-blacktown"] == "Drive-In Blacktown"
+    assert not {"glendale", "kotara", "shellharbour", "tuggerah", "moonlight-cinema-sydney"} & set(
+        CINEMAS
+    )
