@@ -8,6 +8,11 @@ Rules from DECISIONS.md:
 - New this week: a film first seen in our data within the last 7 days, not on the
   first day we held its venue (so launch day, or adding a venue, is not "new").
   The page shows it under "new this week" for its new_release showings only.
+- Horizon: only showings whose display day is within HORIZON_DAYS of today, for
+  every venue (Hoyts lists ~10 weeks ahead). A film is first seen when it enters
+  the horizon.
+- "Audio Description" and "Closed Captions" are dropped from attributes: almost
+  every chain session has them, so they are noise. "Open Captions" stays.
 First-seen dates are carried forward from the previous data.json.
 """
 
@@ -25,6 +30,8 @@ SYDNEY = ZoneInfo(SYDNEY_TZ)
 LATE_NIGHT_END = time(5, 0)
 NEW_DAYS = 7
 RETRO_AGE = 2  # years
+HORIZON_DAYS = 14
+HIDDEN_ATTRIBUTES = {"Audio Description", "Closed Captions"}
 
 
 def film_id(s: Showing) -> str:
@@ -57,6 +64,8 @@ def build_data(showings: list[Showing], previous: dict | None, today: date) -> d
     seen = {fid: dict(by_venue) for fid, by_venue in previous.get("seen", {}).items()}
     films: dict[str, dict] = {}
     rows = []
+    last_day = today + timedelta(days=HORIZON_DAYS - 1)
+    showings = [s for s in showings if today <= display_day(s.start) <= last_day]
     for s in sorted(showings, key=lambda s: (s.start, s.film_title)):
         fid = film_id(s)
         venues.setdefault(s.venue_slug, {"name": s.venue_name, "first_seen": today_iso})
@@ -83,7 +92,7 @@ def build_data(showings: list[Showing], previous: dict | None, today: date) -> d
                 "time": time_label(s.start),
                 "late": s.start.time() < LATE_NIGHT_END,
                 "type": effective_type(s, today.year),
-                "attributes": s.attributes,
+                "attributes": [a for a in s.attributes if a not in HIDDEN_ATTRIBUTES],
                 "booking_url": s.booking_url,
             }
         )

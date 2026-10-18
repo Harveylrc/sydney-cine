@@ -229,3 +229,33 @@ def test_film_carries_vote_count():
     s = showing("Akira (1988)", at(LAUNCH, 19), tmdb_id=149, year=1988, vote_count=5200)
     [film] = build_data([s], None, LAUNCH)["films"]
     assert film["vote_count"] == 5200
+
+
+# --- horizon and hidden tags --------------------------------------------------
+
+
+@pytest.mark.parametrize(
+    "start, kept",
+    [
+        (at(LAUNCH, 10), True),  # today
+        (at(LAUNCH, 2), False),  # 02:00 today belongs to yesterday evening
+        (at(LAUNCH + timedelta(days=13), 21), True),  # 14th day
+        (at(LAUNCH + timedelta(days=14), 1), True),  # late night of the 14th day
+        (at(LAUNCH + timedelta(days=14), 10), False),  # 15th day
+        (at(LAUNCH - timedelta(days=1), 19), False),
+    ],
+)
+def test_horizon(start, kept):
+    data = build_data([showing("Film", start)], None, LAUNCH)
+    assert bool(data["showings"]) is kept
+
+
+def test_film_beyond_horizon_is_not_seen_yet():
+    data = build_data([showing("Far Off", at(LAUNCH + timedelta(days=60), 19))], None, LAUNCH)
+    assert data["films"] == [] and data["seen"] == {}
+
+
+def test_audio_description_and_closed_captions_dropped():
+    tags = ["Xtremescreen", "Audio Description", "Closed Captions", "Open Captions"]
+    [row] = build_data([showing("Film", at(LAUNCH, 19), attributes=tags)], None, LAUNCH)["showings"]
+    assert row["attributes"] == ["Xtremescreen", "Open Captions"]
