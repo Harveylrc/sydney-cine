@@ -4,6 +4,8 @@
 # figure (coverage.py). Cinemas we don't scrape are listed too, with
 # `scraped: false`, so the figure has the whole of Sydney as its total.
 # A scraped cinema missing here shows under no region and is logged by export.py.
+# `closed: true` (e.g. for a refurbishment) leaves a cinema out of the coverage
+# figure altogether; a closed cinema that has sessions again counts as open.
 #
 # Screen counts (B7, checked 2026-10-19): from each cinema's own site where it
 # states one; Hoyts gives none, so its counts are the screens in its own session
@@ -39,7 +41,7 @@
 - {slug: golden-age, name: Golden Age, lga: City of Sydney, region: City, screens: 1}
 - {slug: roseville, name: Roseville Cinemas, lga: Ku-ring-gai, region: North, screens: 2}
 
-- {slug: event-bondi, name: Event Bondi, lga: Waverley, region: East, screens: 11}
+- {slug: event-bondi, name: Event Bondi, lga: Waverley, region: East, screens: 11, closed: true}  # refurbishment; remove when it reopens
 - {slug: event-burwood, name: Event Burwood, lga: Burwood, region: Inner West, screens: 12}
 - {slug: event-campbelltown, name: Event Campbelltown, lga: Campbelltown, region: South West, screens: 11}
 - {slug: event-castle-hill, name: Event Castle Hill, lga: The Hills, region: Parramatta & Hills, screens: 15}
