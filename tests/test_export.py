@@ -1,4 +1,5 @@
 import json
+import logging
 from datetime import date, datetime, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -259,3 +260,14 @@ def test_audio_description_and_closed_captions_dropped():
     tags = ["Xtremescreen", "Audio Description", "Closed Captions", "Open Captions"]
     [row] = build_data([showing("Film", at(LAUNCH, 19), attributes=tags)], None, LAUNCH)["showings"]
     assert row["attributes"] == ["Xtremescreen", "Open Captions"]
+
+
+def test_not_a_film_dropped_and_logged(caplog):
+    shows = [
+        showing("Film", at(LAUNCH, 19)),
+        showing("Tribute Band Live", at(LAUNCH, 20), is_film=False),
+    ]
+    with caplog.at_level(logging.INFO, logger="export"):
+        data = build_data(shows, None, LAUNCH)
+    assert [r["title"] for r in data["showings"]] == ["Film"]
+    assert "Dropped, not a film: 'Tribute Band Live' at Ritz Randwick" in caplog.text

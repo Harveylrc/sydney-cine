@@ -25,6 +25,8 @@ from zoneinfo import ZoneInfo
 from enrich import normalise, search_terms
 from models import SYDNEY_TZ, Showing
 
+log = logging.getLogger("export")
+
 DATA_PATH = Path(__file__).resolve().parent / "public" / "data.json"
 SYDNEY = ZoneInfo(SYDNEY_TZ)
 LATE_NIGHT_END = time(5, 0)
@@ -64,6 +66,11 @@ def build_data(showings: list[Showing], previous: dict | None, today: date) -> d
     seen = {fid: dict(by_venue) for fid, by_venue in previous.get("seen", {}).items()}
     films: dict[str, dict] = {}
     rows = []
+    for title, venue in sorted(
+        {(s.film_title, s.venue_name) for s in showings if s.is_film is False}
+    ):
+        log.info("Dropped, not a film: %r at %s", title, venue)
+    showings = [s for s in showings if s.is_film is not False]
     last_day = today + timedelta(days=HORIZON_DAYS - 1)
     showings = [s for s in showings if today <= display_day(s.start) <= last_day]
     for s in sorted(showings, key=lambda s: (s.start, s.film_title)):

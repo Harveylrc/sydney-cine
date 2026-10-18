@@ -17,6 +17,10 @@ Matching order (policy in DECISIONS.md):
    results (or "none") from the venue title, film type and tags. At most
    MAX_CLAUDE_CALLS per run; when Claude can't answer, step 3's rules decide
    and that answer is not cached, so Claude is asked again next run.
+   Claude also says whether the listing is a film screening at all; when the
+   title rules found nothing and Claude says it isn't (a live tribute band, a
+   talk), the showing is marked is_film=False and export.py drops it. With no
+   TMDB results at all, Claude is asked that question alone.
 Every final lookup, hit or miss, is cached in SQLite so it is only made once.
 Unmatched showings are logged and returned unchanged, never dropped.
 """
@@ -44,6 +48,7 @@ API = "https://api.themoviedb.org/3"
 DB_PATH = Path(__file__).resolve().parent / "cache" / "tmdb.sqlite"
 ENV_PATH = Path(__file__).resolve().parent / ".env"
 OVERRIDES_PATH = Path(__file__).resolve().parent / "tmdb_overrides.csv"
+DROP = "drop"  # tmdb_overrides.csv value: not a film, leave it off the page
 
 CLAUDE_MODEL = "claude-sonnet-5-5"
 MAX_CLAUDE_CALLS = 200  # per run: hard budget guard
@@ -95,6 +100,7 @@ class Match:
     director: str | None = None
     rating: float | None = None
     vote_count: int | None = None
+    is_film: bool | None = None  # Claude's view when it was asked; None: not asked
 
 
 def search_terms(film_title: str) -> tuple[str, int | None]:
@@ -210,6 +216,7 @@ def directors(movie: dict) -> str | None:
 
 
 ANSWER = re.compile(r"answer:\s*\**\s*(\d+|none)", re.IGNORECASE)
+FILM = re.compile(r"film:\s*\**\s*(yes|no)", re.IGNORECASE)
 
 
 class ChooserUnavailable(Exception):
@@ -225,19 +232,23 @@ class ClaudeChooser:
         "Decide which candidate is the film being screened. When the title rules have a "
         "choice, keep it unless the venue's description, director, year or running time "
         "contradicts it. When they have none, pick the candidate the evidence supports, or "
-        "none rather than guess. End your reply with one line: "
-        "'Answer: <tmdb_id>' or 'Answer: none'."
+        "none rather than guess. Also say whether the listing is a film screening at all: "
+        "a feature, documentary, short programme, concert film or recorded opera, ballet or "
+        "theatre broadcast is; a live band or tribute show, a talk, a quiz or a party is "
+        "not. End your reply with two lines: 'Answer: <tmdb_id>' or 'Answer: none', then "
+        "'Film: yes' or 'Film: no'."
     )
 
     def __init__(self, client, model: str = CLAUDE_MODEL, max_calls: int = MAX_CLAUDE_CALLS):
         self.client, self.model, self.max_calls = client, model, max_calls
         self.calls = 0
-        self.answers = {"matched": 0, "none": 0}
+        self.answers = {"matched": 0, "none": 0, "not_film": 0}
         self._budget_logged = False
 
     def choose(
         self, s: Showing, candidates: list[dict], rules_pick: int | None = None
-    ) -> int | None:
+    ) -> tuple[int | None, bool | None]:
+        """(tmdb_id or None, is_film or None if Claude didn't say)."""
         if self.calls >= self.max_calls:
             if not self._budget_logged:
                 log.warning("Claude budget of %d calls used; rules decide the rest", self.max_calls)
@@ -261,11 +272,15 @@ class ClaudeChooser:
         if not answers or (answers[-1].lower() != "none" and int(answers[-1]) not in ids):
             log.warning("Claude reply for %r has no usable answer: %r", s.film_title, reply[-80:])
             raise ChooserUnavailable("reply")
+        film = FILM.findall(reply)
+        is_film = film[-1].lower() == "yes" if film else None
         if answers[-1].lower() == "none":
             self.answers["none"] += 1
-            return None
+            if is_film is False:
+                self.answers["not_film"] += 1
+            return None, is_film
         self.answers["matched"] += 1
-        return int(answers[-1])
+        return int(answers[-1]), True
 
 
 def prompt(s: Showing, candidates: list[dict], rules_pick: int | None = None) -> str:
@@ -283,7 +298,9 @@ def prompt(s: Showing, candidates: list[dict], rules_pick: int | None = None) ->
         lines.append(f"Venue's description: {' '.join(s.venue_synopsis.split())[:SYNOPSIS_CHARS]}")
     lines += [
         "",
-        "Which of these TMDB entries is the film being screened?",
+        "Which of these TMDB entries is the film being screened?"
+        if candidates
+        else "TMDB found no entries for this title.",
     ]
     for c in candidates:
         also = (
@@ -296,7 +313,7 @@ def prompt(s: Showing, candidates: list[dict], rules_pick: int | None = None) ->
         )
     choice = f"tmdb_id {rules_pick}" if rules_pick else "no choice"
     lines += ["", f"The title rules' choice: {choice}."]
-    lines += ["End with 'Answer: <tmdb_id>' or 'Answer: none'."]
+    lines += ["End with 'Answer: <tmdb_id>' or 'Answer: none', then 'Film: yes' or 'Film: no'."]
     return "\n".join(lines)
 
 
@@ -318,22 +335,38 @@ class Cache:
             CREATE TABLE IF NOT EXISTS lookups (
                 -- "vista:<chain>:HO000…", "title:<title>|<year>[|recent]" or "tmdb:<id>"
                 key TEXT PRIMARY KEY,
-                tmdb_id INTEGER, year INTEGER, director TEXT, rating REAL, vote_count INTEGER
+                tmdb_id INTEGER, year INTEGER, director TEXT, rating REAL, vote_count INTEGER,
+                is_film INTEGER  -- 1/0 when Claude said, NULL when not asked
             );
             """
         )
+        columns = {row[1] for row in self.db.execute("PRAGMA table_info(lookups)")}
+        if "is_film" not in columns:  # caches made before B3e
+            self.db.execute("ALTER TABLE lookups ADD COLUMN is_film INTEGER")
 
     def get(self, key: str) -> Match | None:
         row = self.db.execute(
-            "SELECT tmdb_id, year, director, rating, vote_count FROM lookups WHERE key = ?",
+            "SELECT tmdb_id, year, director, rating, vote_count, is_film"
+            " FROM lookups WHERE key = ?",
             (key,),
         ).fetchone()
-        return Match(*row) if row else None
+        if not row:
+            return None
+        *fields, is_film = row
+        return Match(*fields, is_film=None if is_film is None else bool(is_film))
 
     def put(self, key: str, match: Match) -> None:
         self.db.execute(
-            "INSERT OR REPLACE INTO lookups VALUES (?, ?, ?, ?, ?, ?)",
-            (key, match.tmdb_id, match.year, match.director, match.rating, match.vote_count),
+            "INSERT OR REPLACE INTO lookups VALUES (?, ?, ?, ?, ?, ?, ?)",
+            (
+                key,
+                match.tmdb_id,
+                match.year,
+                match.director,
+                match.rating,
+                match.vote_count,
+                None if match.is_film is None else int(match.is_film),
+            ),
         )
         self.db.commit()
 
@@ -351,7 +384,7 @@ def lookup_key(s: Showing) -> str:
     return f"title:{title.casefold()}|{year or ''}" + ("|recent" if prefers_recent(s) else "")
 
 
-def find_override(title: str, overrides: dict, by_key: dict) -> tuple[bool, int | None]:
+def find_override(title: str, overrides: dict, by_key: dict) -> tuple[bool, int | str | None]:
     """(found, tmdb_id): the exact title first, then the showing's cleaned title
     against the rows as written (by_key: normalised row title -> id)."""
     if title in overrides:
@@ -363,22 +396,28 @@ def find_override(title: str, overrides: dict, by_key: dict) -> tuple[bool, int 
     return False, None
 
 
-def load_overrides(path: Path = OVERRIDES_PATH) -> dict[str, int | None]:
-    """venue_title -> TMDB id, or None for "none" (deliberately unmatched)."""
+def override_value(text: str) -> int | str | None:
+    """'1234' -> 1234; 'none' -> None (a film, deliberately unmatched);
+    'drop' -> DROP (not a film: leave it off the page)."""
+    text = text.strip()
+    if text == "none":
+        return None
+    return DROP if text == DROP else int(text)
+
+
+def load_overrides(path: Path = OVERRIDES_PATH) -> dict[str, int | str | None]:
+    """venue_title -> override_value(tmdb_id)."""
     if not path.exists():
         return {}
     with path.open(encoding="utf-8", newline="") as f:
-        return {
-            row["venue_title"]: None if row["tmdb_id"].strip() == "none" else int(row["tmdb_id"])
-            for row in csv.DictReader(f)
-        }
+        return {row["venue_title"]: override_value(row["tmdb_id"]) for row in csv.DictReader(f)}
 
 
 def enrich(
     showings: list[Showing],
     client: TMDBClient,
     cache: Cache,
-    overrides: dict[str, int | None] | None = None,
+    overrides: dict[str, int | str | None] | None = None,
     chooser: ClaudeChooser | None = None,
 ) -> list[Showing]:
     overrides = overrides or {}
@@ -390,15 +429,19 @@ def enrich(
         title, year = search_terms(s.film_title)
         exact, results = client.search(title, year)
         pool = (exact or results)[:MAX_CANDIDATES]
-        if chooser and len(exact) != 1 and pool:
+        if chooser and len(exact) != 1:
             rules = client.rule_choice(exact, year, prefers_recent(s))
             try:
-                chosen = chooser.choose(
+                chosen, is_film = chooser.choose(
                     s, [client.describe(r) for r in pool], rules["id"] if rules else None
                 )
             except ChooserUnavailable:
                 return client.pick(exact, year, prefers_recent(s)), False
-            return (client.details(chosen) if chosen else Match(tmdb_id=None)), True
+            if chosen:
+                return replace(client.details(chosen), is_film=True), True
+            # "Not a film" only counts when the title rules found nothing either;
+            # any other answer is recorded as a film, so it isn't asked again.
+            return Match(tmdb_id=None, is_film=not (is_film is False and not exact)), True
         return client.pick(exact, year, prefers_recent(s)), True
 
     def by_override(tmdb_id: int) -> tuple[Match, bool]:
@@ -409,18 +452,24 @@ def enrich(
         if found:
             if tmdb_id is None:
                 return Match(tmdb_id=None)  # deliberate: not a miss, not logged
+            if tmdb_id == DROP:
+                return Match(tmdb_id=None, is_film=False)
             key = f"tmdb:{tmdb_id}"
             fetch = partial(by_override, tmdb_id)
         else:
             key = lookup_key(s)
             fetch = partial(look_up, s)
         if key not in matches:
-            if (match := cache.get(key)) is None:
+            match = cache.get(key)
+            # A miss cached before Claude judged films (B3e) is asked again once.
+            if match is None or (chooser and match.tmdb_id is None and match.is_film is None):
                 match, final = fetch()
                 if final:
                     cache.put(key, match)
             matches[key] = match
-            if match.tmdb_id is None:
+            if match.is_film is False:
+                log.info("Not a film: %r (%s)", s.film_title, key)
+            elif match.tmdb_id is None:
                 log.warning("No TMDB match for %r (%s)", s.film_title, key)
         return matches[key]
 
@@ -428,7 +477,7 @@ def enrich(
     for s in showings:
         match = resolve(s)
         if match.tmdb_id is None:
-            enriched.append(s)
+            enriched.append(replace(s, is_film=False) if match.is_film is False else s)
         else:
             enriched.append(
                 replace(
@@ -464,10 +513,11 @@ def load_token(env_path: Path = ENV_PATH) -> str:
 def report(chooser: ClaudeChooser | None) -> None:
     if chooser and chooser.calls:
         log.info(
-            "Claude asked about %d films: %d matched, %d none",
+            "Claude asked about %d films: %d matched, %d none (%d of them not films)",
             chooser.calls,
             chooser.answers["matched"],
             chooser.answers["none"],
+            chooser.answers["not_film"],
         )
 
 

@@ -655,7 +655,7 @@ def test_several_exact_candidates_go_to_claude(tmdb_b3c, cache):
     retro = showing("Black Christmas", film_type="retrospective")
     [s], chooser = run_claude([retro], tmdb_b3c, cache, FakeClaude("16938"))
     assert (s.tmdb_id, s.year, s.director) == (16938, 1974, "Bob Clark")
-    assert chooser.calls == 1 and chooser.answers == {"matched": 1, "none": 0}
+    assert chooser.calls == 1 and chooser.answers == {"matched": 1, "none": 0, "not_film": 0}
 
 
 def test_prompt_carries_venue_and_candidates(tmdb_b3c, cache):
@@ -689,9 +689,11 @@ def test_single_exact_candidate_skips_claude(tmdb_b3c, cache):
     assert s.tmdb_id == 101 and chooser.calls == 0
 
 
-def test_no_search_results_skips_claude(tmdb_b3c, cache):
-    [s], chooser = run_claude([showing("Nothing Here")], tmdb_b3c, cache, FakeClaude())
-    assert s.tmdb_id is None and chooser.calls == 0
+def test_no_search_results_asks_only_whether_its_a_film(tmdb_b3c, cache):
+    claude = FakeClaude("Answer: none\nFilm: yes")
+    [s], chooser = run_claude([showing("Nothing Here")], tmdb_b3c, cache, claude)
+    assert s.tmdb_id is None and s.is_film is None and chooser.calls == 1
+    assert "TMDB found no entries for this title." in claude.prompts[0]["messages"][0]["content"]
 
 
 def test_override_skips_claude(tmdb_b3c, cache):
@@ -808,3 +810,60 @@ def test_prompt_carries_venue_director(tmdb_b3c, cache):
     run_claude([retro], tmdb_b3c, cache, claude)
     assert "Director (per the venue): Bob Clark" in claude.prompts[0]["messages"][0]["content"]
     assert "director, year or running time" in claude.prompts[0]["system"]
+
+
+# --- is it a film? (B3e) ------------------------------------------------------
+
+
+def test_not_a_film_when_rules_find_nothing(tmdb_b3c, cache, caplog):
+    show = showing("Nothing Here", film_type="special")
+    with caplog.at_level(logging.INFO, logger="enrich"):
+        [s], chooser = run_claude([show], tmdb_b3c, cache, FakeClaude("Answer: none\nFilm: no"))
+    assert s.is_film is False and s.tmdb_id is None
+    assert chooser.answers == {"matched": 0, "none": 1, "not_film": 1}
+    assert "Not a film: 'Nothing Here'" in caplog.text
+    # Cached: the next run doesn't ask again.
+    [s], chooser = run_claude([show], tmdb_b3c, cache, FakeClaude())
+    assert s.is_film is False and chooser.calls == 0
+
+
+def test_not_a_film_ignored_when_rules_found_candidates(tmdb_b3c, cache):
+    retro = showing("Black Christmas", film_type="retrospective")
+    [s], _ = run_claude([retro], tmdb_b3c, cache, FakeClaude("Answer: none\nFilm: no"))
+    assert s.is_film is None and s.tmdb_id is None
+
+
+def test_old_cached_miss_is_asked_once_more(tmdb_b3c, cache):
+    show = showing("Nothing Here")
+    cache.put(lookup_key(show), Match(tmdb_id=None))  # as cached before B3e
+    [s], chooser = run_claude([show], tmdb_b3c, cache, FakeClaude("Answer: none\nFilm: no"))
+    assert s.is_film is False and chooser.calls == 1
+    assert cache.get(lookup_key(show)).is_film is False
+
+
+def test_drop_override(tmdb_b3c, cache):
+    overrides = {"An Evening With Someone": "drop"}
+    [s], chooser = run_claude(
+        [showing("An Evening With Someone")], tmdb_b3c, cache, FakeClaude(), overrides=overrides
+    )
+    assert s.is_film is False and chooser.calls == 0
+
+
+def test_load_overrides_accepts_drop(tmp_path):
+    path = tmp_path / "o.csv"
+    path.write_text("venue_title,tmdb_id\nA,12\nB,none\nC,drop\n", encoding="utf-8")
+    assert load_overrides(path) == {"A": 12, "B": None, "C": "drop"}
+
+
+def test_cache_from_before_b3e_gains_column(tmp_path):
+    import sqlite3
+
+    path = tmp_path / "old.sqlite"
+    db = sqlite3.connect(path)
+    db.execute(
+        "CREATE TABLE lookups (key TEXT PRIMARY KEY, tmdb_id INTEGER, year INTEGER,"
+        " director TEXT, rating REAL, vote_count INTEGER)"
+    )
+    db.execute("INSERT INTO lookups VALUES ('title:x|', 7, 1999, 'D', 7.0, 10)")
+    db.commit()
+    assert Cache(path).get("title:x|") == Match(7, 1999, "D", 7.0, 10, is_film=None)
