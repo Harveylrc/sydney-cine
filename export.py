@@ -1,5 +1,5 @@
 """Write public/data.json for the page (films, showings and first-seen history) and
-public/films.json for the film panel.
+public/films.json for a film's expanded row.
 
 Rules from DECISIONS.md:
 - Late night: a session starting before 05:00 is listed under the previous day
@@ -14,10 +14,9 @@ Rules from DECISIONS.md:
   the horizon.
 - "Audio Description" and "Closed Captions" are dropped from attributes: almost
   every chain session has them, so they are noise. "Open Captions" stays.
-- Film panel (B10, B10b): poster_path, overview and runtime from TMDB; with no
-  TMDB overview or runtime, the first venue synopsis / running time we saw
-  instead. They go in films.json, which the page loads on the first panel open,
-  so data.json stays small.
+- Expanded row (B10c): poster_path and runtime from TMDB; with no TMDB runtime,
+  the first venue running time we saw. They go in films.json, which the page
+  loads the first time a row is opened, so data.json stays small. No synopsis.
 First-seen dates are carried forward from the previous data.json.
 """
 
@@ -41,7 +40,6 @@ NEW_DAYS = 7
 RETRO_AGE = 2  # years
 HORIZON_DAYS = 14
 HIDDEN_ATTRIBUTES = {"Audio Description", "Closed Captions"}
-SYNOPSIS_CHARS = 800  # a venue synopsis standing in for TMDB's overview
 
 
 def film_id(s: Showing) -> str:
@@ -131,18 +129,17 @@ def build_data(showings: list[Showing], previous: dict | None, today: date) -> d
     }
 
 
-def build_panel(showings: list[Showing], data: dict, details: dict[int, dict]) -> dict:
-    """films.json: film id -> {poster_path, overview, runtime} for data's films, with
-    empty fields left out. details: tmdb id -> those fields (enrich.film_details)."""
+def build_film_details(showings: list[Showing], data: dict, details: dict[int, dict]) -> dict:
+    """films.json: film id -> {poster_path, runtime} for data's films, with empty
+    fields left out. details: tmdb id -> enrich.film_details() fields."""
     wanted = {film["id"] for film in data["films"]}
     panel: dict[str, dict] = {}
     for s in sorted(showings, key=lambda s: (s.start, s.film_title)):
         fid = film_id(s)
         if fid not in wanted:
             continue
-        entry = panel.setdefault(fid, dict(details.get(s.tmdb_id, {})))
-        if not entry.get("overview") and s.venue_synopsis:
-            entry["overview"] = s.venue_synopsis.strip()[:SYNOPSIS_CHARS]
+        found = details.get(s.tmdb_id, {})
+        entry = panel.setdefault(fid, {k: found.get(k) for k in ("poster_path", "runtime")})
         if not entry.get("runtime") and s.runtime_min:
             entry["runtime"] = s.runtime_min
     cleaned = {fid: {k: v for k, v in entry.items() if v} for fid, entry in panel.items()}
@@ -203,7 +200,7 @@ if __name__ == "__main__":
     details = film_details((s.tmdb_id for s in showings if s.tmdb_id), client, cache)
     data = build_data(showings, load_previous(), datetime.now(SYDNEY).date())
     write(data)
-    write(build_panel(showings, data, details), FILMS_PATH)
+    write(build_film_details(showings, data, details), FILMS_PATH)
     new = sum(f["new_this_week"] for f in data["films"])
     print(
         f"Wrote {DATA_PATH}: {len(data['showings'])} showings, "

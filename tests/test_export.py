@@ -8,7 +8,7 @@ import pytest
 
 from export import (
     build_data,
-    build_panel,
+    build_film_details,
     display_day,
     effective_type,
     load_previous,
@@ -244,40 +244,42 @@ def test_film_carries_vote_count():
 # --- film panel fields (B10) ---------------------------------------------------
 
 
-def test_panel_carries_tmdb_fields_and_data_does_not():
+def test_film_details_carry_poster_and_runtime_only():
     s = showing("Akira (1988)", at(LAUNCH, 19), tmdb_id=149, venue_synopsis="Venue blurb")
     details = {149: {"poster_path": "/akira.jpg", "overview": "Neo-Tokyo.", "runtime": 124}}
     data = build_data([s], None, LAUNCH)
     assert "poster_path" not in data["films"][0]
-    assert build_panel([s], data, details) == {
-        "tmdb:149": {"poster_path": "/akira.jpg", "overview": "Neo-Tokyo.", "runtime": 124}
+    assert build_film_details([s], data, details) == {
+        "tmdb:149": {"poster_path": "/akira.jpg", "runtime": 124}
     }
 
 
-def test_venue_synopsis_and_runtime_fill_gaps():
+def test_venue_runtime_fills_gap_and_synopsis_is_ignored():
     shows = [
         showing("Local Doco", at(LAUNCH, 18)),
         showing(
-            "Local Doco", at(LAUNCH, 20), venue_synopsis="  A film about Sydney. ", runtime_min=81
+            "Local Doco", at(LAUNCH, 20), venue_synopsis="A film about Sydney.", runtime_min=81
         ),
     ]
-    [entry] = build_panel(shows, build_data(shows, None, LAUNCH), {}).values()
-    assert entry == {"overview": "A film about Sydney.", "runtime": 81}
-
-
-def test_tmdb_overview_missing_uses_venue_synopsis():
-    s = showing("Akira", at(LAUNCH, 19), tmdb_id=149, venue_synopsis="Venue blurb", runtime_min=125)
-    details = {149: {"poster_path": None, "overview": None, "runtime": 124}}
-    panel = build_panel([s], build_data([s], None, LAUNCH), details)
-    assert panel == {"tmdb:149": {"overview": "Venue blurb", "runtime": 124}}
-
-
-def test_panel_leaves_out_dropped_and_out_of_horizon_films():
-    shows = [
-        showing("Live Show", at(LAUNCH, 19), is_film=False, venue_synopsis="A concert"),
-        showing("Later", at(LAUNCH + timedelta(days=20), 19), venue_synopsis="Later film"),
+    assert list(build_film_details(shows, build_data(shows, None, LAUNCH), {}).values()) == [
+        {"runtime": 81}
     ]
-    assert build_panel(shows, build_data(shows, None, LAUNCH), {}) == {}
+
+
+def test_tmdb_runtime_beats_venue_runtime():
+    s = showing("Akira", at(LAUNCH, 19), tmdb_id=149, runtime_min=125)
+    details = {149: {"poster_path": None, "overview": None, "runtime": 124}}
+    assert build_film_details([s], build_data([s], None, LAUNCH), details) == {
+        "tmdb:149": {"runtime": 124}
+    }
+
+
+def test_film_details_leave_out_dropped_and_out_of_horizon_films():
+    shows = [
+        showing("Live Show", at(LAUNCH, 19), is_film=False, runtime_min=90),
+        showing("Later", at(LAUNCH + timedelta(days=20), 19), runtime_min=90),
+    ]
+    assert build_film_details(shows, build_data(shows, None, LAUNCH), {}) == {}
 
 
 # --- horizon and hidden tags --------------------------------------------------
