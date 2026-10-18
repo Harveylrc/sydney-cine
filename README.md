@@ -1,6 +1,6 @@
 # sydney-cine
 
-Sydney Ciné Info: one filterable page of showtimes across Sydney's cinemas, chains and
+Sydney Cinema Guide: one filterable page of showtimes across Sydney's cinemas, chains and
 independents alike, enriched with year, director and ratings from TMDB, so you can
 search by film, director, type and date instead of visiting every cinema's site. The
 scrapers identify themselves as `sydney-cine/0.1`, make at most one request per second

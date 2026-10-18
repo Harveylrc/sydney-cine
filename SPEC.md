@@ -1,4 +1,4 @@
-# SPEC — Sydney Ciné Info (v1, 2026-10-15)
+# SPEC — Sydney Cinema Guide (v1, 2026-10-15)
 
 ## Problem
 Finding what's on in Sydney means visiting every cinema's site in turn. Paris has
