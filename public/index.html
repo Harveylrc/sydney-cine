@@ -628,11 +628,13 @@
   }
 
   const PARTIAL_NOTE = "Most cinemas publish the following week's sessions on Wednesday.";
-  // Not for retrospectives (the Retrospectives view or the Retrospective type):
-  // independents programme those well ahead, not on the chains' Wednesday cycle.
-  const retrospectivesOnly = () => view === "retro" || form.elements.type.value === "retrospective";
+  // Not for retrospectives, festivals or special events (the Retrospectives view, or
+  // the Type filter on one of those): they're programmed well ahead, not on the
+  // chains' Wednesday cycle. Only all showings and new releases get the note.
+  const PLANNED_AHEAD = new Set(["retrospective", "festival", "special"]);
+  const plannedAheadOnly = () => view === "retro" || PLANNED_AHEAD.has(form.elements.type.value);
   const isPartial = (day) =>
-    !retrospectivesOnly() && Boolean(data.days && data.days[day] && data.days[day].partial);
+    !plannedAheadOnly() && Boolean(data.days && data.days[day] && data.days[day].partial);
   const partialNote = () => el("p", { class: "partial-note", text: PARTIAL_NOTE });
 
   const tabLabel = (iso) =>
