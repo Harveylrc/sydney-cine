@@ -54,6 +54,6 @@ Hoyts, Palace and Orpheum all use Vista `HO000…` movie ids, but **they are per
 
 ## Open
 - **Reading:** retest from an Australian IP; if it still returns nothing, treat like Dendy (uncovered).
-- **Event UA:** confirm the print view is identical for a normal browser UA.
 - **TMDB cache expiry (from B3):** cached lookups never expire, so ratings go stale. In B6, re-fetch rating for hits older than 30 days (keep tmdb_id/director/year).
 - **Sort weight (from B4b):** popularity vs sessions weight is a guess (2); revisit once more venues are in and session counts are bigger.
+- **Event (from B5f):** (1) UA check done 2026-10-19: George Street's print view fetched with our User-Agent and with a Chrome one is byte-identical apart from a per-request Cloudflare token; no `aiagent` markup. (2) The print view has **no booking links or session ids** (the P1 row's "sessionId int in booking links" must come from the normal cinema page), so Event showings link to `/cinema/{slug}` and carry no session id. (3) Scraped: the 14 metro cinemas (Bondi, Burwood, Campbelltown, Castle Hill, Ed Square, George Street, Hornsby, Hurstville, IMAX Sydney, Liverpool, Macquarie, Miranda, Parramatta, Top Ryde City); left out like Hoyts Erina: Glendale, Kotara, Shellharbour, Tuggerah; Moonlight Cinema Sydney is seasonal (SPEC). Bondi is closed for refurbishment (its print view lists no films) and will reappear by itself. **Question:** Drive In Blacktown is in Event's list with sessions, but SPEC excludes outdoor cinemas "until a season is live" — include it?

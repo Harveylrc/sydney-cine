@@ -66,12 +66,16 @@ PREFER_RECENT_TYPES = {"new_release", "festival"}
 # Orpheum strands: "Hitchcock Retro - Psycho", "JFF 2026 - Pitfall".
 TITLE_PREFIX = re.compile(
     r"^(?:\d{2}mm\s+|(?:JIFF|SFF)(?:\s*\d{2})?:\s*|\(LFF\)\s*|[A-Z]{1,4}FF\d{2}\s+"
-    r"|(?:Hitchcoc?k Retro|[A-Z]{1,4}FF \d{4})\s+[-–]\s+)+",
+    r"|(?:Hitchcoc?k Retro|[A-Z]{1,4}FF \d{4})\s+[-–]\s+|3D\s+)+",  # Event: "3D A Beautiful Planet"
     re.IGNORECASE,
 )
 # How a film is presented, not part of its title (Orpheum: " - 4K Restoration",
 # " - Director Q&A Preview", " on 35mm Film"). "Live" is deliberately absent: a
 # live show named after a film ("Two of Us - … Live") must not match that film.
+LANGUAGES = (
+    "Tamil|Telugu|Hindi|Malayalam|Kannada|Punjabi|Bengali|Marathi|Gujarati|Urdu|Nepali"
+    "|Mandarin|Cantonese|Korean|Japanese"
+)
 PRESENTATION = (
     r"Anniv(?:ersary)?|Restoration|Q&A|Preview|Advance Screenings?|Limited|Special Event"
     r"|70mm|in 4K|in 3D|on 35mm|Exclusive|Sing-A-Long|Directors? Cut|Opening Night"
@@ -81,12 +85,13 @@ TITLE_SUFFIX = re.compile(
     r"|\s*\([^()]*,\s*Eng Sub\)$"  # Hoyts language: " (Hindi, Eng Sub)"
     r"|[\s:(]+Encore\)?$"  # Hoyts re-runs: ": Encore", " (Encore)"
     r"|,\s*\d+\s*['’]$"  # Roseville running time: "Monet, 90'"
+    rf"|\s*\((?:{LANGUAGES})\)$|\s+[-–]\s+(?:{LANGUAGES})$"  # Event: "Jailer 2 (Tamil)", "- Telugu"
     rf"|\s+[-–]\s*[^-–]*\b(?:{PRESENTATION})\b[^-–]*$",  # " - 30th Anniversary in 4K"
     re.IGNORECASE,
 )
 # Stripped before TITLE_SUFFIX, so "GIANT – The Play Preview Event" keeps "The Play".
 TITLE_TRAILING = re.compile(
-    r"(?<![-–\s])\s+(?:on 35mm Film|in 4K(?: Laser)?|in 3D|4K Restoration|Preview Event"
+    r"(?<![-–\s])\s+(?:on 35mm Film|in 4K(?: Laser)?|in 3D|3D|4K Restoration|Preview Event"
     r"|Special Event|\d+(?:st|nd|rd|th) Anniv(?:ersary)?\b.*)$",  # "La La Land 10th Anniv + …"
     re.IGNORECASE,
 )

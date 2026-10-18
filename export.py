@@ -142,10 +142,10 @@ if __name__ == "__main__":
         load_token,
         report,
     )
-    from scrapers import golden_age, hoyts, orpheum, palace, ritz, roseville
+    from scrapers import event, golden_age, hoyts, orpheum, palace, ritz, roseville
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-    scrapers = (ritz, hoyts, palace, orpheum, golden_age, roseville)
+    scrapers = (ritz, hoyts, palace, orpheum, golden_age, roseville, event)
     scraped = [showing for scraper in scrapers for showing in scraper.fetch()]
     chooser = claude_chooser()
     showings = enrich(scraped, TMDBClient(load_token()), Cache(), load_overrides(), chooser)

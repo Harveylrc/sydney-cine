@@ -171,6 +171,11 @@ def showing(title, vista_movie_id=None, hour=19, film_type=None, venue="ritz-ran
         ("Pressure - Preview Event", ("Pressure", None)),
         ("Super Nature - First Films Opening Night Film", ("Super Nature", None)),
         ("JIFF 26: The Sea", ("The Sea", None)),
+        ("HYBE Cheering Party 3D", ("HYBE Cheering Party", None)),
+        ("3D A Beautiful Planet", ("A Beautiful Planet", None)),
+        ("Jailer 2 (Tamil)", ("Jailer 2", None)),
+        ("Jailer 2 - Telugu", ("Jailer 2", None)),
+        ("3D", ("3D", None)),
         ("EXHIBITION ON SCREEN: Monet, 90'", ("EXHIBITION ON SCREEN: Monet", None)),
         ("Paris, Texas", ("Paris, Texas", None)),
         ("Highlander - Christopher Lambert Live Q&A", ("Highlander", None)),
@@ -555,6 +560,7 @@ def test_seeded_overrides_file():
         "Royal Opera: Cosí Fan Tutte": 1702775,
         "Royal Opera: Götterdämmerung": 1702769,
         "Royal Opera: Tosca": 1702784,
+        "TxT World Tour 'Act : Tomorrow'": 1688795,  # Event's name for Hoyts' TXT tour film
     }
 
 
