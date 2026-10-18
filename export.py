@@ -14,6 +14,9 @@ Rules from DECISIONS.md:
   the horizon.
 - "Audio Description" and "Closed Captions" are dropped from attributes: almost
   every chain session has them, so they are noise. "Open Captions" stays.
+- Regions (B12): each venue's region comes from venues.yaml (venue -> LGA ->
+  one of REGIONS); every session carries its venue's region, and "regions" lists
+  the regions that have sessions, in REGIONS order, for the page's filter.
 - Partial days (B10d): a day with fewer than half the busiest day's sessions is
   "partial": the chains publish the next Thu–Wed week around Tuesday/Wednesday,
   and until then the days after the current week hold only advance sessions.
@@ -31,6 +34,8 @@ from datetime import date, datetime, time, timedelta
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+import yaml
+
 from enrich import normalise, search_terms
 from models import SYDNEY_TZ, Showing
 
@@ -38,6 +43,17 @@ log = logging.getLogger("export")
 
 DATA_PATH = Path(__file__).resolve().parent / "public" / "data.json"
 FILMS_PATH = DATA_PATH.with_name("films.json")
+VENUES_PATH = Path(__file__).resolve().parent / "venues.yaml"
+REGIONS = (  # DECISIONS 2026-10-18 "Regions", in the page's order
+    "City",
+    "East",
+    "Inner West",
+    "North",
+    "Parramatta & Hills",
+    "Outer West",
+    "South West",
+    "St George & Sutherland",
+)
 SYDNEY = ZoneInfo(SYDNEY_TZ)
 LATE_NIGHT_END = time(5, 0)
 NEW_DAYS = 7
@@ -68,8 +84,15 @@ def effective_type(s: Showing, this_year: int) -> str | None:
     return "retrospective" if s.year <= this_year - RETRO_AGE else "new_release"
 
 
-def build_data(showings: list[Showing], previous: dict | None, today: date) -> dict:
+def build_data(
+    showings: list[Showing],
+    previous: dict | None,
+    today: date,
+    venue_info: dict[str, dict] | None = None,
+) -> dict:
+    """venue_info: slug -> venues.yaml entry (load_venues())."""
     previous = previous or {}
+    venue_info = venue_info or {}
     today_iso = today.isoformat()
 
     venues = {slug: dict(v) for slug, v in previous.get("venues", {}).items()}
@@ -85,7 +108,9 @@ def build_data(showings: list[Showing], previous: dict | None, today: date) -> d
     showings = [s for s in showings if today <= display_day(s.start) <= last_day]
     for s in sorted(showings, key=lambda s: (s.start, s.film_title)):
         fid = film_id(s)
-        venues.setdefault(s.venue_slug, {"name": s.venue_name, "first_seen": today_iso})
+        venue = venues.setdefault(s.venue_slug, {"name": s.venue_name, "first_seen": today_iso})
+        region = venue_info.get(s.venue_slug, {}).get("region")
+        venue["region"] = region
         seen.setdefault(fid, {}).setdefault(s.venue_slug, today_iso)
         films.setdefault(
             fid,
@@ -104,6 +129,7 @@ def build_data(showings: list[Showing], previous: dict | None, today: date) -> d
                 "film": fid,
                 "title": s.film_title,
                 "venue": s.venue_slug,
+                "region": region,
                 "start": s.start.isoformat(),
                 "day": display_day(s.start).isoformat(),
                 "time": time_label(s.start),
@@ -130,8 +156,23 @@ def build_data(showings: list[Showing], previous: dict | None, today: date) -> d
         "films": sorted(films.values(), key=lambda f: f["title"].casefold()),
         "showings": rows,
         "days": day_status(rows),
+        "regions": [r for r in REGIONS if any(row["region"] == r for row in rows)],
         "seen": seen,
     }
+
+
+def load_venues(path: Path = VENUES_PATH) -> dict[str, dict]:
+    """slug -> {slug, name, lga, region, screens} from venues.yaml."""
+    entries = yaml.safe_load(path.read_text(encoding="utf-8"))
+    for entry in entries:
+        if entry["region"] not in REGIONS:
+            raise ValueError(f"{path.name}: {entry['slug']} has unknown region {entry['region']!r}")
+    return {entry["slug"]: entry for entry in entries}
+
+
+def unplaced_venues(showings: list[Showing], venue_info: dict[str, dict]) -> list[str]:
+    """Venues with sessions but no venues.yaml entry (so no region)."""
+    return sorted({s.venue_slug for s in showings} - set(venue_info))
 
 
 def day_status(rows: list[dict]) -> dict[str, dict]:
@@ -210,7 +251,10 @@ if __name__ == "__main__":
     showings = enrich(scraped, client, cache, load_overrides(), chooser)
     report(chooser)
     details = film_details((s.tmdb_id for s in showings if s.tmdb_id), client, cache)
-    data = build_data(showings, load_previous(), datetime.now(SYDNEY).date())
+    venue_info = load_venues()
+    for slug in unplaced_venues(showings, venue_info):
+        log.warning("Venue %s is not in venues.yaml: no region", slug)
+    data = build_data(showings, load_previous(), datetime.now(SYDNEY).date(), venue_info)
     write(data)
     write(build_film_details(showings, data, details), FILMS_PATH)
     new = sum(f["new_this_week"] for f in data["films"])

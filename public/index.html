@@ -135,6 +135,29 @@
   .suggestions li[aria-selected="true"], .suggestions li:hover { background: var(--bg); color: var(--accent); }
   .years { display: flex; gap: 6px; align-items: center; }
   .filters .reset { align-self: end; justify-self: start; }
+  /* Region chips (B12): none pressed means every region. */
+  .regions {
+    grid-column: 1 / -1;
+    margin: 0;
+    padding: 0;
+    border: 0;
+    min-width: 0;
+  }
+  .regions legend {
+    padding: 0;
+    margin-bottom: 4px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .filters .chips button { padding: 3px 12px; font-size: 0.85rem; }
+  .filters .chips button[aria-pressed="true"] {
+    color: var(--bg);
+    background: var(--accent);
+    border-color: var(--accent);
+    font-weight: 600;
+  }
 
   .summary { margin: 14px 0 0; font-size: 0.9rem; }
 
@@ -365,6 +388,10 @@
         <option value="az">A–Z</option>
       </select>
     </label>
+    <fieldset class="regions" hidden>
+      <legend>Region</legend>
+      <div class="chips" id="region-chips"></div>
+    </fieldset>
     <button type="reset" class="reset">Clear filters</button>
   </form>
 
@@ -438,6 +465,7 @@
       from: year(f.get("from")),
       to: year(f.get("to")),
       sort: f.get("sort"),
+      regions: selectedRegions,
     };
   }
 
@@ -478,11 +506,29 @@
     if (f.film && !fold(film.title).includes(f.film) && !fold(s.title).includes(f.film)) return false;
     if (f.director && !fold(film.director).includes(f.director)) return false;
     if (f.type && s.type !== f.type) return false;
+    if (f.regions.size && !f.regions.has(s.region)) return false;
     if (f.day && s.day !== f.day) return false;
     if ((f.from || f.to) && film.year == null) return false;
     if (f.from && film.year < f.from) return false;
     if (f.to && film.year > f.to) return false;
     return true;
+  }
+
+  // Region chips: built from data.json's regions; several can be on at once.
+  const selectedRegions = new Set();
+  function populateRegions() {
+    const chips = $("#region-chips");
+    for (const region of data.regions || []) {
+      const chip = el("button", { type: "button", "aria-pressed": "false", text: region });
+      chip.addEventListener("click", () => {
+        if (selectedRegions.has(region)) selectedRegions.delete(region);
+        else selectedRegions.add(region);
+        chip.setAttribute("aria-pressed", String(selectedRegions.has(region)));
+        render();
+      });
+      chips.append(chip);
+    }
+    $(".regions").hidden = !chips.childNodes.length;
   }
 
   function markActive() {
@@ -821,7 +867,11 @@
     });
   });
   form.addEventListener("input", () => data && render());
-  form.addEventListener("reset", () => setTimeout(() => data && render()));
+  form.addEventListener("reset", () => {
+    selectedRegions.clear();
+    form.querySelectorAll(".chips button").forEach((chip) => chip.setAttribute("aria-pressed", "false"));
+    setTimeout(() => data && render());
+  });
   form.addEventListener("submit", (e) => e.preventDefault());
 
   fetch("data.json", { cache: "no-cache" })
@@ -849,6 +899,7 @@
       $("#updated").textContent = `Updated ${updated}. Cinemas: ${
         Object.values(data.venues).map((v) => v.name).join(", ")}.`;
       populateFilters();
+      populateRegions();
       render();
       openFromHash(); // a linked #film=<id>
     })
