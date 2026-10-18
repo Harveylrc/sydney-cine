@@ -53,4 +53,3 @@ Hoyts, Palace and Orpheum all use Vista `HO000…` movie ids, but **they are per
 - **Event UA:** confirm the print view is identical for a normal browser UA.
 - **TMDB cache expiry (from B3):** cached lookups never expire, so ratings go stale. In B6, re-fetch rating for hits older than 30 days (keep tmdb_id/director/year).
 - **Sort weight (from B4b):** popularity vs sessions weight is a guess (2); revisit once more venues are in and session counts are bigger.
-- **Doubtful TMDB matches (from B5b):** look wrong on sight, not verified: Black Christmas (Palace horror retro) → 2019 remake, probably wants 1974; BFF26 The Match → a 2025 Korean film; IFF26 Separate Beds → a 1968 Iranian film; GFF26 Female → 2022 US film; GFF26 The River → 2024 US film; GFF26 Electra → 2023 Czech short. Add overrides (with the right TMDB ids, or `none`)?

@@ -447,6 +447,12 @@ def test_seeded_overrides_file():
         "JIFF: Sapiro v. Ford: The Jew Who Sued Henry Ford": 1552128,
         "JIFF: Lansky: The Jewish Godfather": None,
         "JIFF: Who Are We: The Story of the Ajax Football Club": None,
+        "Black Christmas": 16938,  # 1974, not the 2019 remake
+        "BFF26 The Match": 1666712,
+        "IFF26 Separate Beds": 1397055,
+        "GFF26 Female": 1566262,
+        "GFF26 The River": 1376339,
+        "GFF26 Electra": None,  # filmed stage production, not on TMDB
     }
 
 
