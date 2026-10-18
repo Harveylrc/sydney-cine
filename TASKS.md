@@ -30,6 +30,7 @@ Each task: branch `task/<id>-<slug>`, `make check` green, tick here, one line in
 - [x] **B5d Golden Age** (HTML, day headings; infer year from month rollover)
 - [x] **B5d-ii Golden Age follow-ups.** Drop Film Trivia and any other non-film event (rule in DECISIONS.md); add the two overrides with verified ids. Acceptance: `make check`.
 - [x] **B5e Roseville** (Veezi sessions page; never fetch `/purchase`)
+- [ ] **B3e Is-it-a-film.** Per DECISIONS 2026-10-18: Claude prompt returns `is_film`; export drops `is_film: false` items and logs them; `tmdb_overrides.csv` accepts `drop`. Tests mocked. Acceptance: `make check`; a live export drops the seven Orpheum live shows and nothing else (list what was dropped).
 - [ ] **B5f Event** (printable week view for each Sydney slug; verify output matches a normal browser UA)
 - [ ] **B6 Nightly job + deploy.** GitHub Actions: first download the deployed `public/data.json` (so first-seen dates carry forward; refresh TMDB ratings older than 30 days), then cron 03:00 Sydney, run scrapers → enrich → export → deploy `public/` to GitHub Pages. Secrets for TMDB. Acceptance: one scheduled run succeeds and the page is live.
 - [ ] **B7 Coverage metric.** `coverage.py` computes % of Sydney screens covered (screen counts per venue in `venues.yaml`), written into data.json and shown on the page footer. Dendy and any failing venue count as uncovered.
