@@ -253,6 +253,26 @@
     font-weight: 600;
     border-bottom-color: var(--accent);
   }
+  /* Days most cinemas haven't published yet (B10d). */
+  .partial-note { margin: 6px 0 0; font-size: 0.85rem; color: var(--muted); }
+  .day-sessions .partial-note { margin: 0 0 6px; }
+  .tabs .dot {
+    display: inline-block;
+    width: 5px;
+    height: 5px;
+    margin-left: 4px;
+    vertical-align: middle;
+    border-radius: 50%;
+    background: var(--muted);
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
+  }
   .day-sessions {
     max-height: 320px;
     overflow-y: auto;
@@ -561,6 +581,10 @@
     return detailsLoading;
   }
 
+  const PARTIAL_NOTE = "Most cinemas haven't published this day yet — check back after Wednesday.";
+  const isPartial = (day) => Boolean(data.days && data.days[day] && data.days[day].partial);
+  const partialNote = () => el("p", { class: "partial-note", text: PARTIAL_NOTE });
+
   const tabLabel = (iso) =>
     new Date(iso + "T00:00:00Z").toLocaleDateString("en-AU", { weekday: "short", day: "numeric", timeZone: "UTC" });
 
@@ -591,11 +615,15 @@
     const tabs = el("div", { class: "tabs", role: "tablist", "aria-label": `Sessions of ${film.title} by day` });
     const lists = el("div", { class: "day-sessions" });
     const buttons = days.map((d, i) => {
-      const list = sessionRows(film, byDay.get(d));
-      Object.entries({ role: "tabpanel", id: `${id}-day-${i}`, "aria-labelledby": `${id}-tab-${i}` })
-        .forEach(([k, v]) => list.setAttribute(k, v));
+      const list = el("div", { role: "tabpanel", id: `${id}-day-${i}`, "aria-labelledby": `${id}-tab-${i}` });
+      if (isPartial(d)) list.append(partialNote());
+      list.append(sessionRows(film, byDay.get(d)));
       lists.append(list);
       const button = el("button", { type: "button", role: "tab", id: `${id}-tab-${i}`, "aria-controls": `${id}-day-${i}`, text: tabLabel(d) });
+      if (isPartial(d)) {
+        button.append(el("span", { class: "dot", "aria-hidden": "true" }), el("span", { class: "sr-only", text: " (not fully published)" }));
+        button.title = "Not fully published yet";
+      }
       button.addEventListener("click", () => select(i));
       tabs.append(button);
       return button;
@@ -670,6 +698,7 @@
     listings.replaceChildren();
     for (const [day, films] of [...days].sort(([a], [b]) => a.localeCompare(b))) {
       const section = el("section", { class: "day" }, el("h2", { text: dayHeading(day) }));
+      if (isPartial(day)) section.append(partialNote());
       for (const { film, showings } of orderFilms(day, films, f.sort)) section.append(filmEntry(film, showings, day));
       listings.append(section);
     }

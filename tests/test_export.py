@@ -282,6 +282,40 @@ def test_film_details_leave_out_dropped_and_out_of_horizon_films():
     assert build_film_details(shows, build_data(shows, None, LAUNCH), {}) == {}
 
 
+# --- partial days (B10d) --------------------------------------------------------
+
+SUNDAY = date(2026, 10, 18)
+
+
+def test_sunday_export_marks_thursday_onward_partial():
+    # The cinema week runs Thu–Wed: on Sunday the chains have Sun–Wed in full and
+    # only advance sessions from Thursday.
+    shows = []
+    for offset in range(14):
+        day = SUNDAY + timedelta(days=offset)
+        per_day = 10 if offset <= 3 else 2  # Sun, Mon, Tue, Wed in full
+        shows += [showing("Film", at(day, 10 + h)) for h in range(per_day)]
+    days = build_data(shows, None, SUNDAY)["days"]
+    assert [d for d, v in days.items() if not v["partial"]] == [
+        "2026-10-18",
+        "2026-10-19",
+        "2026-10-20",
+        "2026-10-21",
+    ]
+    assert days["2026-10-22"] == {"sessions": 2, "partial": True}
+
+
+def test_half_the_busiest_day_is_not_partial():
+    shows = [showing("Film", at(LAUNCH, 10 + h)) for h in range(4)]
+    shows += [showing("Film", at(LAUNCH + timedelta(days=1), 10 + h)) for h in range(2)]
+    days = build_data(shows, None, LAUNCH)["days"]
+    assert [v["partial"] for v in days.values()] == [False, False]
+
+
+def test_no_showings_no_days():
+    assert build_data([], None, LAUNCH)["days"] == {}
+
+
 # --- horizon and hidden tags --------------------------------------------------
 
 
