@@ -280,6 +280,7 @@
   let data = null;
   let filmsById = new Map();
   let thisYear = new Date().getFullYear();
+  let unfiltered = new Map(); // day -> film id -> all that day's showings, for ranking
   let view = "all";
   let entryCount = 0;
 
@@ -343,11 +344,12 @@
     az: byTitle,
   };
 
-  function orderFilms(films, sort) {
+  // Ranks on all of a film's sessions that day, whatever the filters (Harvey, B9b).
+  function orderFilms(day, films, sort) {
     return [...films]
       .map(([id, showings]) => {
         const film = filmsById.get(id);
-        return { film, showings, score: rankScore(film, showings, thisYear) };
+        return { film, showings, score: rankScore(film, unfiltered.get(day).get(id), thisYear) };
       })
       .sort(ORDERS[sort] || ORDERS.popular);
   }
@@ -452,7 +454,7 @@
     listings.replaceChildren();
     for (const [day, films] of [...days].sort(([a], [b]) => a.localeCompare(b))) {
       const section = el("section", { class: "day" }, el("h2", { text: dayHeading(day) }));
-      for (const { film, showings } of orderFilms(films, f.sort)) section.append(filmEntry(film, showings));
+      for (const { film, showings } of orderFilms(day, films, f.sort)) section.append(filmEntry(film, showings));
       listings.append(section);
     }
 
@@ -501,6 +503,12 @@
       data = json;
       filmsById = new Map(data.films.map((f) => [f.id, f]));
       thisYear = Number(data.generated_at.slice(0, 4)) || thisYear;
+      for (const s of data.showings) {
+        if (!unfiltered.has(s.day)) unfiltered.set(s.day, new Map());
+        const films = unfiltered.get(s.day);
+        if (!films.has(s.film)) films.set(s.film, []);
+        films.get(s.film).push(s);
+      }
       const updated = new Date(data.generated_at).toLocaleString("en-AU", {
         timeZone: "Australia/Sydney", weekday: "short", day: "numeric", month: "short",
         hour: "numeric", minute: "2-digit",
