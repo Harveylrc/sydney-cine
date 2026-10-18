@@ -21,6 +21,7 @@
   }
 
   * { box-sizing: border-box; }
+  [hidden] { display: none !important; } /* beats display rules such as .detail's flex */
 
   html { color-scheme: dark; }
 
@@ -154,9 +155,12 @@
     display: flex;
     align-items: baseline;
     gap: 0 16px;
-    padding: 7px 0;
+    margin: 0 -8px;
+    padding: 7px 8px;
+    border-radius: 4px;
     cursor: pointer;
   }
+  .film-head:hover { background: rgba(255, 255, 255, 0.04); }
   .film-head .text { flex: 1; min-width: 0; }
   .film h3 {
     margin: 0;
@@ -501,6 +505,8 @@
       else if (hashFilm() === film.id) history.replaceState(null, "", location.pathname + location.search);
     }
     openers.set(entry, () => setOpen(true));
+    // The whole header row toggles (title, meta, count and the space between); the
+    // title stays the button for keyboards and screen readers.
     head.addEventListener("click", () => {
       const selection = window.getSelection();
       if (!selection.isCollapsed && head.contains(selection.anchorNode)) return; // selecting text
