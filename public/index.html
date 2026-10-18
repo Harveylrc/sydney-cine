@@ -628,7 +628,13 @@
   }
 
   const PARTIAL_NOTE = "Most cinemas publish the following week's sessions on Wednesday.";
-  const isPartial = (day) => Boolean(data.days && data.days[day] && data.days[day].partial);
+  // Not for retrospectives, festivals or special events (the Retrospectives view, or
+  // the Type filter on one of those): they're programmed well ahead, not on the
+  // chains' Wednesday cycle. Only all showings and new releases get the note.
+  const PLANNED_AHEAD = new Set(["retrospective", "festival", "special"]);
+  const plannedAheadOnly = () => view === "retro" || PLANNED_AHEAD.has(form.elements.type.value);
+  const isPartial = (day) =>
+    !plannedAheadOnly() && Boolean(data.days && data.days[day] && data.days[day].partial);
   const partialNote = () => el("p", { class: "partial-note", text: PARTIAL_NOTE });
 
   const tabLabel = (iso) =>
@@ -662,11 +668,14 @@
     const lists = el("div", { class: "day-sessions" });
     const buttons = days.map((d, i) => {
       const list = el("div", { role: "tabpanel", id: `${id}-day-${i}`, "aria-labelledby": `${id}-tab-${i}` });
-      if (isPartial(d)) list.append(partialNote());
+      // A retrospective, festival or special screening is programmed ahead, so a
+      // day where all of this film's sessions are one of those gets no note or dot.
+      const noted = isPartial(d) && !byDay.get(d).every((s) => PLANNED_AHEAD.has(s.type));
+      if (noted) list.append(partialNote());
       list.append(sessionRows(film, byDay.get(d)));
       lists.append(list);
       const button = el("button", { type: "button", role: "tab", id: `${id}-tab-${i}`, "aria-controls": `${id}-day-${i}`, text: tabLabel(d) });
-      if (isPartial(d)) {
+      if (noted) {
         button.append(el("span", { class: "dot", "aria-hidden": "true" }), el("span", { class: "sr-only", text: " (not fully published)" }));
         button.title = "Not fully published yet";
       }
