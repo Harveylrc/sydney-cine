@@ -14,9 +14,10 @@ Rules from DECISIONS.md:
   the horizon.
 - "Audio Description" and "Closed Captions" are dropped from attributes: almost
   every chain session has them, so they are noise. "Open Captions" stays.
-- Regions (B12): each venue's region comes from venues.yaml (venue -> LGA ->
-  one of REGIONS); every session carries its venue's region, and "regions" lists
-  the regions that have sessions, in REGIONS order, for the page's filter.
+- Regions (B12): each venue's regions come from venues.yaml (venue -> LGA ->
+  one of REGIONS; a venue may list more than one, e.g. Moore Park is City and
+  East). Every session carries its venue's "regions" list, and the top-level
+  "regions" lists those that have sessions, in REGIONS order, for the filter.
 - Partial days (B10d): a day with fewer than half the busiest day's sessions is
   "partial": the chains publish the next Thu–Wed week around Tuesday/Wednesday,
   and until then the days after the current week hold only advance sessions.
@@ -109,8 +110,8 @@ def build_data(
     for s in sorted(showings, key=lambda s: (s.start, s.film_title)):
         fid = film_id(s)
         venue = venues.setdefault(s.venue_slug, {"name": s.venue_name, "first_seen": today_iso})
-        region = venue_info.get(s.venue_slug, {}).get("region")
-        venue["region"] = region
+        regions = venue_info.get(s.venue_slug, {}).get("regions", [])
+        venue["regions"] = regions
         seen.setdefault(fid, {}).setdefault(s.venue_slug, today_iso)
         films.setdefault(
             fid,
@@ -129,7 +130,7 @@ def build_data(
                 "film": fid,
                 "title": s.film_title,
                 "venue": s.venue_slug,
-                "region": region,
+                "regions": regions,
                 "start": s.start.isoformat(),
                 "day": display_day(s.start).isoformat(),
                 "time": time_label(s.start),
@@ -156,18 +157,24 @@ def build_data(
         "films": sorted(films.values(), key=lambda f: f["title"].casefold()),
         "showings": rows,
         "days": day_status(rows),
-        "regions": [r for r in REGIONS if any(row["region"] == r for row in rows)],
+        "regions": [r for r in REGIONS if any(r in row["regions"] for row in rows)],
         "seen": seen,
     }
 
 
 def load_venues(path: Path = VENUES_PATH) -> dict[str, dict]:
-    """slug -> {slug, name, lga, region, screens} from venues.yaml."""
+    """slug -> {slug, name, lga, regions, screens} from venues.yaml, where "region"
+    is one region or a list of them; it comes back as the list "regions"."""
     entries = yaml.safe_load(path.read_text(encoding="utf-8"))
+    venues = {}
     for entry in entries:
-        if entry["region"] not in REGIONS:
-            raise ValueError(f"{path.name}: {entry['slug']} has unknown region {entry['region']!r}")
-    return {entry["slug"]: entry for entry in entries}
+        region = entry.pop("region")
+        entry["regions"] = region if isinstance(region, list) else [region]
+        for name in entry["regions"]:
+            if name not in REGIONS:
+                raise ValueError(f"{path.name}: {entry['slug']} has unknown region {name!r}")
+        venues[entry["slug"]] = entry
+    return venues
 
 
 def unplaced_venues(showings: list[Showing], venue_info: dict[str, dict]) -> list[str]:

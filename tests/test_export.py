@@ -226,7 +226,7 @@ def test_fixture_day_exports(tmp_path):
     assert len(data["films"]) == 22
     assert {r["day"] for r in data["showings"]} == {"2026-10-16"}
     assert data["venues"] == {
-        "ritz-randwick": {"name": "Ritz Randwick", "first_seen": "2026-10-16", "region": None}
+        "ritz-randwick": {"name": "Ritz Randwick", "first_seen": "2026-10-16", "regions": []}
     }
     path = tmp_path / "public" / "data.json"
     write(data, path)
@@ -288,23 +288,23 @@ def test_film_details_leave_out_dropped_and_out_of_horizon_films():
 # --- regions (B12) -------------------------------------------------------------
 
 VENUE_INFO = {
-    "ritz-randwick": {"slug": "ritz-randwick", "region": "East"},
-    "orpheum": {"slug": "orpheum", "region": "North"},
+    "ritz-randwick": {"slug": "ritz-randwick", "regions": ["East"]},
+    "orpheum": {"slug": "orpheum", "regions": ["North"]},
 }
 
 
 def test_every_session_carries_its_venue_region():
     shows = [showing("Film", at(LAUNCH, 18)), showing("Film", at(LAUNCH, 19), venue="orpheum")]
     data = build_data(shows, None, LAUNCH, VENUE_INFO)
-    assert [r["region"] for r in data["showings"]] == ["East", "North"]
-    assert data["venues"]["orpheum"]["region"] == "North"
+    assert [r["regions"] for r in data["showings"]] == [["East"], ["North"]]
+    assert data["venues"]["orpheum"]["regions"] == ["North"]
     assert data["regions"] == ["East", "North"]  # REGIONS order, only those with sessions
 
 
 def test_venue_missing_from_yaml_has_no_region():
     shows = [showing("Film", at(LAUNCH, 19), venue="orpheum")]
     data = build_data(shows, None, LAUNCH, {})
-    assert data["showings"][0]["region"] is None and data["regions"] == []
+    assert data["showings"][0]["regions"] == [] and data["regions"] == []
     assert unplaced_venues(shows, VENUE_INFO) == []
     assert unplaced_venues(shows, {}) == ["orpheum"]
 
@@ -318,12 +318,12 @@ def test_venues_yaml_covers_every_scraped_venue():
     slugs |= {m.VENUE_SLUG for m in (ritz, orpheum, golden_age, roseville)}
     venues = load_venues()
     assert set(venues) == slugs
-    assert {v["region"] for v in venues.values()} <= set(REGIONS)
+    assert {r for v in venues.values() for r in v["regions"]} <= set(REGIONS)
     assert all(v["lga"] for v in venues.values())
 
 
 def test_east_region_cinemas():
-    east = {slug for slug, v in load_venues().items() if v["region"] == "East"}
+    east = {slug for slug, v in load_venues().items() if "East" in v["regions"]}
     assert east == {
         "ritz-randwick",
         "hoyts-eastgardens",
@@ -331,6 +331,20 @@ def test_east_region_cinemas():
         "palace-moore-park",
         "event-bondi",
     }
+
+
+def test_moore_park_cinemas_are_city_and_east():
+    venues = load_venues()
+    for slug in ("hoyts-entertainment-quarter", "palace-moore-park"):
+        assert venues[slug]["regions"] == ["City", "East"]
+    assert venues["ritz-randwick"]["regions"] == ["East"]
+
+
+def test_cinema_in_two_regions_appears_under_both():
+    info = {"ritz-randwick": {"regions": ["City", "East"]}}
+    data = build_data([showing("Film", at(LAUNCH, 19))], None, LAUNCH, info)
+    assert data["showings"][0]["regions"] == ["City", "East"]
+    assert data["regions"] == ["City", "East"]
 
 
 def test_unknown_region_rejected(tmp_path):
