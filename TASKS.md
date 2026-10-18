@@ -24,7 +24,8 @@ Each task: branch `task/<id>-<slug>`, `make check` green, tick here, one line in
 - [x] **B5b Palace** (parse `__NEXT_DATA__` from `/cinemas/{slug}` for 3 Sydney slugs; convert UTC; fixture = saved HTML)
 - [x] **B5b-ii Palace follow-ups.** Add `tmdb_overrides.csv` rows for the six wrong matches listed in DECISIONS.md (Black Christmas → the 1974 film, etc.); verify each id on TMDB. Remove the "Palace buildId" note if still present. Acceptance: `make check`; a live export shows Black Christmas as 1974.
 - [x] **B3c Claude-assisted TMDB matching.** Per DECISIONS 2026-10-18. `enrich.py`: when the rules are unsure, call the Claude API (model claude-sonnet-5-5, `anthropic` SDK) with a short prompt listing the venue title, film_type, tags and up to 8 TMDB candidates; parse a single tmdb_id or "none"; cache the answer; cap at 200 calls per run; skip silently (log once) if `ANTHROPIC_API_KEY` is unset. Tests mock the API. Acceptance: `make check`; a live run reports how many films went to Claude and the before/after match rate.
-- [ ] **B5c Orpheum** (`/api/movie/playing-now`; fixture = saved JSON)
+- [ ] **B3d Matching evidence.** Per DECISIONS 2026-10-18 (a)+(b): add `venue_synopsis` and `runtime_min` to `Showing`; Palace and Hoyts scrapers fill what they have; include both in the Claude prompt; prompt keeps a lone exact match unless contradicted. Re-run the live comparison on the three Palace mis-matches (Last Orders, Tender Loving Care, The Fox) and La Traviata; report before/after. Acceptance: `make check`; those four come out right without overrides.
+- [ ] **B5c Orpheum** (also pass synopsisShort + duration) (`/api/movie/playing-now`; fixture = saved JSON)
 - [ ] **B5d Golden Age** (HTML, day headings; infer year from month rollover)
 - [ ] **B5e Roseville** (Veezi sessions page; never fetch `/purchase`)
 - [ ] **B5f Event** (printable week view for each Sydney slug; verify output matches a normal browser UA)
