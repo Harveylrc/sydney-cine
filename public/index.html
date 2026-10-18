@@ -109,6 +109,29 @@
     min-width: 0;
   }
   .filters .active { border-color: var(--accent); }
+  /* Director suggestions, under the field. */
+  .combo { position: relative; }
+  .suggestions {
+    position: absolute;
+    z-index: 2;
+    top: calc(100% + 2px);
+    right: 0; /* grows leftwards: Director is never the first column */
+    min-width: 100%;
+    width: max-content;
+    max-width: min(320px, calc(100vw - 2 * var(--gutter)));
+    margin: 0;
+    padding: 4px 0;
+    list-style: none;
+    font-size: 0.95rem;
+    text-transform: none;
+    letter-spacing: normal;
+    color: var(--heading);
+    background: var(--inset);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+  .suggestions li { padding: 5px 10px; cursor: pointer; }
+  .suggestions li[aria-selected="true"], .suggestions li:hover { background: var(--bg); color: var(--accent); }
   .years { display: flex; gap: 6px; align-items: center; }
   .filters .reset { align-self: end; justify-self: start; }
 
@@ -285,8 +308,11 @@
       <input type="search" name="film" placeholder="Any film">
     </label>
     <label>Director
-      <input type="search" name="director" list="directors" placeholder="Any director">
-      <datalist id="directors"></datalist>
+      <span class="combo">
+        <input type="search" name="director" placeholder="Any director" role="combobox"
+          aria-autocomplete="list" aria-expanded="false" aria-controls="director-list">
+        <ul id="director-list" class="suggestions" role="listbox" aria-label="Directors" hidden></ul>
+      </span>
     </label>
     <label>Type
       <select name="type">
@@ -606,9 +632,13 @@
       ? `${count} showing${count === 1 ? "" : "s"} of ${filmCount} film${filmCount === 1 ? "" : "s"}`
       : "";
     if (!count) {
+      const director = form.elements.director.value.trim();
       const msg = view === "new"
         ? "No new releases have appeared this week yet."
-        : "No showings match these filters.";
+        : directorNames && directorNames.some((d) => d.key === f.director)
+          && !data.films.some((film) => fold(film.director).includes(f.director))
+          ? `Nothing by ${director} in the next two weeks.` // a known director, not on now
+          : "No showings match these filters.";
       listings.append(el("p", { class: "empty", text: msg }));
     }
   }
@@ -618,12 +648,93 @@
     for (const day of [...new Set(data.showings.map((s) => s.day))].sort()) {
       daySelect.append(el("option", { value: day, text: dayShort(day) }));
     }
-    const directors = new Set();
     for (const film of data.films) {
-      for (const name of (film.director || "").split(", ")) if (name) directors.add(name);
+      for (const name of (film.director || "").split(", ")) if (name) showingDirectors.add(name);
     }
-    $("#directors").append(...[...directors].sort().map((name) => el("option", { value: name })));
   }
+
+  // Director suggestions (B11): directors.json (~2,000 well-known directors, rebuilt
+  // monthly) plus everyone in data.json, loaded on first focus. Matches ignore case
+  // and accents; a match at the start of a word comes first, then directors with
+  // sessions now, then the list's order (best known first).
+  const directorInput = form.elements.director;
+  const suggestionList = $("#director-list");
+  const MAX_SUGGESTIONS = 8;
+  const showingDirectors = new Set();
+  let directorNames = null;
+  let directorsLoading = null;
+  let suggestions = [];
+  let active = -1;
+
+  function loadDirectors() {
+    directorsLoading = directorsLoading || fetch("directors.json", { cache: "no-cache" })
+      .then((r) => (r.ok ? r.json() : []))
+      .catch(() => [])
+      .then((names) => {
+        const all = [...new Set([...names, ...[...showingDirectors].sort()])];
+        directorNames = all.map((name, rank) => ({ name, key: fold(name), rank, now: showingDirectors.has(name) }));
+        suggest();
+      });
+    return directorsLoading;
+  }
+
+  function suggest() {
+    const q = fold(directorInput.value.trim());
+    suggestions = !q || !directorNames ? [] : directorNames
+      .map((d) => ({ ...d, at: d.key.indexOf(q) }))
+      .filter((d) => d.at >= 0 && d.key !== q)
+      .map((d) => ({ ...d, wordStart: d.at === 0 || d.key[d.at - 1] === " " }))
+      .sort((a, b) => b.wordStart - a.wordStart || b.now - a.now || a.rank - b.rank)
+      .slice(0, MAX_SUGGESTIONS);
+    active = -1;
+    suggestionList.replaceChildren(...suggestions.map((d, i) =>
+      el("li", { role: "option", id: `director-${i}`, "aria-selected": "false", text: d.name })));
+    const open = suggestions.length > 0 && document.activeElement === directorInput;
+    suggestionList.hidden = !open;
+    directorInput.setAttribute("aria-expanded", String(open));
+    directorInput.removeAttribute("aria-activedescendant");
+  }
+
+  function highlight(i) {
+    active = i;
+    suggestionList.querySelectorAll("li").forEach((li, j) => li.setAttribute("aria-selected", String(j === i)));
+    if (i >= 0) directorInput.setAttribute("aria-activedescendant", `director-${i}`);
+    else directorInput.removeAttribute("aria-activedescendant");
+  }
+
+  function choose(name) {
+    directorInput.value = name;
+    suggest(); // an exact name has no suggestions left, so the list closes
+    render();
+  }
+
+  directorInput.addEventListener("focus", () => (directorNames ? suggest() : loadDirectors()));
+  directorInput.addEventListener("input", suggest);
+  directorInput.addEventListener("blur", () => {
+    suggestionList.hidden = true;
+    directorInput.setAttribute("aria-expanded", "false");
+  });
+  directorInput.addEventListener("keydown", (e) => {
+    if (suggestionList.hidden) return;
+    if (e.key === "ArrowDown" || e.key === "ArrowUp") {
+      e.preventDefault();
+      // Down from the last, or up from the first, goes back to the typed text (-1).
+      const next = active + (e.key === "ArrowDown" ? 1 : -1);
+      highlight(next >= suggestions.length ? -1 : next < -1 ? suggestions.length - 1 : next);
+    } else if (e.key === "Enter" && active >= 0) {
+      e.preventDefault();
+      choose(suggestions[active].name);
+    } else if (e.key === "Escape") {
+      e.preventDefault(); // close the list, keep the text
+      suggestionList.hidden = true;
+      directorInput.setAttribute("aria-expanded", "false");
+    }
+  });
+  suggestionList.addEventListener("mousedown", (e) => e.preventDefault()); // keep focus in the field
+  suggestionList.addEventListener("click", (e) => {
+    const li = e.target.closest("li");
+    if (li) choose(li.textContent);
+  });
 
   document.querySelectorAll(".views button").forEach((button) => {
     button.addEventListener("click", () => {

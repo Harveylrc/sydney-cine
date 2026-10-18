@@ -15,6 +15,8 @@ scrapes each cinema, matches the films on TMDB (asking Claude when the rules are
 unsure), writes `public/data.json` (and `films.json`, the posters and synopses the film panel loads on first use) and publishes `public/` to GitHub Pages at
 https://harveylrc.github.io/sydney-cine/. It reads the published `data.json` first so
 "new this week" dates carry over, and keeps its TMDB lookup cache between runs.
+On the 1st of each month it also rebuilds `directors.json`, the ~2,000 directors the
+Director field suggests (`python -m scripts.build_directors`, about 10 minutes).
 "Run workflow" on the repository's Actions tab runs it immediately.
 
 It needs two repository secrets, `TMDB_API_KEY` and `ANTHROPIC_API_KEY` (Settings →
