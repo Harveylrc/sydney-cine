@@ -324,7 +324,13 @@ def test_venues_yaml_covers_every_scraped_venue():
 
 def test_east_region_cinemas():
     east = {slug for slug, v in load_venues().items() if v["region"] == "East"}
-    assert east == {"ritz-randwick", "hoyts-eastgardens", "event-bondi"}
+    assert east == {
+        "ritz-randwick",
+        "hoyts-eastgardens",
+        "hoyts-entertainment-quarter",
+        "palace-moore-park",
+        "event-bondi",
+    }
 
 
 def test_unknown_region_rejected(tmp_path):
