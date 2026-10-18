@@ -170,7 +170,6 @@
     font-size: 0.8rem;
   }
   footer p { margin: 4px 0; }
-  .tmdb-logo { height: 10px; width: auto; margin-right: 6px; vertical-align: baseline; }
 </style>
 </head>
 <body>
@@ -226,7 +225,7 @@
 
   <footer>
     <p id="updated"></p>
-    <p><img class="tmdb-logo" id="tmdb-logo" src="tmdb-logo.svg" alt="TMDB">Film details from <a href="https://www.themoviedb.org/">TMDB</a>. This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
+    <p>Film details from <a href="https://www.themoviedb.org/">TMDB</a>. This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
     <p>Times link to each cinema's own booking page. Check there before you go.</p>
   </footer>
 </div>
@@ -241,10 +240,6 @@
   };
 
   const $ = (sel) => document.querySelector(sel);
-  // Hide the TMDB logo if public/tmdb-logo.svg is missing (it may fail before this runs).
-  const logo = $("#tmdb-logo");
-  if (logo.complete && !logo.naturalWidth) logo.remove();
-  else logo.addEventListener("error", () => logo.remove());
   const form = $("#filters");
   const listings = $("#listings");
   const summary = $("#summary");

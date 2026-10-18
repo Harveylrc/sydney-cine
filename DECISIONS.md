@@ -17,7 +17,7 @@
 
 - 2026-10-18 **Hoyts answers (B5a).** (1) Erina excluded — metropolitan Sydney only; the 12 sites stand. (2) Unknown Hoyts tag codes (GNO, MOW, MatM, LStar, PRAMS, BDAY) stay dropped: venue-specific and not self-explanatory. (3) Accessibility tags: drop "Audio Description" and "Closed Captions" everywhere (near-universal, add noise); keep "Open Captions" (burned-in, changes the screening) and all format/event tags. (4) **Horizon: 14 days** for every venue, enforced once in `export.py`, not per scraper.
 - 2026-10-18 **Listing layout.** One entry per film per day. Under it, one row per session: `time · cinema · tags`, sorted by time, cinema name plain, time in the accent colour. No per-cinema sub-blocks. Model: Paris Ciné Info film page.
-- 2026-10-18 **TMDB logo:** show the small TMDB logo next to the attribution text in the footer (licence condition; the "no images" brief meant posters). Fold into B4c.
+- 2026-10-18 **TMDB logo:** not included (Harvey, after B4c). The footer keeps the text attribution only. TMDB's free terms ask for the logo as well; revisit if TMDB raises it.
 - 2026-10-18 **First-seen history in B6:** the nightly job downloads the currently deployed `data.json` before running `export.py`, so first-seen dates carry forward. Fold into B6.
 
 ## P1 — Data access per venue (audited 2026-10-15; P4 browser pass same day)
