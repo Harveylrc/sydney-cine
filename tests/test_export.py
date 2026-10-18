@@ -317,7 +317,11 @@ def test_venues_yaml_covers_every_scraped_venue():
     slugs |= {slug for slug, _ in palace.CINEMAS.values()}
     slugs |= {m.VENUE_SLUG for m in (ritz, orpheum, golden_age, roseville)}
     venues = load_venues()
-    assert {slug for slug, v in venues.items() if v.get("scraped", True)} == slugs
+    scraped = {
+        slug for slug, v in venues.items() if v.get("scraped", True) and v.get("source") != "manual"
+    }
+    assert scraped == slugs
+    assert venues["sydney-cinematheque"]["source"] == "manual"
     assert {r for v in venues.values() for r in v["regions"]} <= set(REGIONS)
     assert all(v["lga"] for v in venues.values())
 

@@ -1,0 +1,10 @@
+# Made-up sessions for tests (not a real programme).
+venue: test-venue
+name: Test Venue
+source: https://example.org/programme
+updated: 2026-10-19
+type: retrospective
+sessions:
+  - {date: 2026-10-18, time: "19:00", title: Old News}
+  - {date: 2026-10-22, time: "19:00", title: Vivre sa vie, year: 1962, director: Jean-Luc Godard, tags: [35mm]}
+  - {date: 2026-10-25, time: "14:30", title: A New Film, type: new_release, url: https://example.org/a-new-film}
