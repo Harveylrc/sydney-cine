@@ -148,115 +148,118 @@
     border-bottom: 1px solid var(--border);
   }
   .film { border-bottom: 1px solid var(--divider); }
-  /* One line per film: title · year · director, count on the right; tap opens the panel. */
-  .film button {
+  /* Two lines: title, then year · director · rating · type; count on the right.
+     The whole row toggles its detail, which opens in place beneath it. */
+  .film-head {
     display: flex;
     align-items: baseline;
-    gap: 12px;
-    width: 100%;
-    padding: 4px 0;
+    gap: 0 16px;
+    padding: 7px 0;
+    cursor: pointer;
+  }
+  .film-head .text { flex: 1; min-width: 0; }
+  .film h3 {
+    margin: 0;
+    color: var(--heading);
+    font-size: 1.05rem;
+    font-weight: 700;
+  }
+  .film h3 button {
     font: inherit;
-    line-height: 1.25;
     color: inherit;
     background: none;
     border: 0;
+    padding: 0;
     text-align: left;
     cursor: pointer;
   }
-  .film .line {
-    flex: 1;
-    min-width: 0;
-    overflow: hidden;
-    white-space: nowrap;
-    text-overflow: ellipsis;
-    font-size: 0.9rem;
-  }
-  .film .title { color: var(--heading); font-size: 1.05rem; font-weight: 700; }
-  .film button:hover .title { text-decoration: underline; }
+  .film-head:hover h3 button { text-decoration: underline; }
   .count {
+    margin-left: auto;
     font-size: 0.85rem;
     color: var(--muted);
     white-space: nowrap;
   }
-  .count::after { content: " ›"; }
-  .film .kind {
-    font-size: 0.7rem;
+  .count::after { content: " ▸"; }
+  .film-head.open .count::after { content: " ▾"; }
+  .meta { margin: 2px 0 0; font-size: 0.9rem; }
+  .meta .rating { color: var(--heading); font-weight: 600; }
+  .kind {
+    font-size: 0.72rem;
     color: var(--muted);
     text-transform: uppercase;
     letter-spacing: 0.06em;
-    white-space: nowrap;
   }
   @media (max-width: 480px) {
-    .count .where { display: none; } /* room for the title; the panel names the cinemas */
+    .count .where { display: none; } /* room for the title; the detail names the cinemas */
   }
 
-  /* Film panel: right-hand side panel on wide screens, full-screen sheet below 900px. */
-  body:has(.panel[open]) { overflow: hidden; }
-  .panel {
-    position: fixed;
-    inset: 0;
-    width: 100%;
-    height: 100%;
-    max-width: none;
-    max-height: none;
-    margin: 0;
-    padding: 0;
-    color: var(--label);
-    background: var(--bg);
-    border: 0;
+  /* Detail: poster with year · runtime under it, beside a box of day tabs over that
+     day's sessions. The box keeps one height across tabs and scrolls inside. */
+  .detail {
+    display: flex;
+    gap: 16px;
+    align-items: flex-start;
+    padding: 2px 0 14px;
   }
-  .panel::backdrop { background: rgba(5, 7, 18, 0.6); }
-  @media (min-width: 900px) {
-    .panel {
-      left: auto;
-      width: min(480px, 42vw);
-      border-left: 1px solid var(--border);
-    }
-  }
-  .panel-body { padding: 18px var(--gutter) 40px; }
-  .panel .close {
-    float: right;
-    margin: -4px -6px 0 12px;
-    font: inherit;
-    font-size: 1.6rem;
-    line-height: 1;
-    color: var(--label);
-    background: none;
-    border: 0;
-    padding: 4px 8px;
-    cursor: pointer;
-  }
-  .panel-top { display: flex; gap: 16px; align-items: flex-start; }
-  .panel-top img {
+  .poster {
     flex: none;
-    width: 120px;
+    width: 110px;
+    font-size: 0.8rem;
+    color: var(--muted);
+  }
+  .poster img {
+    display: block;
+    width: 100%;
+    height: auto;
     aspect-ratio: 2 / 3;
     object-fit: cover;
+    margin-bottom: 4px;
     border-radius: 4px;
     background: var(--inset);
   }
-  .panel h2 {
-    margin: 0;
-    color: var(--heading);
-    font-size: 1.4rem;
-    font-weight: 800;
-    line-height: 1.2;
+  .box {
+    flex: 1;
+    min-width: 0;
+    max-width: 640px;
+    background: var(--inset);
+    border: 1px solid var(--border);
+    border-radius: 4px;
   }
-  .panel .facts { margin: 6px 0 0; font-size: 0.9rem; }
-  .panel .facts p { margin: 0; }
-  .panel .rating { color: var(--heading); font-weight: 600; }
-  .panel .kind {
-    font-size: 0.72rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
-  .panel .synopsis { margin: 16px 0 0; }
-  .panel h3 {
-    margin: 22px 0 6px;
-    padding-bottom: 4px;
-    color: var(--heading);
-    font-size: 1rem;
+  .tabs {
+    display: flex;
+    overflow-x: auto;
     border-bottom: 1px solid var(--border);
+    scrollbar-width: thin;
+  }
+  .tabs button {
+    flex: none;
+    padding: 6px 10px;
+    font: inherit;
+    font-size: 0.8rem;
+    color: var(--label);
+    white-space: nowrap;
+    background: none;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    cursor: pointer;
+  }
+  .tabs button[aria-selected="true"] {
+    color: var(--accent);
+    font-weight: 600;
+    border-bottom-color: var(--accent);
+  }
+  .day-sessions {
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 8px 10px;
+  }
+  @media (max-width: 480px) {
+    .detail { flex-direction: column; gap: 8px; }
+    .poster { width: auto; display: flex; align-items: flex-end; gap: 10px; }
+    .poster img { width: 64px; margin: 0; }
+    .box { width: 100%; }
+    .day-sessions { max-height: 45vh; }
   }
   /* One row per session: time · cinema · tags */
   .sessions {
@@ -344,10 +347,6 @@
   <p class="summary" id="summary" aria-live="polite">Loading showings…</p>
   <main id="listings"></main>
 
-  <dialog class="panel" id="panel" aria-labelledby="panel-title">
-    <div class="panel-body" id="panel-body"></div>
-  </dialog>
-
   <footer>
     <p id="updated"></p>
     <p>Film details from <a href="https://www.themoviedb.org/">TMDB</a>. This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
@@ -373,9 +372,10 @@
   const summary = $("#summary");
   let data = null;
   let filmsById = new Map();
+  let entryCount = 0;
   let thisYear = new Date().getFullYear();
   let unfiltered = new Map(); // day -> film id -> all that day's showings, for ranking
-  let byFilm = new Map(); // film id -> all its showings in start order, for the panel
+  let byFilm = new Map(); // film id -> all its showings in start order, for a row's detail
   let view = "all";
 
   // Element helper: text is always set as text, never parsed as HTML.
@@ -467,16 +467,51 @@
     }
   }
 
-  // One line: title · year · director, then the count. Tapping opens the film panel.
-  function filmEntry(film, showings) {
-    const line = el("span", { class: "line" }, el("span", { class: "title", text: film.title }));
-    for (const part of [film.year, film.director]) if (part) line.append(" · " + part);
-    const button = el("button", { type: "button", "aria-haspopup": "dialog" }, line);
+  // Two lines: title; year · director · rating · type tag. Tapping the row opens its
+  // detail in place beneath it (B10c); several can be open; tapping again closes.
+  const openers = new WeakMap(); // entry -> open(), for #film= links
+  function filmEntry(film, showings, day) {
+    const meta = el("p", { class: "meta" });
+    const parts = [film.year, film.director].filter(Boolean).map(String);
+    parts.forEach((p, i) => meta.append((i ? " · " : "") + p));
+    if (film.rating != null) {
+      meta.append(parts.length ? " · " : "", el("span", { class: "rating", text: film.rating.toFixed(1) }), " TMDB");
+    }
     const tags = typesOf(showings).filter((t) => ROW_TAGS[t]).map((t) => ROW_TAGS[t]);
-    if (tags.length) button.append(el("span", { class: "kind", text: tags.join(" · ") }));
-    button.append(countLabel(showings));
-    button.addEventListener("click", () => openFilm(film.id));
-    return el("article", { class: "film" }, button);
+    if (tags.length) meta.append(meta.childNodes.length ? " · " : "", el("span", { class: "kind", text: tags.join(" · ") }));
+
+    const detailId = `detail-${++entryCount}`;
+    const toggle = el("button", { type: "button", "aria-expanded": "false", "aria-controls": detailId, text: film.title });
+    const text = el("div", { class: "text" }, el("h3", {}, toggle));
+    if (meta.childNodes.length) text.append(meta);
+    const head = el("div", { class: "film-head" }, text, countLabel(showings));
+    const entry = el("article", { class: "film", "data-film": film.id }, head);
+
+    let detail = null; // built on first open
+    function setOpen(open) {
+      if (open && !detail) {
+        entry.append((detail = filmDetail(film, day, detailId)));
+        fitBox(detail);
+      }
+      if (detail) detail.hidden = !open;
+      toggle.setAttribute("aria-expanded", String(open));
+      head.classList.toggle("open", open);
+      // The address names the last film opened, so it can be shared; no history entry.
+      if (open) history.replaceState(null, "", "#film=" + encodeURIComponent(film.id));
+      else if (hashFilm() === film.id) history.replaceState(null, "", location.pathname + location.search);
+    }
+    openers.set(entry, () => setOpen(true));
+    head.addEventListener("click", () => {
+      const selection = window.getSelection();
+      if (!selection.isCollapsed && head.contains(selection.anchorNode)) return; // selecting text
+      setOpen(toggle.getAttribute("aria-expanded") !== "true");
+    });
+    entry.addEventListener("keydown", (e) => {
+      if (e.key !== "Escape" || toggle.getAttribute("aria-expanded") !== "true") return;
+      setOpen(false);
+      toggle.focus();
+    });
+    return entry;
   }
 
   const plural = (n, word) => `${n} ${word}${n === 1 ? "" : "s"}`;
@@ -508,13 +543,8 @@
     return rows;
   }
 
-  // Film panel. Opening adds #film=<id> to the address (so a film can be linked and
-  // Back closes it); Esc, the close button and a tap outside all go back.
-  const panel = $("#panel");
-  const POSTER = "https://image.tmdb.org/t/p/w342";
-  let opener = null;
-
-  // poster_path, overview and runtime live in films.json, fetched on the first open.
+  // poster_path and runtime live in films.json, fetched the first time a row opens.
+  const POSTER = "https://image.tmdb.org/t/p/w185";
   let details = null;
   let detailsLoading = null;
   function loadDetails() {
@@ -525,36 +555,80 @@
     return detailsLoading;
   }
 
-  function panelContent(film) {
-    const body = $("#panel-body");
-    const extra = (details && details[film.id]) || {};
-    const showings = byFilm.get(film.id) || [];
-    const facts = el("div", { class: "facts" });
-    const line = [film.year, film.director, extra.runtime && `${extra.runtime} min`].filter(Boolean);
-    if (line.length) facts.append(el("p", { text: line.join(" · ") }));
-    if (film.rating != null) {
-      facts.append(el("p", {}, el("span", { class: "rating", text: film.rating.toFixed(1) }),
-        ` TMDB (${plural(film.vote_count || 0, "vote")})`));
-    }
-    const types = typesOf(showings);
-    if (types.length) facts.append(el("p", { class: "kind", text: types.map((t) => TYPE_LABELS[t]).join(" · ") }));
-    const top = el("div", { class: "panel-top" });
-    if (extra.poster_path) top.append(el("img", { src: POSTER + extra.poster_path, alt: "", width: "120", height: "180" }));
-    top.append(el("div", {}, el("h2", { id: "panel-title", text: film.title }), facts));
-    const close = el("button", { type: "button", class: "close", "aria-label": "Close", text: "×" });
-    close.addEventListener("click", closePanel);
-    body.replaceChildren(close, top);
-    if (extra.overview) body.append(el("p", { class: "synopsis", text: extra.overview }));
+  const tabLabel = (iso) =>
+    new Date(iso + "T00:00:00Z").toLocaleDateString("en-AU", { weekday: "short", day: "numeric", timeZone: "UTC" });
 
+  // Poster (year · runtime under it) and a box: a tab per day with sessions, over that
+  // day's `time · cinema · tags` rows. Starts on the row's own day.
+  function filmDetail(film, day, id) {
     const byDay = new Map();
-    for (const s of showings) {
+    for (const s of byFilm.get(film.id) || []) {
       if (!byDay.has(s.day)) byDay.set(s.day, []);
       byDay.get(s.day).push(s);
     }
-    for (const [day, showings] of byDay) {
-      body.append(el("h3", { text: `${dayHeading(day)} · ${plural(showings.length, "session")}` }),
-        sessionRows(film, showings));
+    const days = [...byDay.keys()];
+
+    const poster = el("div", { class: "poster" });
+    const fillPoster = () => {
+      const extra = (details && details[film.id]) || {};
+      const facts = [film.year, extra.runtime && `${extra.runtime} min`].filter(Boolean).join(" · ");
+      poster.replaceChildren();
+      if (extra.poster_path) {
+        poster.append(el("img", { src: POSTER + extra.poster_path, alt: "", width: "110", height: "165" }));
+      }
+      if (facts) poster.append(el("span", { text: facts }));
+      poster.hidden = !poster.childNodes.length;
+    };
+    fillPoster();
+    if (!details) loadDetails().then(fillPoster);
+
+    const tabs = el("div", { class: "tabs", role: "tablist", "aria-label": `Sessions of ${film.title} by day` });
+    const lists = el("div", { class: "day-sessions" });
+    const buttons = days.map((d, i) => {
+      const list = sessionRows(film, byDay.get(d));
+      Object.entries({ role: "tabpanel", id: `${id}-day-${i}`, "aria-labelledby": `${id}-tab-${i}` })
+        .forEach(([k, v]) => list.setAttribute(k, v));
+      lists.append(list);
+      const button = el("button", { type: "button", role: "tab", id: `${id}-tab-${i}`, "aria-controls": `${id}-day-${i}`, text: tabLabel(d) });
+      button.addEventListener("click", () => select(i));
+      tabs.append(button);
+      return button;
+    });
+    function select(i, focus = false) {
+      buttons.forEach((b, j) => {
+        b.setAttribute("aria-selected", String(i === j));
+        b.tabIndex = i === j ? 0 : -1;
+        lists.children[j].hidden = i !== j;
+      });
+      lists.scrollTop = 0;
+      tabs.scrollLeft = buttons[i].offsetLeft - tabs.offsetLeft - 24;
+      if (focus) buttons[i].focus();
     }
+    tabs.addEventListener("keydown", (e) => {
+      const step = { ArrowRight: 1, ArrowLeft: -1 }[e.key];
+      if (!step) return;
+      e.preventDefault();
+      const now = buttons.findIndex((b) => b.getAttribute("aria-selected") === "true");
+      select((now + step + buttons.length) % buttons.length, true);
+    });
+
+    const detail = el("div", { class: "detail", id }, poster, el("div", { class: "box" }, tabs, lists));
+    detail.select = () => select(Math.max(days.indexOf(day), 0));
+    return detail;
+  }
+
+  // Once in the page: give the session box the height of its busiest day, up to its
+  // max-height, so switching days never moves the rows below.
+  function fitBox(detail) {
+    const lists = detail.querySelector(".day-sessions");
+    const cap = parseFloat(getComputedStyle(lists).maxHeight) || Infinity;
+    let tallest = 0;
+    for (const list of lists.children) {
+      for (const other of lists.children) other.hidden = other !== list;
+      tallest = Math.max(tallest, lists.scrollHeight);
+    }
+    lists.style.height = `${Math.min(tallest, cap)}px`;
+    detail.select();
   }
 
   const hashFilm = () => {
@@ -562,48 +636,15 @@
     return m ? decodeURIComponent(m[1]) : null;
   };
 
-  function showPanel() {
-    const film = filmsById.get(hashFilm());
-    if (!film) {
-      if (panel.open) panel.close();
-      return;
-    }
-    panelContent(film);
-    if (!panel.open) panel.showModal();
-    panel.scrollTop = 0;
-    if (!details) {
-      loadDetails().then(() => {
-        if (!panel.open || hashFilm() !== film.id) return;
-        const focused = panel.contains(document.activeElement);
-        panelContent(film); // now with poster and synopsis
-        if (focused) panel.querySelector(".close").focus();
-      });
-    }
+  // #film=<id>: open that film's first row and bring it into view.
+  function openFromHash() {
+    const id = hashFilm();
+    const entry = id && listings.querySelector(`.film[data-film="${CSS.escape(id)}"]`);
+    if (!entry) return;
+    openers.get(entry)();
+    entry.scrollIntoView({ block: "start" });
   }
-
-  function openFilm(id) {
-    opener = document.activeElement;
-    history.pushState({ panel: true }, "", "#film=" + encodeURIComponent(id));
-    showPanel();
-  }
-
-  function closePanel() {
-    if (history.state && history.state.panel) {
-      history.back(); // popstate hides the panel
-    } else { // opened from a link: drop the hash without leaving the page
-      history.replaceState(null, "", location.pathname + location.search);
-      showPanel();
-    }
-  }
-
-  panel.addEventListener("cancel", (e) => { e.preventDefault(); closePanel(); });
-  panel.addEventListener("click", (e) => { if (e.target === panel) closePanel(); }); // the backdrop
-  panel.addEventListener("close", () => {
-    if (opener && document.contains(opener)) opener.focus();
-    opener = null;
-  });
-  window.addEventListener("popstate", () => data && showPanel());
-  window.addEventListener("hashchange", () => data && showPanel());
+  window.addEventListener("hashchange", () => data && openFromHash());
 
   function render() {
     markActive();
@@ -623,7 +664,7 @@
     listings.replaceChildren();
     for (const [day, films] of [...days].sort(([a], [b]) => a.localeCompare(b))) {
       const section = el("section", { class: "day" }, el("h2", { text: dayHeading(day) }));
-      for (const { film, showings } of orderFilms(day, films, f.sort)) section.append(filmEntry(film, showings));
+      for (const { film, showings } of orderFilms(day, films, f.sort)) section.append(filmEntry(film, showings, day));
       listings.append(section);
     }
 
@@ -774,7 +815,7 @@
         Object.values(data.venues).map((v) => v.name).join(", ")}.`;
       populateFilters();
       render();
-      showPanel(); // a linked #film=<id>
+      openFromHash(); // a linked #film=<id>
     })
     .catch(() => {
       summary.textContent = "Couldn't load showings. Try again later.";
