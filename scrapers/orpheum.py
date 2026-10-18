@@ -91,6 +91,11 @@ def minutes(duration) -> int | None:
     return int(found.group(1)) or None if found else None
 
 
+def director(film: dict) -> str | None:
+    names = (film.get("director") or {}).get("director") or []
+    return ", ".join(name.strip() for name in names if name.strip()) or None
+
+
 def parse_films(films: list[dict], unknown: set[str] | None = None) -> list[Showing]:
     showings = []
     for film in films:
@@ -110,6 +115,7 @@ def parse_films(films: list[dict], unknown: set[str] | None = None) -> list[Show
                     vista_movie_id=film.get("reference") or None,
                     venue_synopsis=plain_text(film.get("synopsisShort")),
                     runtime_min=minutes(film.get("duration")),
+                    venue_director=director(film),
                 )
             )
     return showings

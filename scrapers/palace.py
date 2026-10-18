@@ -37,7 +37,7 @@ SESSION_LABELS = {
     "Audio Description Session": "Audio Description",
     "Closed Captioning Available": "Closed Captions",
     "Hearing Impaired": None,  # same sessions as Closed Captioning
-    "No Free Tickets": None,  # pricing
+    "No Free Tickets": "NFT",  # kept like every venue (DECISIONS 2026-10-18)
     "Special Event": "Special Event",
     "SPECIAL EVENT": "Special Event",
     "RETRO": "Retro",

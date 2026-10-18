@@ -26,6 +26,7 @@ class Showing:
     vista_movie_id: str | None = None  # "HO000…" — unique within one chain only
     venue_synopsis: str | None = None  # the venue's own description, when it gives one
     runtime_min: int | None = None  # the venue's running time, when it gives one
+    venue_director: str | None = None  # the venue's director credit, when it gives one
     tmdb_id: int | None = None
     year: int | None = None
     director: str | None = None

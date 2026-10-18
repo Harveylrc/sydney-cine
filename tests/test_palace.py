@@ -41,7 +41,7 @@ def test_fixture_session(showings):
     # "2026-10-19T12:30:00.000Z" is 12:30 in Sydney, not 12:30 UTC
     assert s.start == datetime(2026, 10, 19, 12, 30, tzinfo=SYDNEY)
     assert s.booking_url == "https://buy.palacecinemas.com.au/?cinema=200&session=178738"
-    assert s.attributes == ["Audio Description", "Closed Captions"]
+    assert s.attributes == ["Audio Description", "Closed Captions", "NFT"]
     assert s.vista_movie_id == "HO00019390"
     assert s.runtime_min == 131
     assert s.venue_synopsis is None  # synopses were emptied in the trimmed fixture
@@ -52,7 +52,7 @@ def test_fixture_film_types(showings):
     assert by_id(showings, "178524").film_type == "festival"  # BFF26 Hamlet
     assert by_id(showings, "177215").film_type == "retrospective"  # La La Land, genre
     assert by_id(showings, "173759").film_type == "special"  # Royal Ballet: Swan Lake
-    assert by_id(showings, "179380").attributes == ["Movie Club"]
+    assert by_id(showings, "179380").attributes == ["NFT", "Movie Club"]
 
 
 def test_every_start_is_sydney_time(showings):
@@ -79,6 +79,7 @@ def test_attributes_mapped_dropped_and_kept():
     info = ["Audio Description Session", "Hearing Impaired", "No Free Tickets", "Special Event"]
     assert attributes(session(info, "INCL. Q&A"), unknown) == [
         "Audio Description",
+        "NFT",
         "Special Event",
         "Q&A",
     ]

@@ -448,6 +448,30 @@ def test_override_matches_exact_venue_title_only(tmdb_b3b, cache):
     assert [s.tmdb_id for s in out] == [None, 1749174]
 
 
+@pytest.mark.parametrize(
+    "venue_title",
+    [
+        "Three Colours: White (1994)",  # exact
+        "Three Colours: White (1994) - Preview Event",  # cleaned title = the row
+        "THREE COLOURS: WHITE (1994) - 30th Anniversary in 4K",
+    ],
+)
+def test_override_covers_cleaned_title(tmdb_b3b, cache, venue_title):
+    [s] = run(
+        [showing(venue_title)], tmdb_b3b, cache, overrides={"Three Colours: White (1994)": 109}
+    )
+    assert s.tmdb_id == 109
+    assert tmdb_b3b.searches() == []
+
+
+def test_override_spelling_differences_ignored(tmdb_b3b, cache):
+    overrides = {"Exhibition on Screen - Renoir & Love": None}
+    [s] = run(
+        [showing("EXHIBITION ON SCREEN: Renoir & Love")], tmdb_b3b, cache, overrides=overrides
+    )
+    assert s.tmdb_id is None and tmdb_b3b.searches() == []
+
+
 def test_load_overrides(tmp_path):
     path = tmp_path / "overrides.csv"
     path.write_text(
@@ -484,6 +508,22 @@ def test_seeded_overrides_file():
         "GFF26 Female": 1566262,
         "GFF26 The River": 1376339,
         "GFF26 Electra": None,  # filmed stage production, not on TMDB
+        "Peter Jackson's The Frighteners": 10779,
+        "Exhibition on Screen - Renoir & Love": 1747216,
+        "Met Opera - Cosi Fan Tutte": 1703620,
+        "Met Opera - La Fanciulla Del West": 1703629,
+        "Met Opera - Macbeth": 1703622,
+        "Met Opera - Manon": 1703631,
+        "Met Opera - Otello": 1703634,
+        "Met Opera - Parsifal": 1703636,
+        "Met Opera - Samson Et Dalila": 1703624,
+        "Met Opera - Silent Night": 1707867,
+        "Met Opera 2026-27: Così fan tutte": 1703620,
+        "Met Opera 2026-27: La Fanciulla del West": 1703629,
+        "Met Opera 2026-27: Macbeth": 1703622,
+        "Met Opera 2026-27: Manon": 1703631,
+        "Met Opera 2026-27: Samson et Dalila": 1703624,
+        "Met Opera 2026-27: Silent Night": 1707867,
     }
 
 
@@ -728,3 +768,12 @@ def test_candidate_runtime_in_prompt(tmdb_b3c, cache):
         "Black Christmas, 1974, 98 min, directed by Bob Clark"
         in claude.prompts[0]["messages"][0]["content"]
     )
+
+
+def test_prompt_carries_venue_director(tmdb_b3c, cache):
+    claude = FakeClaude("16938")
+    retro = showing("Black Christmas", film_type="retrospective")
+    retro = Showing(**{**retro.__dict__, "venue_director": "Bob Clark"})
+    run_claude([retro], tmdb_b3c, cache, claude)
+    assert "Director (per the venue): Bob Clark" in claude.prompts[0]["messages"][0]["content"]
+    assert "director, year or running time" in claude.prompts[0]["system"]

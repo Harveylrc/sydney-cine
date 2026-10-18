@@ -9,7 +9,15 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from scrapers.orpheum import attributes, film_type, minutes, parse_films, plain_text, start_time
+from scrapers.orpheum import (
+    attributes,
+    director,
+    film_type,
+    minutes,
+    parse_films,
+    plain_text,
+    start_time,
+)
 
 SYDNEY = ZoneInfo("Australia/Sydney")
 FIXTURE = Path(__file__).parent / "fixtures" / "orpheum_playing-now_2026-10-18.json"
@@ -49,6 +57,7 @@ def test_fixture_film_types_and_formats(showings):
     assert (psycho.film_type, psycho.runtime_min) == ("retrospective", 109)
     assert by_id(showings, "0001-25529").attributes == ["70mm"]  # Lawrence of Arabia
     assert by_id(showings, "0001-25974").film_type == "special"  # The Fox - Q&A Preview
+    assert psycho.venue_director == "Alfred Hitchcock"
     pitfall = by_id(showings, "0001-25021")
     assert (pitfall.film_type, pitfall.attributes) == ("festival", ["Subtitled"])
 
@@ -118,3 +127,12 @@ def test_minutes(raw, expected):
 def test_plain_text():
     assert plain_text("One.<br /><br />Two &amp; three.") == "One. Two & three."
     assert plain_text("") is None
+
+
+def test_director():
+    assert (
+        director({"director": {"director": ["Joel Coen", " Ethan Coen "]}})
+        == "Joel Coen, Ethan Coen"
+    )
+    assert director({"director": {"director": []}}) is None
+    assert director({}) is None

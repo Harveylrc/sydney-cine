@@ -1,7 +1,10 @@
 """TMDB enrichment: fill tmdb_id, year, director and rating on scraped Showings.
 
 Matching order (policy in DECISIONS.md):
-1. tmdb_overrides.csv: a hand-kept map of exact venue title -> TMDB id or "none".
+1. tmdb_overrides.csv: a hand-kept map of venue title -> TMDB id or "none". A row
+   matches the exact title, or failing that the showing's cleaned title against
+   the row as written, ignoring case and punctuation: "X" also covers
+   "X - Preview Event", but "JIFF: The Sea" does not cover a plain "The Sea".
 2. Showings that share a vista_movie_id within one chain are looked up once for
    the whole group. Vista ids are per chain (Palace's HO00011213 is not Hoyts'),
    so the key includes the chain: the first part of venue_slug ("hoyts", "palace").
@@ -219,7 +222,7 @@ class ClaudeChooser:
         "You match Sydney cinema listings to The Movie Database (TMDB). Venue titles may "
         "carry festival codes (e.g. BFF26, JFF26), formats, languages or anniversary notes. "
         "Decide which candidate is the film being screened. When the title rules have a "
-        "choice, keep it unless the venue's description, the year or the running time "
+        "choice, keep it unless the venue's description, director, year or running time "
         "contradicts it. When they have none, pick the candidate the evidence supports, or "
         "none rather than guess. End your reply with one line: "
         "'Answer: <tmdb_id>' or 'Answer: none'."
@@ -271,6 +274,8 @@ def prompt(s: Showing, candidates: list[dict], rules_pick: int | None = None) ->
         f"Type: {(s.film_type or 'not given').replace('_', ' ')}",
         f"Tags: {', '.join(s.attributes) or 'none'}",
     ]
+    if s.venue_director:
+        lines.append(f"Director (per the venue): {s.venue_director}")
     if s.runtime_min:
         lines.append(f"Running time: {s.runtime_min} min")
     if s.venue_synopsis:
@@ -345,6 +350,18 @@ def lookup_key(s: Showing) -> str:
     return f"title:{title.casefold()}|{year or ''}" + ("|recent" if prefers_recent(s) else "")
 
 
+def find_override(title: str, overrides: dict, by_key: dict) -> tuple[bool, int | None]:
+    """(found, tmdb_id): the exact title first, then the showing's cleaned title
+    against the rows as written (by_key: normalised row title -> id)."""
+    if title in overrides:
+        return True, overrides[title]
+    cleaned, year = search_terms(title)
+    key = normalise(cleaned) + (str(year) if year else "")  # row "X (1994)" -> "x1994"
+    if key in by_key:
+        return True, by_key[key]
+    return False, None
+
+
 def load_overrides(path: Path = OVERRIDES_PATH) -> dict[str, int | None]:
     """venue_title -> TMDB id, or None for "none" (deliberately unmatched)."""
     if not path.exists():
@@ -364,6 +381,7 @@ def enrich(
     chooser: ClaudeChooser | None = None,
 ) -> list[Showing]:
     overrides = overrides or {}
+    by_key = {normalise(title): tmdb_id for title, tmdb_id in overrides.items()}
     matches: dict[str, Match] = {}
 
     def look_up(s: Showing) -> tuple[Match, bool]:
@@ -386,8 +404,8 @@ def enrich(
         return client.details(tmdb_id), True
 
     def resolve(s: Showing) -> Match:
-        if s.film_title in overrides:
-            tmdb_id = overrides[s.film_title]
+        found, tmdb_id = find_override(s.film_title, overrides, by_key)
+        if found:
             if tmdb_id is None:
                 return Match(tmdb_id=None)  # deliberate: not a miss, not logged
             key = f"tmdb:{tmdb_id}"
