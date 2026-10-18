@@ -253,6 +253,7 @@ if __name__ == "__main__":
         event,
         glenbrook,
         golden_age,
+        govindas,
         hoyts,
         manual,
         mount_vic_flicks,
@@ -273,6 +274,7 @@ if __name__ == "__main__":
         event,
         glenbrook,
         mount_vic_flicks,
+        govindas,
         manual,
     )
     scraped = scrape_all(scrapers)

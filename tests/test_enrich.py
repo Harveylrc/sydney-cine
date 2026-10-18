@@ -562,6 +562,7 @@ def test_seeded_overrides_file():
         "Royal Opera: Götterdämmerung": 1702769,
         "Royal Opera: Tosca": 1702784,
         "TxT World Tour 'Act : Tomorrow'": 1688795,  # Event's name for Hoyts' TXT tour film
+        "Stanley Kubrick's masterpiece Barry Lyndon (1975)": 3175,  # Govinda's billing
     }
 
 
