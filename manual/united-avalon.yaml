@@ -1,0 +1,9 @@
+# Stub (B13g): unitedcinemas.com.au answers our scraper with a Cloudflare block
+# (403 "Attention Required"), which we don't get round. Fill in with
+#   pbpaste | .venv/bin/python -m scripts.paste_to_manual united-avalon
+# from this cinema's session times opened in your own browser.
+venue: united-avalon
+name: United Cinemas Avalon
+source: https://www.unitedcinemas.com.au/
+updated: 2026-10-19
+sessions: []
