@@ -1,4 +1,5 @@
-"""Write public/data.json for the page: films, showings and first-seen history.
+"""Write public/data.json for the page (films, showings and first-seen history) and
+public/films.json for the film panel.
 
 Rules from DECISIONS.md:
 - Late night: a session starting before 05:00 is listed under the previous day
@@ -13,8 +14,10 @@ Rules from DECISIONS.md:
   the horizon.
 - "Audio Description" and "Closed Captions" are dropped from attributes: almost
   every chain session has them, so they are noise. "Open Captions" stays.
-- Film panel (B10): poster_path, overview and runtime from TMDB; with no TMDB
-  overview or runtime, the first venue synopsis / running time we saw instead.
+- Film panel (B10, B10b): poster_path, overview and runtime from TMDB; with no
+  TMDB overview or runtime, the first venue synopsis / running time we saw
+  instead. They go in films.json, which the page loads on the first panel open,
+  so data.json stays small.
 First-seen dates are carried forward from the previous data.json.
 """
 
@@ -31,6 +34,7 @@ from models import SYDNEY_TZ, Showing
 log = logging.getLogger("export")
 
 DATA_PATH = Path(__file__).resolve().parent / "public" / "data.json"
+FILMS_PATH = DATA_PATH.with_name("films.json")
 SYDNEY = ZoneInfo(SYDNEY_TZ)
 LATE_NIGHT_END = time(5, 0)
 NEW_DAYS = 7
@@ -62,15 +66,8 @@ def effective_type(s: Showing, this_year: int) -> str | None:
     return "retrospective" if s.year <= this_year - RETRO_AGE else "new_release"
 
 
-def build_data(
-    showings: list[Showing],
-    previous: dict | None,
-    today: date,
-    details: dict[int, dict] | None = None,
-) -> dict:
-    """details: tmdb id -> {poster_path, overview, runtime} (enrich.film_details)."""
+def build_data(showings: list[Showing], previous: dict | None, today: date) -> dict:
     previous = previous or {}
-    details = details or {}
     today_iso = today.isoformat()
 
     venues = {slug: dict(v) for slug, v in previous.get("venues", {}).items()}
@@ -98,14 +95,8 @@ def build_data(
                 "director": s.director,
                 "rating": s.rating,
                 "vote_count": s.vote_count,
-                **panel_fields(details.get(s.tmdb_id, {})),
             },
         )
-        film = films[fid]
-        if not film["overview"] and s.venue_synopsis:
-            film["overview"] = s.venue_synopsis.strip()[:SYNOPSIS_CHARS] or None
-        if not film["runtime"] and s.runtime_min:
-            film["runtime"] = s.runtime_min
         rows.append(
             {
                 "film": fid,
@@ -140,8 +131,22 @@ def build_data(
     }
 
 
-def panel_fields(found: dict) -> dict:
-    return {key: found.get(key) for key in ("poster_path", "overview", "runtime")}
+def build_panel(showings: list[Showing], data: dict, details: dict[int, dict]) -> dict:
+    """films.json: film id -> {poster_path, overview, runtime} for data's films, with
+    empty fields left out. details: tmdb id -> those fields (enrich.film_details)."""
+    wanted = {film["id"] for film in data["films"]}
+    panel: dict[str, dict] = {}
+    for s in sorted(showings, key=lambda s: (s.start, s.film_title)):
+        fid = film_id(s)
+        if fid not in wanted:
+            continue
+        entry = panel.setdefault(fid, dict(details.get(s.tmdb_id, {})))
+        if not entry.get("overview") and s.venue_synopsis:
+            entry["overview"] = s.venue_synopsis.strip()[:SYNOPSIS_CHARS]
+        if not entry.get("runtime") and s.runtime_min:
+            entry["runtime"] = s.runtime_min
+    cleaned = {fid: {k: v for k, v in entry.items() if v} for fid, entry in panel.items()}
+    return {fid: entry for fid, entry in cleaned.items() if entry}
 
 
 def scrape_all(scrapers) -> list[Showing]:
@@ -170,6 +175,7 @@ def load_previous(path: Path = DATA_PATH) -> dict | None:
 
 
 def write(data: dict, path: Path = DATA_PATH) -> None:
+    """data.json, or films.json with path=FILMS_PATH."""
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps(data, ensure_ascii=False, separators=(",", ":")), encoding="utf-8")
 
@@ -195,8 +201,9 @@ if __name__ == "__main__":
     showings = enrich(scraped, client, cache, load_overrides(), chooser)
     report(chooser)
     details = film_details((s.tmdb_id for s in showings if s.tmdb_id), client, cache)
-    data = build_data(showings, load_previous(), datetime.now(SYDNEY).date(), details)
+    data = build_data(showings, load_previous(), datetime.now(SYDNEY).date())
     write(data)
+    write(build_panel(showings, data, details), FILMS_PATH)
     new = sum(f["new_this_week"] for f in data["films"])
     print(
         f"Wrote {DATA_PATH}: {len(data['showings'])} showings, "
