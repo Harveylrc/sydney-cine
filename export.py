@@ -13,6 +13,8 @@ Rules from DECISIONS.md:
   the horizon.
 - "Audio Description" and "Closed Captions" are dropped from attributes: almost
   every chain session has them, so they are noise. "Open Captions" stays.
+- Film panel (B10): poster_path, overview and runtime from TMDB; with no TMDB
+  overview or runtime, the first venue synopsis / running time we saw instead.
 First-seen dates are carried forward from the previous data.json.
 """
 
@@ -35,6 +37,7 @@ NEW_DAYS = 7
 RETRO_AGE = 2  # years
 HORIZON_DAYS = 14
 HIDDEN_ATTRIBUTES = {"Audio Description", "Closed Captions"}
+SYNOPSIS_CHARS = 800  # a venue synopsis standing in for TMDB's overview
 
 
 def film_id(s: Showing) -> str:
@@ -59,8 +62,15 @@ def effective_type(s: Showing, this_year: int) -> str | None:
     return "retrospective" if s.year <= this_year - RETRO_AGE else "new_release"
 
 
-def build_data(showings: list[Showing], previous: dict | None, today: date) -> dict:
+def build_data(
+    showings: list[Showing],
+    previous: dict | None,
+    today: date,
+    details: dict[int, dict] | None = None,
+) -> dict:
+    """details: tmdb id -> {poster_path, overview, runtime} (enrich.film_details)."""
     previous = previous or {}
+    details = details or {}
     today_iso = today.isoformat()
 
     venues = {slug: dict(v) for slug, v in previous.get("venues", {}).items()}
@@ -88,8 +98,14 @@ def build_data(showings: list[Showing], previous: dict | None, today: date) -> d
                 "director": s.director,
                 "rating": s.rating,
                 "vote_count": s.vote_count,
+                **panel_fields(details.get(s.tmdb_id, {})),
             },
         )
+        film = films[fid]
+        if not film["overview"] and s.venue_synopsis:
+            film["overview"] = s.venue_synopsis.strip()[:SYNOPSIS_CHARS] or None
+        if not film["runtime"] and s.runtime_min:
+            film["runtime"] = s.runtime_min
         rows.append(
             {
                 "film": fid,
@@ -122,6 +138,10 @@ def build_data(showings: list[Showing], previous: dict | None, today: date) -> d
         "showings": rows,
         "seen": seen,
     }
+
+
+def panel_fields(found: dict) -> dict:
+    return {key: found.get(key) for key in ("poster_path", "overview", "runtime")}
 
 
 def scrape_all(scrapers) -> list[Showing]:
@@ -160,6 +180,7 @@ if __name__ == "__main__":
         TMDBClient,
         claude_chooser,
         enrich,
+        film_details,
         load_overrides,
         load_token,
         report,
@@ -170,9 +191,11 @@ if __name__ == "__main__":
     scrapers = (ritz, hoyts, palace, orpheum, golden_age, roseville, event)
     scraped = scrape_all(scrapers)
     chooser = claude_chooser()
-    showings = enrich(scraped, TMDBClient(load_token()), Cache(), load_overrides(), chooser)
+    client, cache = TMDBClient(load_token()), Cache()
+    showings = enrich(scraped, client, cache, load_overrides(), chooser)
     report(chooser)
-    data = build_data(showings, load_previous(), datetime.now(SYDNEY).date())
+    details = film_details((s.tmdb_id for s in showings if s.tmdb_id), client, cache)
+    data = build_data(showings, load_previous(), datetime.now(SYDNEY).date(), details)
     write(data)
     new = sum(f["new_this_week"] for f in data["films"])
     print(

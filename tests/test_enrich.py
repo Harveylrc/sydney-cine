@@ -12,6 +12,7 @@ from enrich import (
     TMDBClient,
     claude_chooser,
     enrich,
+    film_details,
     load_overrides,
     lookup_key,
     search_terms,
@@ -923,3 +924,29 @@ def test_undated_rows_count_as_stale(tmp_path):
     cache = Cache(path)
     assert cache.stale("title:x|", date(2026, 10, 19))
     assert cache.get("title:x|").tmdb_id == 7
+
+
+# --- film panel details (B10) ---------------------------------------------------
+
+
+def test_film_details_fetched_once_and_cached(tmdb, cache):
+    leon = dict(LEON, poster_path="/leon.jpg", overview="A hitman.", runtime=110)
+    tmdb.movies[101] = leon
+    client = TMDBClient("token", session=tmdb, this_year=2026)
+    found = film_details([101, 101], client, cache, date(2026, 10, 19))
+    assert found == {101: {"poster_path": "/leon.jpg", "overview": "A hitman.", "runtime": 110}}
+    fresh = TMDBClient("token", session=FakeTMDB(), this_year=2026)  # would fail if asked
+    assert film_details([101], fresh, cache, date(2026, 11, 1)) == found
+
+
+def test_film_details_refetched_after_30_days(tmdb, cache):
+    tmdb.movies[101] = dict(LEON, poster_path="/old.jpg")
+    film_details([101], TMDBClient("token", session=tmdb), cache, date(2026, 9, 1))
+    tmdb.movies[101] = dict(LEON, poster_path="/new.jpg")
+    later = film_details([101], TMDBClient("token", session=tmdb), cache, date(2026, 10, 19))
+    assert later[101]["poster_path"] == "/new.jpg"
+
+
+def test_film_details_missing_fields_are_none(tmdb, cache):
+    [details] = film_details([101], TMDBClient("token", session=tmdb), cache).values()
+    assert details == {"poster_path": None, "overview": None, "runtime": None}

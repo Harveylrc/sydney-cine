@@ -240,6 +240,42 @@ def test_film_carries_vote_count():
     assert film["vote_count"] == 5200
 
 
+# --- film panel fields (B10) ---------------------------------------------------
+
+
+def test_film_carries_tmdb_panel_fields():
+    s = showing("Akira (1988)", at(LAUNCH, 19), tmdb_id=149, venue_synopsis="Venue blurb")
+    details = {149: {"poster_path": "/akira.jpg", "overview": "Neo-Tokyo.", "runtime": 124}}
+    [film] = build_data([s], None, LAUNCH, details)["films"]
+    assert (film["poster_path"], film["overview"], film["runtime"]) == (
+        "/akira.jpg",
+        "Neo-Tokyo.",
+        124,
+    )
+
+
+def test_venue_synopsis_and_runtime_fill_gaps():
+    shows = [
+        showing("Local Doco", at(LAUNCH, 18)),
+        showing(
+            "Local Doco", at(LAUNCH, 20), venue_synopsis="  A film about Sydney. ", runtime_min=81
+        ),
+    ]
+    [film] = build_data(shows, None, LAUNCH)["films"]
+    assert (film["poster_path"], film["overview"], film["runtime"]) == (
+        None,
+        "A film about Sydney.",
+        81,
+    )
+
+
+def test_tmdb_overview_beats_venue_synopsis():
+    s = showing("Akira", at(LAUNCH, 19), tmdb_id=149, venue_synopsis="Venue blurb", runtime_min=125)
+    details = {149: {"poster_path": None, "overview": None, "runtime": 124}}
+    [film] = build_data([s], None, LAUNCH, details)["films"]
+    assert (film["overview"], film["runtime"]) == ("Venue blurb", 124)
+
+
 # --- horizon and hidden tags --------------------------------------------------
 
 
