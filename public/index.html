@@ -400,7 +400,6 @@
 
   <footer>
     <p id="updated"></p>
-    <p id="coverage"></p>
     <p>Film details from <a href="https://www.themoviedb.org/">TMDB</a>. This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
     <p>Times link to each cinema's own booking page. Check there before you go.</p>
   </footer>
@@ -908,12 +907,6 @@
       });
       $("#updated").textContent = `Updated ${updated}. Cinemas: ${
         Object.values(data.venues).map((v) => v.name).join(", ")}.`;
-      const cov = data.coverage;
-      if (cov && cov.percent != null) {
-        $("#coverage").textContent = `These listings cover ${cov.percent}% of Sydney's cinema screens: `
-          + `${cov.screens_covered} of ${cov.screens_total} screens, at ${cov.cinemas_covered} of ${cov.cinemas_total} cinemas.`
-          + (cov.uncovered.length ? ` Not yet covered: ${cov.uncovered.join(", ")}.` : "");
-      }
       populateFilters();
       populateRegions();
       render();
