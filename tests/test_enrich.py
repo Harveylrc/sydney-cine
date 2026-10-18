@@ -170,6 +170,9 @@ def showing(title, vista_movie_id=None, hour=19, film_type=None, venue="ritz-ran
         ),
         ("Pressure - Preview Event", ("Pressure", None)),
         ("Super Nature - First Films Opening Night Film", ("Super Nature", None)),
+        ("JIFF 26: The Sea", ("The Sea", None)),
+        ("EXHIBITION ON SCREEN: Monet, 90'", ("EXHIBITION ON SCREEN: Monet", None)),
+        ("Paris, Texas", ("Paris, Texas", None)),
         ("Highlander - Christopher Lambert Live Q&A", ("Highlander", None)),
         (
             "Two of Us - The Songs of Simon & Garfunkel Live",
@@ -527,6 +530,31 @@ def test_seeded_overrides_file():
         "Met Opera 2026-27: Silent Night": 1707867,
         "Love (Sex, Dreams)": 1228685,  # Kjærlighet (2024); quoted in the CSV for its comma
         "Panda": 1616810,  # Zhang Xinyang, 2026
+        # B5e: Roseville's JIFF 26 spellings, and Cancelled (Danny Ben-Moshe, 2026)
+        "JIFF 26: Sapiro v. Ford": 1552128,
+        "JIFF 26: The Heroes of the Louvre": 1208117,
+        "JIFF 26: The Sea": None,
+        "JIFF 26: Cancelled": 1760107,
+        "JIFF: Cancelled": 1760107,
+        "ANDRÉ RIEU’S 26 CHRISTMAS CONCERT: LET IT SNOW": 1707785,
+        # Royal Ballet & Opera 2026/27 season, Roseville and Palace spellings
+        "ROYAL BALLET MacMillan’s MANON": 1702757,
+        "ROYAL BALLET Macmillan’s ROMEO AND JULIET": 1702789,
+        "ROYAL BALLET Petipa’s SWAN LAKE": 1702782,
+        "ROYAL BALLET Wheeldon’s ALICE’S ADVENTURES IN WOND": 1702778,
+        "ROYAL BALLET Wright’s THE NUTCRACKER": 1702761,
+        "ROYAL OPERA Bizet’s CARMEN": 1702759,
+        "ROYAL OPERA Mozart’s COSÌ FAN TUTTE": 1702775,
+        "ROYAL OPERA Puccini’s TOSCA": 1702784,
+        "Royal Ballet: Alice's Adventures In Wonderland": 1702778,
+        "Royal Ballet: Manon": 1702757,
+        "Royal Ballet: Romeo and Juliet": 1702789,
+        "Royal Ballet: Swan Lake": 1702782,
+        "Royal Ballet: The Nutcracker": 1702761,
+        "Royal Opera: Carmen": 1702759,
+        "Royal Opera: Cosí Fan Tutte": 1702775,
+        "Royal Opera: Götterdämmerung": 1702769,
+        "Royal Opera: Tosca": 1702784,
     }
 
 

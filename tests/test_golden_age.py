@@ -3,7 +3,6 @@ rendered HTML the scraper reads, the page embeds the same schedule as data with
 full dates (eventDate); the tests use that to check the inferred years."""
 
 import json
-import logging
 import re
 from datetime import date, datetime, time
 from pathlib import Path
@@ -11,7 +10,7 @@ from zoneinfo import ZoneInfo
 
 import pytest
 
-from scrapers.golden_age import clock, credits, heading_dates, parse_page
+from scrapers.golden_age import clock, credits, parse_page
 
 SYDNEY = ZoneInfo("Australia/Sydney")
 FIXTURE = Path(__file__).parent / "fixtures" / "golden_age_2026-10-18.html"
@@ -73,39 +72,6 @@ def test_notices_and_non_film_events_skipped(showings):
 def test_co_directors(showings):
     naza = next(s for s in showings if s.film_title == "NAZA")
     assert naza.venue_director == "Yuval Abraham, Rachel Szor"
-
-
-# --- year inference ---------------------------------------------------------------
-
-
-def test_month_rollover_into_next_year():
-    headings = ["Wednesday 30th December", "Thursday 31st December", "Friday 1st January"]
-    assert heading_dates(headings, date(2026, 12, 30)) == [
-        date(2026, 12, 30),
-        date(2026, 12, 31),
-        date(2027, 1, 1),
-    ]
-
-
-def test_first_heading_long_past_means_next_year():
-    assert heading_dates(["Saturday 2nd January"], date(2026, 12, 30)) == [date(2027, 1, 2)]
-
-
-def test_first_heading_a_little_past_stays_this_year():
-    # A page cached a day behind: still this year.
-    assert heading_dates(["Saturday 17th October"], TODAY) == [date(2026, 10, 17)]
-
-
-def test_wrong_weekday_logged(caplog):
-    with caplog.at_level(logging.WARNING, logger="golden_age"):
-        assert heading_dates(["Monday 18th October"], TODAY) == [date(2026, 10, 18)]
-    assert "is not a Monday in 2026" in caplog.text
-
-
-@pytest.mark.parametrize("bad", ["Sunday 29th February", "Coming soon"])
-def test_unusable_heading_skipped(bad, caplog):
-    with caplog.at_level(logging.WARNING, logger="golden_age"):
-        assert heading_dates([bad], TODAY) == [None]
 
 
 # --- pieces -----------------------------------------------------------------------

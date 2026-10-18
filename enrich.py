@@ -60,7 +60,7 @@ PREFER_RECENT_TYPES = {"new_release", "festival"}
 # "35mm ", "JIFF: ", "(LFF) ", and Palace festival codes such as "BFF26 ", "GFF26 ".
 # Orpheum strands: "Hitchcock Retro - Psycho", "JFF 2026 - Pitfall".
 TITLE_PREFIX = re.compile(
-    r"^(?:\d{2}mm\s+|(?:JIFF|SFF):\s*|\(LFF\)\s*|[A-Z]{1,4}FF\d{2}\s+"
+    r"^(?:\d{2}mm\s+|(?:JIFF|SFF)(?:\s*\d{2})?:\s*|\(LFF\)\s*|[A-Z]{1,4}FF\d{2}\s+"
     r"|(?:Hitchcoc?k Retro|[A-Z]{1,4}FF \d{4})\s+[-–]\s+)+",
     re.IGNORECASE,
 )
@@ -75,6 +75,7 @@ TITLE_SUFFIX = re.compile(
     r"\s+[-–]\s+(?:Digital|\d{2}mm|\d+(?:st|nd|rd|th) Anniversary)$"  # " - Digital"
     r"|\s*\([^()]*,\s*Eng Sub\)$"  # Hoyts language: " (Hindi, Eng Sub)"
     r"|[\s:(]+Encore\)?$"  # Hoyts re-runs: ": Encore", " (Encore)"
+    r"|,\s*\d+\s*['’]$"  # Roseville running time: "Monet, 90'"
     rf"|\s+[-–]\s*[^-–]*\b(?:{PRESENTATION})\b[^-–]*$",  # " - 30th Anniversary in 4K"
     re.IGNORECASE,
 )

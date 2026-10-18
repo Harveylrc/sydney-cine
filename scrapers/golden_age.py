@@ -4,9 +4,7 @@ The page is grouped by day heading ("Sunday 18th October", no year). Under each
 heading, one Thumb per session: title, subtitle "Dir. Miloš Forman | 81mins",
 time "Sun 18 11:00 am" and a link to /film/{slug}. Notices such as "Closed for
 a Private Event" are Thumbs too, but link elsewhere (/venue-hire) and are
-skipped. The year comes from month rollover: headings run in date order from
-today, so a month earlier than the previous heading's starts the next year; the
-weekday in the heading is checked against the result. Class names carry a
+skipped. The year comes from month rollover (scrapers.heading_dates). Class names carry a
 build hash ("Thumb-module-scss-module__OGaEla__title"), so they are matched on
 their stable suffix. robots.txt allows everything. Links go to the film page,
 where tickets are sold; no session ids are published.
@@ -20,7 +18,7 @@ from zoneinfo import ZoneInfo
 from bs4 import BeautifulSoup, Tag
 
 from models import SYDNEY_TZ, Showing
-from scrapers import BaseScraper, is_non_film
+from scrapers import BaseScraper, heading_dates, is_non_film
 
 log = logging.getLogger("golden_age")
 
@@ -28,22 +26,10 @@ SITE = "https://www.ourgoldenage.com.au"
 PAGE = f"{SITE}/films/now-showing"
 VENUE_SLUG = "golden-age"
 VENUE_NAME = "Golden Age"
-MONTHS = {
-    name: number
-    for number, name in enumerate(
-        ["january", "february", "march", "april", "may", "june", "july", "august",
-         "september", "october", "november", "december"],
-        start=1,
-    )
-}  # fmt: skip
-WEEKDAYS = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"]
-HEADING = re.compile(r"(\w+day)\s+(\d{1,2})(?:st|nd|rd|th)?\s+(\w+)", re.IGNORECASE)
 CLOCK = re.compile(r"(\d{1,2}):(\d{2})\s*(am|pm)", re.IGNORECASE)
 SUBTITLE = re.compile(r"Dir\.\s*(?P<director>.+?)\s*(?:\|\s*(?P<minutes>\d+)\s*mins?)?$")
 # A session listed under day D that starts before this belongs to D+1 (DECISIONS.md).
 DAY_ROLLOVER = time(5, 0)
-# The first heading is today or later; one this far in the past means next year.
-STALE = timedelta(days=60)
 
 SYDNEY = ZoneInfo(SYDNEY_TZ)
 
@@ -51,35 +37,6 @@ SYDNEY = ZoneInfo(SYDNEY_TZ)
 def has_class(suffix: str):
     """Match a CSS-module class by its stable suffix, e.g. '__title'."""
     return lambda classes: classes is not None and any(c.endswith(suffix) for c in classes.split())
-
-
-def heading_dates(headings: list[str], today: date) -> list[date | None]:
-    """'Sunday 18th October', … -> dates, adding a year at each month rollover."""
-    dates, year, previous = [], today.year, None
-    for text in headings:
-        found = HEADING.search(text)
-        month = MONTHS.get(found.group(3).lower()) if found else None
-        if not month:
-            log.warning("Golden Age heading not understood: %r", text)
-            dates.append(None)
-            continue
-        day = int(found.group(2))
-        if previous is None:
-            if date(year, month, min(day, 28)) < today - STALE:
-                year += 1
-        elif month < previous.month:
-            year += 1
-        try:
-            on = date(year, month, day)
-        except ValueError:  # e.g. 29 February in a year that hasn't one
-            log.warning("Golden Age heading %r is not a date in %d", text, year)
-            dates.append(None)
-            continue
-        if WEEKDAYS[on.weekday()] != found.group(1).lower():
-            log.warning("Golden Age heading %r is not a %s in %d", text, found.group(1), year)
-        dates.append(on)
-        previous = on
-    return dates
 
 
 def clock(text: str) -> time | None:

@@ -1,9 +1,11 @@
+import logging
+from datetime import date
 from unittest.mock import MagicMock
 
 import pytest
 
 import scrapers
-from scrapers import USER_AGENT, BaseScraper, is_non_film
+from scrapers import USER_AGENT, BaseScraper, heading_dates, is_non_film
 
 
 class FakeClock:
@@ -103,3 +105,43 @@ def test_non_film_events(title):
 )
 def test_screenings_kept(title):
     assert not is_non_film(title)
+
+
+# --- year inference ---------------------------------------------------------------
+
+
+def test_month_rollover_into_next_year():
+    headings = ["Wednesday 30th December", "Thursday 31st December", "Friday 1st January"]
+    assert heading_dates(headings, date(2026, 12, 30)) == [
+        date(2026, 12, 30),
+        date(2026, 12, 31),
+        date(2027, 1, 1),
+    ]
+
+
+def test_first_heading_long_past_means_next_year():
+    assert heading_dates(["Saturday 2nd January"], date(2026, 12, 30)) == [date(2027, 1, 2)]
+
+
+def test_first_heading_a_little_past_stays_this_year():
+    # A page cached a day behind: still this year.
+    assert heading_dates(["Saturday 17th October"], date(2026, 10, 18)) == [date(2026, 10, 17)]
+
+
+def test_wrong_weekday_logged(caplog):
+    with caplog.at_level(logging.WARNING, logger="scrapers"):
+        assert heading_dates(["Monday 18th October"], date(2026, 10, 18)) == [date(2026, 10, 18)]
+    assert "is not a Monday in 2026" in caplog.text
+
+
+@pytest.mark.parametrize("bad", ["Sunday 29th February", "Coming soon"])
+def test_unusable_heading_skipped(bad, caplog):
+    with caplog.at_level(logging.WARNING, logger="scrapers"):
+        assert heading_dates([bad], date(2026, 10, 18)) == [None]
+
+
+def test_veezi_style_heading():
+    assert heading_dates(["Tuesday 20, October", "Sunday 24, January"], date(2026, 10, 18)) == [
+        date(2026, 10, 20),
+        date(2027, 1, 24),
+    ]
