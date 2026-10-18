@@ -668,11 +668,14 @@
     const lists = el("div", { class: "day-sessions" });
     const buttons = days.map((d, i) => {
       const list = el("div", { role: "tabpanel", id: `${id}-day-${i}`, "aria-labelledby": `${id}-tab-${i}` });
-      if (isPartial(d)) list.append(partialNote());
+      // A retrospective, festival or special screening is programmed ahead, so a
+      // day where all of this film's sessions are one of those gets no note or dot.
+      const noted = isPartial(d) && !byDay.get(d).every((s) => PLANNED_AHEAD.has(s.type));
+      if (noted) list.append(partialNote());
       list.append(sessionRows(film, byDay.get(d)));
       lists.append(list);
       const button = el("button", { type: "button", role: "tab", id: `${id}-tab-${i}`, "aria-controls": `${id}-day-${i}`, text: tabLabel(d) });
-      if (isPartial(d)) {
+      if (noted) {
         button.append(el("span", { class: "dot", "aria-hidden": "true" }), el("span", { class: "sr-only", text: " (not fully published)" }));
         button.title = "Not fully published yet";
       }
