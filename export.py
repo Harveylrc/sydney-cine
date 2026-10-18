@@ -135,10 +135,10 @@ if __name__ == "__main__":
         load_token,
         report,
     )
-    from scrapers import hoyts, orpheum, palace, ritz
+    from scrapers import golden_age, hoyts, orpheum, palace, ritz
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-    scraped = ritz.fetch() + hoyts.fetch() + palace.fetch() + orpheum.fetch()
+    scraped = ritz.fetch() + hoyts.fetch() + palace.fetch() + orpheum.fetch() + golden_age.fetch()
     chooser = claude_chooser()
     showings = enrich(scraped, TMDBClient(load_token()), Cache(), load_overrides(), chooser)
     report(chooser)

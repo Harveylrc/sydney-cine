@@ -69,7 +69,7 @@ TITLE_PREFIX = re.compile(
 # live show named after a film ("Two of Us - … Live") must not match that film.
 PRESENTATION = (
     r"Anniv(?:ersary)?|Restoration|Q&A|Preview|Advance Screenings?|Limited|Special Event"
-    r"|70mm|in 4K|in 3D|on 35mm|Exclusive|Sing-A-Long|Directors? Cut"
+    r"|70mm|in 4K|in 3D|on 35mm|Exclusive|Sing-A-Long|Directors? Cut|Opening Night"
 )
 TITLE_SUFFIX = re.compile(
     r"\s+[-–]\s+(?:Digital|\d{2}mm|\d+(?:st|nd|rd|th) Anniversary)$"  # " - Digital"

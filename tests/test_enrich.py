@@ -169,6 +169,7 @@ def showing(title, vista_movie_id=None, hour=19, film_type=None, venue="ritz-ran
             ("George Michael - The Faith Tour", None),
         ),
         ("Pressure - Preview Event", ("Pressure", None)),
+        ("Super Nature - First Films Opening Night Film", ("Super Nature", None)),
         ("Highlander - Christopher Lambert Live Q&A", ("Highlander", None)),
         (
             "Two of Us - The Songs of Simon & Garfunkel Live",
