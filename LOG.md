@@ -29,3 +29,4 @@
 2026-10-18 B5a reviewed by Harvey; four questions answered (Erina out, tags dropped, AD/CC hidden, 14-day cap). Layout changed to one block per film per day with time·cinema rows (B4c).
 - 2026-10-18 B4c: export.py keeps 14 days (by display day, so a 1 am session on day 15 stays) and drops Audio Description/Closed Captions; page shows one block per film per day with time · cinema · tags rows sorted by time; TMDB logo slot in footer (public/tmdb-logo.svg, hidden if missing). data.json 758 KB raw, 43 KB gzipped. Unsure: TMDB's robots.txt blocks AI agents, so Harvey downloads the logo by hand; popular films now run to 20+ rows a day.
 - 2026-10-18 B4c follow-up: TMDB logo slot removed at Harvey's request; footer keeps the text attribution only. DECISIONS and TASKS updated.
+2026-10-18 B4c reviewed (Harvey): layout right but entries must be collapsed by default, expand on click → B4d.
