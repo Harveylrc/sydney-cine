@@ -1,0 +1,9 @@
+# Stub (B13d): the Regent's own site lists films but not session times; those are
+# only on SimpleTix, a ticketing site we don't fetch. Fill in with
+#   pbpaste | .venv/bin/python -m scripts.paste_to_manual richmond-regent
+# from the SimpleTix session list opened in your own browser.
+venue: richmond-regent
+name: Richmond Regent
+source: https://www.theregentrichmond.com.au/cinema
+updated: 2026-10-19
+sessions: []
