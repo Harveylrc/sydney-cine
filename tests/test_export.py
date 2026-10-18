@@ -310,12 +310,12 @@ def test_venue_missing_from_yaml_has_no_region():
 
 
 def test_venues_yaml_covers_every_scraped_venue():
-    from scrapers import event, golden_age, hoyts, orpheum, palace, ritz, roseville
+    from scrapers import event, glenbrook, golden_age, hoyts, orpheum, palace, ritz, roseville
 
     slugs = {f"hoyts-{hoyts.cinema_slug(c)}" for c in hoyts.CINEMAS}
     slugs |= {f"event-{slug}" for slug in event.CINEMAS}
     slugs |= {slug for slug, _ in palace.CINEMAS.values()}
-    slugs |= {m.VENUE_SLUG for m in (ritz, orpheum, golden_age, roseville)}
+    slugs |= {m.VENUE_SLUG for m in (ritz, orpheum, golden_age, roseville, glenbrook)}
     venues = load_venues()
     scraped = {
         slug for slug, v in venues.items() if v.get("scraped", True) and v.get("source") != "manual"

@@ -249,10 +249,20 @@ if __name__ == "__main__":
         load_token,
         report,
     )
-    from scrapers import event, golden_age, hoyts, manual, orpheum, palace, ritz, roseville
+    from scrapers import (
+        event,
+        glenbrook,
+        golden_age,
+        hoyts,
+        manual,
+        orpheum,
+        palace,
+        ritz,
+        roseville,
+    )
 
     logging.basicConfig(level=logging.INFO, format="%(levelname)s %(message)s")
-    scrapers = (ritz, hoyts, palace, orpheum, golden_age, roseville, event, manual)
+    scrapers = (ritz, hoyts, palace, orpheum, golden_age, roseville, event, glenbrook, manual)
     scraped = scrape_all(scrapers)
     chooser = claude_chooser()
     client, cache = TMDBClient(load_token()), Cache()
