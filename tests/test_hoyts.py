@@ -67,6 +67,8 @@ def test_fixture_session(showings):
         "Infinity Vision",
     ]
     assert s.vista_movie_id == "HO00008129"  # Doomsday's second Vista id
+    assert s.runtime_min == 165
+    assert s.venue_synopsis is None  # Hoyts: runtime only (DECISIONS 2026-10-18)
     assert s.film_type is None
 
 

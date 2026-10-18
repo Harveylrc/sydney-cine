@@ -1,10 +1,11 @@
+import json
 from datetime import datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
 import pytest
 
-from scrapers.palace import attributes, film_type, parse_page, start_time
+from scrapers.palace import attributes, film_type, parse_page, runtime, start_time
 
 SYDNEY = ZoneInfo("Australia/Sydney")
 FIXTURE = Path(__file__).parent / "fixtures" / "palace_central_2026-10-18.html"
@@ -42,6 +43,8 @@ def test_fixture_session(showings):
     assert s.booking_url == "https://buy.palacecinemas.com.au/?cinema=200&session=178738"
     assert s.attributes == ["Audio Description", "Closed Captions"]
     assert s.vista_movie_id == "HO00019390"
+    assert s.runtime_min == 131
+    assert s.venue_synopsis is None  # synopses were emptied in the trimmed fixture
     assert s.film_type is None
 
 
@@ -102,3 +105,42 @@ def test_attributes_mapped_dropped_and_kept():
 )
 def test_film_type(title, genres, labels, expected):
     assert film_type({"title": title, "genreNames": genres}, labels) == expected
+
+
+@pytest.mark.parametrize(
+    "text, minutes", [("131 MIN", 131), ("90 min", 90), ("", None), (None, None)]
+)
+def test_runtime(text, minutes):
+    assert runtime(text) == minutes
+
+
+def test_synopsis_passed_through():
+    data = {
+        "props": {
+            "pageProps": {
+                "cinema": {"slug": "palace-norton-street"},
+                "sessions": [
+                    {
+                        "movieId": "HO1",
+                        "title": "The Fox",
+                        "genreNames": [],
+                        "synopsis": "  Dario Russo's dark comedy.\n ",
+                        "runTime": "90 MIN",
+                        "sessions": [
+                            {
+                                "sessionId": "1",
+                                "cinemaId": "129",
+                                "date": "2026-10-20T18:30:00.000Z",
+                                "sessionInfo": [],
+                                "displayAttributeText": None,
+                            }
+                        ],
+                    }
+                ],
+            }
+        }
+    }
+    html = f'<script id="__NEXT_DATA__" type="application/json">{json.dumps(data)}</script>'
+    [s] = parse_page(html)
+    assert s.venue_synopsis == "Dario Russo's dark comedy."
+    assert s.runtime_min == 90

@@ -124,6 +124,7 @@ def parse_sessions(
                 attributes=attributes(session, unknown),
                 film_type=film_type(movie, session),
                 vista_movie_id=session["movieId"],
+                runtime_min=(movie.get("runtime") or {}).get("minutes") or movie.get("duration"),
             )
         )
     return showings

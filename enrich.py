@@ -47,6 +47,7 @@ MAX_CLAUDE_CALLS = 200  # per run: hard budget guard
 MAX_CANDIDATES = 8
 CLAUDE_MAX_TOKENS = 2000  # room to think before the final "Answer:" line
 OVERVIEW_CHARS = 300
+SYNOPSIS_CHARS = 800
 
 # No-year tiebreak: these showings prefer an exact match from the last 3 years.
 RECENT_YEARS = 3
@@ -138,16 +139,20 @@ class TMDBClient:
         """The rules alone: see pick()."""
         return self.pick(self.search(title, year)[0], year, prefer_recent)
 
-    def pick(self, candidates: list[dict], year: int | None, prefer_recent: bool) -> Match:
+    def rule_choice(
+        self, candidates: list[dict], year: int | None, prefer_recent: bool
+    ) -> dict | None:
         """With no year and prefer_recent, the first exact match from the last
         RECENT_YEARS years wins; failing that, TMDB's first exact match."""
         if prefer_recent and year is None:
             cutoff = self.this_year - RECENT_YEARS
             recent = [r for r in candidates if (release_year(r) or 0) >= cutoff]
             candidates = recent or candidates
-        if not candidates:
-            return Match(tmdb_id=None)
-        return self.details(candidates[0]["id"])
+        return candidates[0] if candidates else None
+
+    def pick(self, candidates: list[dict], year: int | None, prefer_recent: bool) -> Match:
+        chosen = self.rule_choice(candidates, year, prefer_recent)
+        return self.details(chosen["id"]) if chosen else Match(tmdb_id=None)
 
     def movie(self, tmdb_id: int) -> dict:
         if tmdb_id not in self._movies:
@@ -165,7 +170,7 @@ class TMDBClient:
         )
 
     def describe(self, result: dict) -> dict:
-        """A search result as Claude sees it: title, year, director, overview."""
+        """A search result as Claude sees it: title, year, director, runtime, overview."""
         movie = self.movie(result["id"])
         return {
             "tmdb_id": movie["id"],
@@ -173,6 +178,7 @@ class TMDBClient:
             "original_title": movie.get("original_title", ""),
             "year": release_year(movie),
             "director": directors(movie),
+            "runtime": movie.get("runtime") or None,
             "overview": (movie.get("overview") or "")[:OVERVIEW_CHARS],
         }
 
@@ -195,8 +201,10 @@ class ClaudeChooser:
     SYSTEM = (
         "You match Sydney cinema listings to The Movie Database (TMDB). Venue titles may "
         "carry festival codes (e.g. BFF26, JFF26), formats, languages or anniversary notes. "
-        "Decide which candidate is the film being screened, or none if no candidate is that "
-        "film; prefer none to a guess. End your reply with one line: "
+        "Decide which candidate is the film being screened. When the title rules have a "
+        "choice, keep it unless the venue's description, the year or the running time "
+        "contradicts it. When they have none, pick the candidate the evidence supports, or "
+        "none rather than guess. End your reply with one line: "
         "'Answer: <tmdb_id>' or 'Answer: none'."
     )
 
@@ -206,7 +214,9 @@ class ClaudeChooser:
         self.answers = {"matched": 0, "none": 0}
         self._budget_logged = False
 
-    def choose(self, s: Showing, candidates: list[dict]) -> int | None:
+    def choose(
+        self, s: Showing, candidates: list[dict], rules_pick: int | None = None
+    ) -> int | None:
         if self.calls >= self.max_calls:
             if not self._budget_logged:
                 log.warning("Claude budget of %d calls used; rules decide the rest", self.max_calls)
@@ -218,7 +228,7 @@ class ClaudeChooser:
                 model=self.model,
                 max_tokens=CLAUDE_MAX_TOKENS,
                 system=self.SYSTEM,
-                messages=[{"role": "user", "content": prompt(s, candidates)}],
+                messages=[{"role": "user", "content": prompt(s, candidates, rules_pick)}],
             )
             # Thinking blocks may come first; the answer is in the text blocks.
             reply = "\n".join(b.text for b in response.content if b.type == "text")
@@ -237,12 +247,18 @@ class ClaudeChooser:
         return int(answers[-1])
 
 
-def prompt(s: Showing, candidates: list[dict]) -> str:
+def prompt(s: Showing, candidates: list[dict], rules_pick: int | None = None) -> str:
     lines = [
         "A Sydney cinema lists this screening:",
         f"Title: {s.film_title}",
         f"Type: {(s.film_type or 'not given').replace('_', ' ')}",
         f"Tags: {', '.join(s.attributes) or 'none'}",
+    ]
+    if s.runtime_min:
+        lines.append(f"Running time: {s.runtime_min} min")
+    if s.venue_synopsis:
+        lines.append(f"Venue's description: {' '.join(s.venue_synopsis.split())[:SYNOPSIS_CHARS]}")
+    lines += [
         "",
         "Which of these TMDB entries is the film being screened?",
     ]
@@ -250,11 +266,14 @@ def prompt(s: Showing, candidates: list[dict]) -> str:
         also = (
             f" (original title: {c['original_title']})" if c["original_title"] != c["title"] else ""
         )
+        runtime = f", {c['runtime']} min" if c["runtime"] else ""
         lines.append(
-            f"- tmdb_id {c['tmdb_id']}: {c['title']}{also}, {c['year'] or 'year unknown'}, "
-            f"directed by {c['director'] or 'unknown'}. {c['overview']}"
+            f"- tmdb_id {c['tmdb_id']}: {c['title']}{also}, {c['year'] or 'year unknown'}"
+            f"{runtime}, directed by {c['director'] or 'unknown'}. {c['overview']}"
         )
-    lines += ["", "End with 'Answer: <tmdb_id>' or 'Answer: none'."]
+    choice = f"tmdb_id {rules_pick}" if rules_pick else "no choice"
+    lines += ["", f"The title rules' choice: {choice}."]
+    lines += ["End with 'Answer: <tmdb_id>' or 'Answer: none'."]
     return "\n".join(lines)
 
 
@@ -336,8 +355,11 @@ def enrich(
         exact, results = client.search(title, year)
         pool = (exact or results)[:MAX_CANDIDATES]
         if chooser and len(exact) != 1 and pool:
+            rules = client.rule_choice(exact, year, prefers_recent(s))
             try:
-                chosen = chooser.choose(s, [client.describe(r) for r in pool])
+                chosen = chooser.choose(
+                    s, [client.describe(r) for r in pool], rules["id"] if rules else None
+                )
             except ChooserUnavailable:
                 return client.pick(exact, year, prefers_recent(s)), False
             return (client.details(chosen) if chosen else Match(tmdb_id=None)), True

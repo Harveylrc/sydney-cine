@@ -671,3 +671,40 @@ def test_api_key_read_from_env_file(tmp_path, monkeypatch):
     env = tmp_path / ".env"
     env.write_text("TMDB_API_KEY=abc\nANTHROPIC_API_KEY=sk-test\n")
     assert isinstance(claude_chooser(env), ClaudeChooser)
+
+
+def test_prompt_carries_venue_evidence_and_rules_choice(tmdb_b3c, cache):
+    claude = FakeClaude("16938")
+    retro = showing("Black Christmas", film_type="retrospective")
+    retro = Showing(
+        **{
+            **retro.__dict__,
+            "venue_synopsis": "Sorority sisters,\n  strange calls.",
+            "runtime_min": 98,
+        }
+    )
+    run_claude([retro], tmdb_b3c, cache, claude)
+    text = claude.prompts[0]["messages"][0]["content"]
+    assert "Running time: 98 min" in text
+    assert "Venue's description: Sorority sisters, strange calls." in text
+    assert "The title rules' choice: tmdb_id 551808." in text  # TMDB's first exact match
+    assert "keep it unless" in claude.prompts[0]["system"]
+
+
+def test_prompt_without_evidence_or_rules_choice(tmdb_b3c, cache):
+    tmdb_b3c.search["The Match"] = [EL_PARTIDO | {"title": "El Partido"}]
+    claude = FakeClaude("1666712")
+    run_claude([showing("BFF26 The Match")], tmdb_b3c, cache, claude)
+    text = claude.prompts[0]["messages"][0]["content"]
+    assert "Running time" not in text and "Venue's description" not in text
+    assert "The title rules' choice: no choice." in text
+
+
+def test_candidate_runtime_in_prompt(tmdb_b3c, cache):
+    tmdb_b3c.movies[16938] = BLACK_XMAS_1974 | {"runtime": 98}
+    claude = FakeClaude("16938")
+    run_claude([showing("Black Christmas")], tmdb_b3c, cache, claude)
+    assert (
+        "Black Christmas, 1974, 98 min, directed by Bob Clark"
+        in claude.prompts[0]["messages"][0]["content"]
+    )

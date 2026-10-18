@@ -104,6 +104,12 @@ def film_type(movie: dict, labels: list[str]) -> str | None:
     return None
 
 
+def runtime(text: str | None) -> int | None:
+    """'131 MIN' -> 131."""
+    found = re.match(r"\s*(\d+)", text or "")
+    return int(found.group(1)) if found else None
+
+
 def parse_page(html: str, unknown: set[str] | None = None) -> list[Showing]:
     props = next_data(html)["props"]["pageProps"]
     venue_slug, venue_name = CINEMAS[props["cinema"]["slug"]]
@@ -125,6 +131,8 @@ def parse_page(html: str, unknown: set[str] | None = None) -> list[Showing]:
                     attributes=labels,
                     film_type=film_type(movie, labels),
                     vista_movie_id=movie["movieId"],
+                    venue_synopsis=(movie.get("synopsis") or "").strip() or None,
+                    runtime_min=runtime(movie.get("runTime")),
                 )
             )
     return showings

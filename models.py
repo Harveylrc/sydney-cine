@@ -23,7 +23,9 @@ class Showing:
     booking_url: str | None = None
     attributes: list[str] = field(default_factory=list)  # e.g. "70mm", "Captions", "NFT"
     film_type: str | None = None  # one of FILM_TYPES, as the venue labels it
-    vista_movie_id: str | None = None  # "HO000…" — shared by Hoyts, Palace, Orpheum
+    vista_movie_id: str | None = None  # "HO000…" — unique within one chain only
+    venue_synopsis: str | None = None  # the venue's own description, when it gives one
+    runtime_min: int | None = None  # the venue's running time, when it gives one
     tmdb_id: int | None = None
     year: int | None = None
     director: str | None = None
