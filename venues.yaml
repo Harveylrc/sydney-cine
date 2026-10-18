@@ -72,4 +72,6 @@
 - {slug: mount-vic-flicks, name: Mount Vic Flicks, lga: Blue Mountains, region: Outer West, screens: 1, scraped: false}  # B13c
 - {slug: dumaresq-street, name: Dumaresq Street Cinemas, lga: Campbelltown, region: South West, screens: null, scraped: false}  # count unknown; B13e
 - {slug: govindas, name: Govinda's Movie Room, lga: City of Sydney, region: City, screens: 1, scraped: false}  # B13f
-- {slug: sydney-cinematheque, name: Sydney Cinémathèque, lga: City of Sydney, region: City, screens: 1, scraped: false}  # Domain Theatre, AGNSW; B13a
+# Manual: the gallery's site is bot-walled, so its programme is pasted in by hand
+# (manual/sydney-cinematheque.yaml via scripts/paste_to_manual.py; B13a-ii).
+- {slug: sydney-cinematheque, name: Sydney Cinémathèque, lga: City of Sydney, region: City, screens: 1, source: manual, source_url: "https://www.artgallery.nsw.gov.au/whats-on/cinema"}
