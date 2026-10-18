@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 from bs4 import BeautifulSoup
 
 from models import SYDNEY_TZ, Showing
-from scrapers import BaseScraper
+from scrapers import BaseScraper, is_non_film
 
 BASE_URL = "https://www.ritzcinemas.com.au"
 VENUE_SLUG = "ritz-randwick"
@@ -48,6 +48,8 @@ def parse_day(html: str, day: date) -> list[Showing]:
     showings = []
     for movie in soup.select("div.Movie"):
         title = movie.select_one(".Title").get_text(strip=True)
+        if is_non_film(title):
+            continue
         for link in movie.select("a.sessions-link"):
             clock = datetime.strptime(
                 link.select_one("span.Time").get_text(strip=True), "%I:%M %p"

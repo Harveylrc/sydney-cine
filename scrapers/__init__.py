@@ -5,6 +5,7 @@ implements fetch() -> list[Showing].
 """
 
 import hashlib
+import re
 import time
 from pathlib import Path
 from urllib.parse import urlsplit
@@ -14,8 +15,21 @@ import requests
 from models import Showing
 
 USER_AGENT = "sydney-cine/0.1 (+contact in README)"
+# Venue listings that are not screenings: dropped by every scraper (DECISIONS
+# 2026-10-18). Specific phrases only — "party" or "quiz" alone would catch films
+# such as The Party or Quiz Show. Concert films, opera/theatre broadcasts and
+# Q&A screenings are screenings and stay.
+NON_FILM = re.compile(
+    r"\bTrivia\b|\bQuiz Nights?\b|\bDJ (?:Sets?|Nights?)\b|\bDance Party\b"
+    r"|\bJazz Lounge\b|\bComedy Club\b",
+    re.IGNORECASE,
+)
 MIN_INTERVAL = 1.0  # seconds between requests to the same host
 CACHE_DIR = Path(__file__).resolve().parent.parent / "cache"
+
+
+def is_non_film(title: str) -> bool:
+    return bool(NON_FILM.search(title))
 
 
 class BaseScraper:

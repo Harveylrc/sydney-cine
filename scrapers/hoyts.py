@@ -14,7 +14,7 @@ from datetime import datetime
 from zoneinfo import ZoneInfo
 
 from models import SYDNEY_TZ, Showing
-from scrapers import BaseScraper
+from scrapers import BaseScraper, is_non_film
 
 log = logging.getLogger("hoyts")
 
@@ -112,6 +112,8 @@ def parse_sessions(
             continue
         if movie is None:
             log.warning("Hoyts session %s: unknown movie %s", session["id"], session["movieId"])
+            continue
+        if is_non_film(movie["name"]):
             continue
         showings.append(
             Showing(

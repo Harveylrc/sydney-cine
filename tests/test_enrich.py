@@ -525,6 +525,8 @@ def test_seeded_overrides_file():
         "Met Opera 2026-27: Manon": 1703631,
         "Met Opera 2026-27: Samson et Dalila": 1703624,
         "Met Opera 2026-27: Silent Night": 1707867,
+        "Love (Sex, Dreams)": 1228685,  # Kjærlighet (2024); quoted in the CSV for its comma
+        "Panda": 1616810,  # Zhang Xinyang, 2026
     }
 
 

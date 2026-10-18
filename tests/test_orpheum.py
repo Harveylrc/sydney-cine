@@ -36,8 +36,9 @@ def by_id(showings, session_id):
 
 
 def test_fixture_counts(showings):
-    assert len(showings) == 258
-    assert len({s.film_title for s in showings}) == 104
+    assert len(showings) == 253  # 258 listed, less 5 Jazz Lounge / Comedy Club nights
+    assert len({s.film_title for s in showings}) == 100
+    assert not any("Jazz Lounge" in s.film_title or "Comedy Club" in s.film_title for s in showings)
     assert {(s.venue_slug, s.venue_name) for s in showings} == {("orpheum", "Hayden Orpheum")}
 
 

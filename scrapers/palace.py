@@ -19,7 +19,7 @@ from zoneinfo import ZoneInfo
 from bs4 import BeautifulSoup
 
 from models import SYDNEY_TZ, Showing
-from scrapers import BaseScraper
+from scrapers import BaseScraper, is_non_film
 
 log = logging.getLogger("palace")
 
@@ -115,6 +115,8 @@ def parse_page(html: str, unknown: set[str] | None = None) -> list[Showing]:
     venue_slug, venue_name = CINEMAS[props["cinema"]["slug"]]
     showings = []
     for movie in props["sessions"]:
+        if is_non_film(movie["title"]):
+            continue
         for session in movie["sessions"]:
             labels = attributes(session, unknown)
             start = start_time(session["date"])

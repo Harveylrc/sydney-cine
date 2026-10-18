@@ -3,7 +3,7 @@ from unittest.mock import MagicMock
 import pytest
 
 import scrapers
-from scrapers import USER_AGENT, BaseScraper
+from scrapers import USER_AGENT, BaseScraper, is_non_film
 
 
 class FakeClock:
@@ -70,3 +70,36 @@ def test_raw_response_cached(scraper, tmp_path):
 def test_fetch_must_be_implemented(scraper):
     with pytest.raises(NotImplementedError):
         scraper.fetch()
+
+
+@pytest.mark.parametrize(
+    "title",
+    [
+        "Film Trivia",
+        "Halloween Quiz Night",
+        "The Orpheum Jazz Lounge - The Pocket Trio",
+        "Comedy Store Presents Hayden Orpheum Comedy Club",
+        "Saturday DJ Set",
+        "Silent Disco Dance Party",
+    ],
+)
+def test_non_film_events(title):
+    assert is_non_film(title)
+
+
+@pytest.mark.parametrize(
+    "title",
+    [
+        "The Party",  # Blake Edwards, 1968
+        "GFF26 The Birthday Party",
+        "HYBE CHEERING PARTY",  # a fan screening TMDB lists as a film
+        "Quiz Show",
+        "Rammstein - Live in Mexico City",
+        "BTS WORLD TOUR 'ARIRANG' IN SAO PAULO LIVE VIEWING",
+        "Highlander - Christopher Lambert Live Q&A",
+        "NT Live: Golden Boy",
+        "Met Opera - Macbeth",
+    ],
+)
+def test_screenings_kept(title):
+    assert not is_non_film(title)

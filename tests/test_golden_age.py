@@ -37,7 +37,7 @@ def embedded_schedule(html):
         (t["title"], t["eventDate"])
         for group in data["groupedThumbData"]
         for t in group["thumbs"]
-        if t["contentType"] == "film"
+        if t["contentType"] == "film" and t["title"] != "Film Trivia"
     ]
 
 
@@ -45,8 +45,8 @@ def embedded_schedule(html):
 
 
 def test_fixture_counts(showings):
-    assert len(showings) == 60
-    assert len({s.film_title for s in showings}) == 35
+    assert len(showings) == 57  # 60 film-page sessions, less 3 Film Trivia nights
+    assert len({s.film_title for s in showings}) == 34
     assert {(s.venue_slug, s.venue_name) for s in showings} == {("golden-age", "Golden Age")}
 
 
@@ -64,11 +64,10 @@ def test_fixture_session(showings):
     assert s.attributes == [] and s.session_id is None and s.film_type is None
 
 
-def test_notices_skipped_and_events_kept(showings):
+def test_notices_and_non_film_events_skipped(showings):
     titles = {s.film_title for s in showings}
     assert not any("Closed" in t for t in titles)
-    trivia = next(s for s in showings if s.film_title == "Film Trivia")
-    assert (trivia.venue_director, trivia.runtime_min) == (None, None)
+    assert "Film Trivia" not in titles
 
 
 def test_co_directors(showings):

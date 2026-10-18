@@ -28,7 +28,7 @@ Each task: branch `task/<id>-<slug>`, `make check` green, tick here, one line in
 - [x] **B5c Orpheum** (also pass synopsisShort + duration) (`/api/movie/playing-now`; fixture = saved JSON)
 - [x] **B5c-ii Orpheum follow-ups.** Per DECISIONS 2026-10-18: Palace keeps NFT; overrides also match the cleaned title; add override rows for The Frighteners and the other clear Orpheum misses; add `venue_director` to `Showing`, fill it from the Orpheum feed, include it in the Claude prompt. Acceptance: `make check`; Fallen Angels – Preview Event and The Frighteners match.
 - [x] **B5d Golden Age** (HTML, day headings; infer year from month rollover)
-- [ ] **B5d-ii Golden Age follow-ups.** Drop Film Trivia and any other non-film event (rule in DECISIONS.md); add the two overrides with verified ids. Acceptance: `make check`.
+- [x] **B5d-ii Golden Age follow-ups.** Drop Film Trivia and any other non-film event (rule in DECISIONS.md); add the two overrides with verified ids. Acceptance: `make check`.
 - [ ] **B5e Roseville** (Veezi sessions page; never fetch `/purchase`)
 - [ ] **B5f Event** (printable week view for each Sydney slug; verify output matches a normal browser UA)
 - [ ] **B6 Nightly job + deploy.** GitHub Actions: first download the deployed `public/data.json` (so first-seen dates carry forward; refresh TMDB ratings older than 30 days), then cron 03:00 Sydney, run scrapers → enrich → export → deploy `public/` to GitHub Pages. Secrets for TMDB. Acceptance: one scheduled run succeeds and the page is live.

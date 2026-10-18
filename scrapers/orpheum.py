@@ -15,7 +15,7 @@ from zoneinfo import ZoneInfo
 from bs4 import BeautifulSoup
 
 from models import SYDNEY_TZ, Showing
-from scrapers import BaseScraper
+from scrapers import BaseScraper, is_non_film
 
 log = logging.getLogger("orpheum")
 
@@ -100,6 +100,8 @@ def parse_films(films: list[dict], unknown: set[str] | None = None) -> list[Show
     showings = []
     for film in films:
         title = film["title"].strip()
+        if is_non_film(title):
+            continue
         for session in film["sessionTimes"]:
             key = SESSION_KEY.search(session["bookingLink"])
             showings.append(

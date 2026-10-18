@@ -20,7 +20,7 @@ from zoneinfo import ZoneInfo
 from bs4 import BeautifulSoup, Tag
 
 from models import SYDNEY_TZ, Showing
-from scrapers import BaseScraper
+from scrapers import BaseScraper, is_non_film
 
 log = logging.getLogger("golden_age")
 
@@ -122,6 +122,8 @@ def parse_page(html: str, today: date) -> list[Showing]:
             link = thumb.find("a", href=True)
             if not link or not link["href"].startswith("/film/"):
                 continue  # "Closed for a Private Event" and other notices
+            if is_non_film(text_of(thumb, "__title")):
+                continue  # "Film Trivia"
             at = clock(text_of(thumb, "__eventDate"))
             if at is None:
                 log.warning("Golden Age session without a time: %r", text_of(thumb, "__title"))
