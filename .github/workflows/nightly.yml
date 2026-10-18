@@ -27,9 +27,6 @@ concurrency:
   group: nightly
   cancel-in-progress: false
 
-env:
-  SITE_URL: https://harveylrc.github.io/sydney-cine
-
 jobs:
   build:
     runs-on: ubuntu-latest
@@ -76,13 +73,7 @@ jobs:
       - name: Download the live data.json
         if: steps.clock.outputs.run == 'true'
         run: |
-          mkdir -p public
-          if curl -fsSL "$SITE_URL/data.json" -o public/data.json; then
-            echo "Previous data.json downloaded"
-          else
-            rm -f public/data.json
-            echo "No published data.json yet: first-seen dates start today"
-          fi
+          scripts/fetch_live.sh data.json || echo "No published data.json yet: first-seen dates start today"
 
       - name: Scrape, match and export
         if: steps.clock.outputs.run == 'true'
@@ -98,11 +89,11 @@ jobs:
         env:
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
         run: |
-          if [ "$(TZ=Australia/Sydney date +%d)" != "01" ] && curl -fsSL "$SITE_URL/directors.json" -o public/directors.json; then
+          if [ "$(TZ=Australia/Sydney date +%d)" != "01" ] && scripts/fetch_live.sh directors.json; then
             echo "Kept the published directors.json"
           elif ! python -m scripts.build_directors; then
             echo "::warning::Director list not rebuilt; keeping the published one if there is one"
-            curl -fsSL "$SITE_URL/directors.json" -o public/directors.json || rm -f public/directors.json
+            scripts/fetch_live.sh directors.json || true
           fi
 
       - name: Save lookup cache

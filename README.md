@@ -13,7 +13,8 @@ harveylrc@proton.me.
 Every night at 03:00 Sydney time a GitHub Actions job (`.github/workflows/nightly.yml`)
 scrapes each cinema, matches the films on TMDB (asking Claude when the rules are
 unsure), writes `public/data.json` (and `films.json`, the posters and running times a film row loads when first opened) and publishes `public/` to GitHub Pages at
-https://harveylrc.github.io/sydney-cine/. It reads the published `data.json` first so
+https://sydneycinema.com/ (the old https://harveylrc.github.io/sydney-cine/ address
+redirects there). It reads the published `data.json` first so
 "new this week" dates carry over, and keeps its TMDB lookup cache between runs.
 On the 1st of each month it also rebuilds `directors.json`, the ~2,000 directors the
 Director field suggests (`python -m scripts.build_directors`, about 10 minutes).
@@ -21,5 +22,10 @@ Director field suggests (`python -m scripts.build_directors`, about 10 minutes).
 
 It needs two repository secrets, `TMDB_API_KEY` and `ANTHROPIC_API_KEY` (Settings →
 Secrets and variables → Actions), and Settings → Pages → Source set to "GitHub
-Actions". Locally, the same keys go in `.env` (see `.env.example`); `make check` runs
+Actions", with Custom domain `sydneycinema.com` and Enforce HTTPS ticked (`public/CNAME`
+records the domain, but GitHub only reads it for sites it builds itself, so the
+Settings entry is what counts). DNS for the domain (at Cloudflare): A records for
+`sydneycinema.com` to 185.199.108.153, 185.199.109.153, 185.199.110.153 and
+185.199.111.153, and a CNAME for `www` to `harveylrc.github.io`, all "DNS only".
+Locally, the same keys go in `.env` (see `.env.example`); `make check` runs
 the linter and tests, and `python export.py` builds `public/data.json`.
