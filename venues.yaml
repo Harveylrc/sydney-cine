@@ -73,7 +73,7 @@
 - {slug: glenbrook-cinema, name: Glenbrook Cinema, lga: Blue Mountains, region: Outer West, screens: 1}  # scraped since B13b
 - {slug: mount-vic-flicks, name: Mount Vic Flicks, lga: Blue Mountains, region: Outer West, screens: 1}  # scraped since B13c
 - {slug: dumaresq-street, name: Dumaresq Street Cinemas, lga: Campbelltown, region: South West, screens: null, source: manual, source_url: "https://dscinema.com.au/"}  # count unknown; B13e: data only via robots-disallowed /graphql
-- {slug: govindas, name: Govinda's Movie Room, lga: City of Sydney, region: City, screens: 1, scraped: false}  # B13f
+- {slug: govindas, name: Govinda's Movie Room, lga: City of Sydney, region: City, screens: 1}  # scraped since B13f
 # Manual: the gallery's site is bot-walled, so its programme is pasted in by hand
 # (manual/sydney-cinematheque.yaml via scripts/paste_to_manual.py; B13a-ii).
 - {slug: sydney-cinematheque, name: Sydney Cinémathèque, lga: City of Sydney, region: City, screens: 1, source: manual, source_url: "https://www.artgallery.nsw.gov.au/whats-on/cinema"}

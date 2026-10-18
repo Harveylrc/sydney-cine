@@ -314,6 +314,7 @@ def test_venues_yaml_covers_every_scraped_venue():
         event,
         glenbrook,
         golden_age,
+        govindas,
         hoyts,
         mount_vic_flicks,
         orpheum,
@@ -326,7 +327,8 @@ def test_venues_yaml_covers_every_scraped_venue():
     slugs |= {f"event-{slug}" for slug in event.CINEMAS}
     slugs |= {slug for slug, _ in palace.CINEMAS.values()}
     slugs |= {
-        m.VENUE_SLUG for m in (ritz, orpheum, golden_age, roseville, glenbrook, mount_vic_flicks)
+        m.VENUE_SLUG
+        for m in (ritz, orpheum, golden_age, roseville, glenbrook, mount_vic_flicks, govindas)
     }
     venues = load_venues()
     scraped = {
