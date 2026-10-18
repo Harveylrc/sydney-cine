@@ -506,7 +506,7 @@
     if (f.film && !fold(film.title).includes(f.film) && !fold(s.title).includes(f.film)) return false;
     if (f.director && !fold(film.director).includes(f.director)) return false;
     if (f.type && s.type !== f.type) return false;
-    if (f.regions.size && !f.regions.has(s.region)) return false;
+    if (f.regions.size && !s.regions.some((r) => f.regions.has(r))) return false;
     if (f.day && s.day !== f.day) return false;
     if ((f.from || f.to) && film.year == null) return false;
     if (f.from && film.year < f.from) return false;
