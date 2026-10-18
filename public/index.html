@@ -322,7 +322,12 @@
   }
 
   // Popular: sessions that day + POPULARITY_WEIGHT × ln(TMDB votes + 1).
-  const POPULARITY_WEIGHT = 2;
+  // Tuning knobs (B9, temporary): ?w=<weight> and ?mode=popular|az override the
+  // defaults, show in the summary line and print the first day's top 15 with scores to the console.
+  const params = new URLSearchParams(location.search);
+  const tuning = params.has("w") || params.has("mode");
+  const knobWeight = Number(params.get("w"));
+  const POPULARITY_WEIGHT = params.get("w") && Number.isFinite(knobWeight) && knobWeight >= 0 ? knobWeight : 2;
   const score = (film, sessions) => sessions + POPULARITY_WEIGHT * Math.log((film.vote_count || 0) + 1);
   const byTitle = (a, b) => a.film.title.localeCompare(b.film.title, "en", { sensitivity: "base" });
   const ORDERS = {
@@ -337,6 +342,21 @@
         return { film, showings, score: score(film, showings.length) };
       })
       .sort(ORDERS[sort] || ORDERS.popular);
+  }
+
+  // Start the Sort menu on ?mode=, and make it what "Clear filters" goes back to.
+  const knobMode = params.get("mode");
+  if (knobMode && [...form.elements.sort.options].some((o) => o.value === knobMode)) {
+    for (const option of form.elements.sort.options) option.defaultSelected = option.value === knobMode;
+    form.elements.sort.value = knobMode;
+    form.elements.sort.dataset.default = knobMode;
+  }
+
+  function logTop(day, ordered, sort) {
+    console.log(`${day} top 15 (sort ${sort}, w=${POPULARITY_WEIGHT}):`);
+    console.table(ordered.slice(0, 15).map(({ film, showings, score }) => ({
+      title: film.title, sessions: showings.length, votes: film.vote_count || 0, score: Number(score.toFixed(2)),
+    })));
   }
 
   function matches(s, film, f) {
@@ -439,14 +459,17 @@
     listings.replaceChildren();
     for (const [day, films] of [...days].sort(([a], [b]) => a.localeCompare(b))) {
       const section = el("section", { class: "day" }, el("h2", { text: dayHeading(day) }));
-      for (const { film, showings } of orderFilms(films, f.sort)) section.append(filmEntry(film, showings));
+      const ordered = orderFilms(films, f.sort);
+      for (const { film, showings } of ordered) section.append(filmEntry(film, showings));
       listings.append(section);
+      if (tuning && listings.children.length === 1) logTop(day, ordered, f.sort);
     }
 
     const filmCount = new Set([...days.values()].flatMap((films) => [...films.keys()])).size;
     summary.textContent = count
       ? `${count} showing${count === 1 ? "" : "s"} of ${filmCount} film${filmCount === 1 ? "" : "s"}`
       : "";
+    if (tuning) summary.textContent += `${count ? " · " : ""}sort ${f.sort}, w=${POPULARITY_WEIGHT}`;
     if (!count) {
       const msg = view === "new"
         ? "No new releases have appeared this week yet."
