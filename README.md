@@ -12,7 +12,7 @@ harveylrc@proton.me.
 
 Every night at 03:00 Sydney time a GitHub Actions job (`.github/workflows/nightly.yml`)
 scrapes each cinema, matches the films on TMDB (asking Claude when the rules are
-unsure), writes `public/data.json` and publishes `public/` to GitHub Pages at
+unsure), writes `public/data.json` (and `films.json`, the posters and synopses the film panel loads on first use) and publishes `public/` to GitHub Pages at
 https://harveylrc.github.io/sydney-cine/. It reads the published `data.json` first so
 "new this week" dates carry over, and keeps its TMDB lookup cache between runs.
 "Run workflow" on the repository's Actions tab runs it immediately.

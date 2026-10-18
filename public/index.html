@@ -156,6 +156,13 @@
     white-space: nowrap;
   }
   .count::after { content: " ›"; }
+  .film .kind {
+    font-size: 0.7rem;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    white-space: nowrap;
+  }
   @media (max-width: 480px) {
     .count .where { display: none; } /* room for the title; the panel names the cinemas */
   }
@@ -215,6 +222,11 @@
   .panel .facts { margin: 6px 0 0; font-size: 0.9rem; }
   .panel .facts p { margin: 0; }
   .panel .rating { color: var(--heading); font-weight: 600; }
+  .panel .kind {
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
   .panel .synopsis { margin: 16px 0 0; }
   .panel h3 {
     margin: 22px 0 6px;
@@ -319,6 +331,16 @@
 
 <script>
 (() => {
+  const TYPE_LABELS = {
+    new_release: "New release",
+    retrospective: "Retrospective",
+    festival: "Festival",
+    special: "Special",
+  };
+  // Rows tag only these; new releases are the default and stay unlabelled.
+  const ROW_TAGS = { retrospective: "Retro", festival: "Festival", special: "Special" };
+  const typesOf = (showings) => Object.keys(TYPE_LABELS).filter((t) => showings.some((s) => s.type === t));
+
   const $ = (sel) => document.querySelector(sel);
   const form = $("#filters");
   const listings = $("#listings");
@@ -423,8 +445,10 @@
   function filmEntry(film, showings) {
     const line = el("span", { class: "line" }, el("span", { class: "title", text: film.title }));
     for (const part of [film.year, film.director]) if (part) line.append(" · " + part);
-    const button = el("button", { type: "button", "aria-haspopup": "dialog" },
-      line, countLabel(showings));
+    const button = el("button", { type: "button", "aria-haspopup": "dialog" }, line);
+    const tags = typesOf(showings).filter((t) => ROW_TAGS[t]).map((t) => ROW_TAGS[t]);
+    if (tags.length) button.append(el("span", { class: "kind", text: tags.join(" · ") }));
+    button.append(countLabel(showings));
     button.addEventListener("click", () => openFilm(film.id));
     return el("article", { class: "film" }, button);
   }
@@ -464,25 +488,40 @@
   const POSTER = "https://image.tmdb.org/t/p/w342";
   let opener = null;
 
+  // poster_path, overview and runtime live in films.json, fetched on the first open.
+  let details = null;
+  let detailsLoading = null;
+  function loadDetails() {
+    detailsLoading = detailsLoading || fetch("films.json", { cache: "no-cache" })
+      .then((r) => (r.ok ? r.json() : {}))
+      .catch(() => ({}))
+      .then((json) => { details = json; });
+    return detailsLoading;
+  }
+
   function panelContent(film) {
     const body = $("#panel-body");
+    const extra = (details && details[film.id]) || {};
+    const showings = byFilm.get(film.id) || [];
     const facts = el("div", { class: "facts" });
-    const line = [film.year, film.director, film.runtime && `${film.runtime} min`].filter(Boolean);
+    const line = [film.year, film.director, extra.runtime && `${extra.runtime} min`].filter(Boolean);
     if (line.length) facts.append(el("p", { text: line.join(" · ") }));
     if (film.rating != null) {
       facts.append(el("p", {}, el("span", { class: "rating", text: film.rating.toFixed(1) }),
         ` TMDB (${plural(film.vote_count || 0, "vote")})`));
     }
+    const types = typesOf(showings);
+    if (types.length) facts.append(el("p", { class: "kind", text: types.map((t) => TYPE_LABELS[t]).join(" · ") }));
     const top = el("div", { class: "panel-top" });
-    if (film.poster_path) top.append(el("img", { src: POSTER + film.poster_path, alt: "", width: "120", height: "180" }));
+    if (extra.poster_path) top.append(el("img", { src: POSTER + extra.poster_path, alt: "", width: "120", height: "180" }));
     top.append(el("div", {}, el("h2", { id: "panel-title", text: film.title }), facts));
     const close = el("button", { type: "button", class: "close", "aria-label": "Close", text: "×" });
     close.addEventListener("click", closePanel);
     body.replaceChildren(close, top);
-    if (film.overview) body.append(el("p", { class: "synopsis", text: film.overview }));
+    if (extra.overview) body.append(el("p", { class: "synopsis", text: extra.overview }));
 
     const byDay = new Map();
-    for (const s of byFilm.get(film.id) || []) {
+    for (const s of showings) {
       if (!byDay.has(s.day)) byDay.set(s.day, []);
       byDay.get(s.day).push(s);
     }
@@ -506,6 +545,14 @@
     panelContent(film);
     if (!panel.open) panel.showModal();
     panel.scrollTop = 0;
+    if (!details) {
+      loadDetails().then(() => {
+        if (!panel.open || hashFilm() !== film.id) return;
+        const focused = panel.contains(document.activeElement);
+        panelContent(film); // now with poster and synopsis
+        if (focused) panel.querySelector(".close").focus();
+      });
+    }
   }
 
   function openFilm(id) {
