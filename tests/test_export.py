@@ -319,6 +319,7 @@ def test_venues_yaml_covers_every_scraped_venue():
         mount_vic_flicks,
         orpheum,
         palace,
+        reading,
         ritz,
         roseville,
     )
@@ -326,6 +327,7 @@ def test_venues_yaml_covers_every_scraped_venue():
     slugs = {f"hoyts-{hoyts.cinema_slug(c)}" for c in hoyts.CINEMAS}
     slugs |= {f"event-{slug}" for slug in event.CINEMAS}
     slugs |= {slug for slug, _ in palace.CINEMAS.values()}
+    slugs |= {reading.venue_slug(c) for c in reading.CINEMAS}
     slugs |= {
         m.VENUE_SLUG
         for m in (ritz, orpheum, golden_age, roseville, glenbrook, mount_vic_flicks, govindas)

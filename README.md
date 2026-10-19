@@ -27,5 +27,9 @@ records the domain, but GitHub only reads it for sites it builds itself, so the
 Settings entry is what counts). DNS for the domain (at Cloudflare): A records for
 `sydneycinema.com` to 185.199.108.153, 185.199.109.153, 185.199.110.153 and
 185.199.111.153, and a CNAME for `www` to `harveylrc.github.io`, all "DNS only".
+Reading's API answers Australian addresses only, so the nightly job (in the US)
+uses `cache/reading-latest.json`, a saved copy refreshed from an Australian
+connection with `make reading-refresh` about once a week (it commits and pushes
+the file); a copy over 8 days old is ignored and Reading shows nothing.
 Locally, the same keys go in `.env` (see `.env.example`); `make check` runs
 the linter and tests, and `python export.py` builds `public/data.json`.
