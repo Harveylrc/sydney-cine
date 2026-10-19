@@ -61,9 +61,9 @@
 
 # --- Not scraped (B7: counted in coverage as uncovered) ---------------------------
 - {slug: dendy-newtown, name: Dendy Newtown, lga: Inner West, region: Inner West, screens: 11, scraped: false}  # robots-disallowed GraphQL
-- {slug: reading-auburn, name: Reading Auburn, lga: Cumberland, region: Parramatta & Hills, screens: 9, scraped: false}  # B8
-- {slug: reading-rhodes, name: Reading Rhodes, lga: Canada Bay, region: Inner West, screens: 8, scraped: false}
-- {slug: reading-rouse-hill, name: Reading Rouse Hill, lga: The Hills, region: Parramatta & Hills, screens: 9, scraped: false}
+- {slug: reading-auburn, name: Reading Auburn, lga: Cumberland, region: Parramatta & Hills, screens: 9}  # scraped since B8a (AU-only API: saved copy)
+- {slug: reading-rhodes, name: Reading Rhodes, lga: Canada Bay, region: Inner West, screens: 8}  # scraped since B8a
+- {slug: reading-rouse-hill, name: Reading Rouse Hill, lga: The Hills, region: Parramatta & Hills, screens: 9}  # scraped since B8a
 - {slug: united-warriewood, name: United Cinemas Warriewood, lga: Northern Beaches, region: North, screens: 7, source: manual, source_url: "https://www.unitedcinemas.com.au/"}  # B13g: Cloudflare-blocked
 - {slug: united-avalon, name: United Cinemas Avalon, lga: Northern Beaches, region: North, screens: 2, source: manual, source_url: "https://www.unitedcinemas.com.au/"}  # B13g: Cloudflare-blocked
 - {slug: united-narellan, name: United Cinemas Narellan, lga: Camden, region: South West, screens: 8, source: manual, source_url: "https://www.unitedcinemas.com.au/"}  # B13g: Cloudflare-blocked

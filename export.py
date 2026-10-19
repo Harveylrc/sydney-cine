@@ -259,6 +259,7 @@ if __name__ == "__main__":
         mount_vic_flicks,
         orpheum,
         palace,
+        reading,
         ritz,
         roseville,
     )
@@ -275,6 +276,7 @@ if __name__ == "__main__":
         glenbrook,
         mount_vic_flicks,
         govindas,
+        reading,
         manual,
     )
     scraped = scrape_all(scrapers)

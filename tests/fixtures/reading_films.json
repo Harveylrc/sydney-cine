@@ -1,0 +1,313 @@
+{
+ "fetched": "2026-10-19T11:09:29+11:00",
+ "cinemas": {
+  "rhodes": [
+   {
+    "name": "Spider-Man: Brand New Day",
+    "director": "Destin Daniel Cretton",
+    "length": "145",
+    "synopsis": "<p>After the record-breaking global success of Spider-Man: No Way Home, Spider-Man: Brand New Day marks an entirely new chapter for Peter Parker and Spider-Man. Four years have passed since the events of No Way Home, and Peter is now an adult living entirely alone, having voluntarily erased himself from the lives and memories of those he loves. Crime-fighting in a New York that no longer knows his name, he&#39;s devoted himself entirely to protecting his city — a full-time Spider-Man — but as the demands on him intensify, the pressure sparks a surprising physical evolution that threatens his existence, even as a strange new pattern of crimes gives rise to one of the most powerful threats he has ever faced.</p>",
+    "release_date": "2026-07-30",
+    "showdates": [
+     {
+      "showtypes": [
+       {
+        "type": "Standard",
+        "showtimes": [
+         {
+          "id": "108096",
+          "ScheduledFilmId": "HO00004445",
+          "date_time": "2026-10-19T20:30:00+11:00"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "showtypes": [
+       {
+        "type": "Standard",
+        "showtimes": [
+         {
+          "id": "108137",
+          "ScheduledFilmId": "HO00004445",
+          "date_time": "2026-10-21T20:30:00+11:00"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "name": "Paw Patrol - The Dino Movie",
+    "director": null,
+    "length": "88",
+    "synopsis": "<p>The Paw Patrol lands on a mysterious dinosaur island after a storm, where they meet Rex, a stranded pup. When Humdinger&#39;s reckless mining triggers a volcano, the team faces their biggest rescue mission yet to save the island.</p>",
+    "release_date": "2026-09-10",
+    "showdates": [
+     {
+      "showtypes": [
+       {
+        "type": "Standard",
+        "showtimes": [
+         {
+          "id": "108071",
+          "ScheduledFilmId": "HO00004543",
+          "date_time": "2026-10-19T13:15:00+11:00"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "showtypes": [
+       {
+        "type": "Standard",
+        "showtimes": [
+         {
+          "id": "108146",
+          "ScheduledFilmId": "HO00004543",
+          "date_time": "2026-10-20T10:00:00+11:00"
+         },
+         {
+          "id": "108153",
+          "ScheduledFilmId": "HO00004543",
+          "date_time": "2026-10-20T13:15:00+11:00"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "name": "Reading Rewind - Taxi Driver (1976)",
+    "director": "Martin Scorsese",
+    "length": "114",
+    "synopsis": "<p>Reading Rewind celebrates the films that shaped cinema, bringing iconic classics and cult favorites back to the big screen every Tuesday and Friday.</p>\r\n\r\n<p> </p>\r\n\r\n<p>A mentally unstable veteran works as a nighttime taxi driver in New York City, where the perceived decadence and sleaze fuels his urge for violent action.</p>",
+    "release_date": "2026-11-13",
+    "showdates": [
+     {
+      "showtypes": [
+       {
+        "type": "Standard",
+        "showtimes": [
+         {
+          "id": "106405",
+          "ScheduledFilmId": "HO00002423",
+          "date_time": "2026-11-13T20:30:00+11:00"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "showtypes": [
+       {
+        "type": "Standard",
+        "showtimes": [
+         {
+          "id": "106406",
+          "ScheduledFilmId": "HO00002423",
+          "date_time": "2026-11-17T18:30:00+11:00"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "name": "Reading Rewind - Star Trek: The Motion Picture (Directors Cut 1979)",
+    "director": "Robert Wise",
+    "length": "132",
+    "synopsis": "<p>Reading Rewind celebrates the films that shaped cinema, bringing iconic classics and cult favorites back to the big screen every Tuesday and Friday.</p>\r\n\r\n<p>When an alien spacecraft of enormous power is spotted approaching Earth, Admiral James T. Kirk resumes command of the overhauled USS Enterprise in order to intercept it.</p>",
+    "release_date": "2026-11-20",
+    "showdates": [
+     {
+      "showtypes": [
+       {
+        "type": "Standard",
+        "showtimes": [
+         {
+          "id": "106407",
+          "ScheduledFilmId": "HO00004631",
+          "date_time": "2026-11-20T20:30:00+11:00"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "showtypes": [
+       {
+        "type": "Standard",
+        "showtimes": [
+         {
+          "id": "106408",
+          "ScheduledFilmId": "HO00004631",
+          "date_time": "2026-11-24T18:30:00+11:00"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "name": "Tributes Night - The Hunger Games: Sunrise on the Reaping",
+    "director": "Francis Lawrence",
+    "length": null,
+    "synopsis": "<p><strong>Tributes, it&#39;s time...</strong></p>\r\n\r\n<p><strong>The Capitol has spoken and you’re invited. Join us for a special advanced screening of The Hunger Games: Sunrise on the Reaping, Wednesday November 18th!</strong></p>\r\n\r\n<p>The Hunger Games: Sunrise on the Reaping will revisit the world of Panem twenty-four years before the events of The Hunger Games, starting on the morning of the reaping of the Fiftieth Hunger Games, also known as the Second Quarter Quell.</p>",
+    "release_date": "2026-11-18",
+    "showdates": [
+     {
+      "showtypes": [
+       {
+        "type": "TitanLuxe",
+        "showtimes": [
+         {
+          "id": "107232",
+          "ScheduledFilmId": "HO00004635",
+          "date_time": "2026-11-18T19:30:00+11:00"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   },
+   {
+    "name": "Go For Broke 2 (Mandarin)",
+    "director": "Marc Ma",
+    "length": "132",
+    "synopsis": "<p>Hila&#39;s son became an innocent victim of the crime world. In despair, she joins forces with Su Cheng, who&#39;s also grieving a lost loved one, to get revenge and take down vi</p>",
+    "release_date": "2026-10-15",
+    "showdates": [
+     {
+      "showtypes": [
+       {
+        "type": "Standard",
+        "showtimes": [
+         {
+          "id": "108080",
+          "ScheduledFilmId": "HO00004665",
+          "date_time": "2026-10-19T15:00:00+11:00"
+         },
+         {
+          "id": "108100",
+          "ScheduledFilmId": "HO00004665",
+          "date_time": "2026-10-19T20:45:00+11:00"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "showtypes": [
+       {
+        "type": "Standard",
+        "showtimes": [
+         {
+          "id": "108162",
+          "ScheduledFilmId": "HO00004665",
+          "date_time": "2026-10-20T15:00:00+11:00"
+         },
+         {
+          "id": "108181",
+          "ScheduledFilmId": "HO00004665",
+          "date_time": "2026-10-20T20:45:00+11:00"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "auburn": [
+   {
+    "name": "Spider-Man: Brand New Day",
+    "director": "Destin Daniel Cretton",
+    "length": "145",
+    "synopsis": "<p>After the record-breaking global success of Spider-Man: No Way Home, Spider-Man: Brand New Day marks an entirely new chapter for Peter Parker and Spider-Man. Four years have passed since the events of No Way Home, and Peter is now an adult living entirely alone, having voluntarily erased himself from the lives and memories of those he loves. Crime-fighting in a New York that no longer knows his name, he&#39;s devoted himself entirely to protecting his city — a full-time Spider-Man — but as the demands on him intensify, the pressure sparks a surprising physical evolution that threatens his existence, even as a strange new pattern of crimes gives rise to one of the most powerful threats he has ever faced.</p>",
+    "release_date": "2026-07-30",
+    "showdates": [
+     {
+      "showtypes": [
+       {
+        "type": "Standard",
+        "showtimes": [
+         {
+          "id": "135192",
+          "ScheduledFilmId": "HO00004445",
+          "date_time": "2026-10-19T19:30:00+11:00"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "showtypes": [
+       {
+        "type": "Standard",
+        "showtimes": [
+         {
+          "id": "135241",
+          "ScheduledFilmId": "HO00004445",
+          "date_time": "2026-10-20T14:45:00+11:00"
+         },
+         {
+          "id": "135231",
+          "ScheduledFilmId": "HO00004445",
+          "date_time": "2026-10-20T20:30:00+11:00"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ],
+  "rouse-hill": [
+   {
+    "name": "Spider-Man: Brand New Day",
+    "director": "Destin Daniel Cretton",
+    "length": "145",
+    "synopsis": "<p>After the record-breaking global success of Spider-Man: No Way Home, Spider-Man: Brand New Day marks an entirely new chapter for Peter Parker and Spider-Man. Four years have passed since the events of No Way Home, and Peter is now an adult living entirely alone, having voluntarily erased himself from the lives and memories of those he loves. Crime-fighting in a New York that no longer knows his name, he&#39;s devoted himself entirely to protecting his city — a full-time Spider-Man — but as the demands on him intensify, the pressure sparks a surprising physical evolution that threatens his existence, even as a strange new pattern of crimes gives rise to one of the most powerful threats he has ever faced.</p>",
+    "release_date": "2026-07-30",
+    "showdates": [
+     {
+      "showtypes": [
+       {
+        "type": "Standard",
+        "showtimes": [
+         {
+          "id": "156611",
+          "ScheduledFilmId": "HO00004445",
+          "date_time": "2026-10-19T12:45:00+11:00"
+         }
+        ]
+       }
+      ]
+     },
+     {
+      "showtypes": [
+       {
+        "type": "Standard",
+        "showtimes": [
+         {
+          "id": "156657",
+          "ScheduledFilmId": "HO00004445",
+          "date_time": "2026-10-20T12:30:00+11:00"
+         }
+        ]
+       }
+      ]
+     }
+    ]
+   }
+  ]
+ }
+}
