@@ -162,8 +162,65 @@
   .suggestions li { padding: 5px 10px; cursor: pointer; }
   .suggestions li[aria-selected="true"], .suggestions li:hover { background: var(--bg); color: var(--accent); }
   .years { display: flex; gap: 6px; align-items: center; }
+  /* Date (B18): a dropdown of days with a tick box each; any number can be ticked. */
+  .filters .field {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    font-size: 0.75rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
+  .filters .dropdown {
+    width: 100%;
+    padding: 6px 28px 6px 8px;
+    font-size: 0.95rem;
+    text-align: left;
+    text-transform: none;
+    letter-spacing: normal;
+    color: var(--heading);
+    background: var(--inset);
+    border-radius: 4px;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    position: relative;
+  }
+  .filters .dropdown::after {
+    content: "▾";
+    position: absolute;
+    right: 9px;
+    color: var(--label);
+  }
+  .date-menu {
+    position: absolute;
+    z-index: 2;
+    top: calc(100% + 2px);
+    left: 0;
+    min-width: 100%;
+    max-height: 300px;
+    overflow-y: auto;
+    padding: 4px 0;
+    background: var(--inset);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+  }
+  .filters .date-menu label {
+    flex-direction: row;
+    align-items: center;
+    gap: 8px;
+    padding: 5px 12px;
+    font-size: 0.95rem;
+    text-transform: none;
+    letter-spacing: normal;
+    color: var(--heading);
+    white-space: nowrap;
+    cursor: pointer;
+  }
+  .filters .date-menu label:hover { background: var(--bg); }
+  .filters .date-menu input { width: auto; margin: 0; accent-color: var(--accent); }
   .filters .reset { align-self: end; justify-self: start; }
-  /* Date (B18) and Region (B12) chips: none pressed means all. */
+  /* Region chips (B12): none pressed means every region. */
   .chip-group {
     grid-column: 1 / -1;
     margin: 0;
@@ -304,7 +361,7 @@
   /* Days most cinemas haven't published yet (B10d). */
   .partial-note { margin: 6px 0 0; font-size: 0.85rem; color: var(--muted); }
   .day-sessions .partial-note { margin: 0 0 6px; }
-  .tabs .dot, .chips .dot {
+  .tabs .dot, .date-menu .dot {
     display: inline-block;
     width: 5px;
     height: 5px;
@@ -398,6 +455,14 @@
         <option value="special">Special</option>
       </select>
     </label>
+    <div class="field">
+      <span id="date-label">Date</span>
+      <span class="combo">
+        <button type="button" class="dropdown" id="date-button" aria-expanded="false"
+          aria-controls="date-menu" aria-labelledby="date-label date-button">Any date</button>
+        <div class="date-menu" id="date-menu" role="group" aria-label="Dates" hidden></div>
+      </span>
+    </div>
     <label>Released
       <span class="years">
         <input type="number" name="from" inputmode="numeric" placeholder="From" min="1890" max="2100">
@@ -410,10 +475,6 @@
         <option value="az">A–Z</option>
       </select>
     </label>
-    <fieldset class="chip-group dates" hidden>
-      <legend>Date</legend>
-      <div class="chips" id="date-chips"></div>
-    </fieldset>
     <fieldset class="chip-group regions" hidden>
       <legend>Region</legend>
       <div class="chips" id="region-chips"></div>
@@ -533,9 +594,8 @@
     return true;
   }
 
-  // Chip groups: Date (one chip per day with sessions, B18) and Region (from
-  // data.json's regions, B12). Any number can be on at once; none means all.
-  const selectedDays = new Set();
+  // Region chips (B12), from data.json's regions. Any number can be on at once;
+  // none means all.
   const selectedRegions = new Set();
   function populateChips(container, values, selected, label) {
     for (const value of values) {
@@ -554,17 +614,59 @@
     container.querySelectorAll("button").forEach((chip) =>
       chip.setAttribute("aria-pressed", String(selected.has(chip.dataset.value))));
 
-  // A day most cinemas haven't published yet keeps its B10d dot on the Date chip.
+  // Date dropdown (B18): one tick box per day with sessions; any number can be
+  // ticked; none means all days. It stays open while ticking; Esc or a click
+  // elsewhere closes it.
+  const selectedDays = new Set();
+  const dateButton = $("#date-button");
+  const dateMenu = $("#date-menu");
+  function populateDates(days) {
+    for (const day of days) {
+      const box = el("input", { type: "checkbox", value: day });
+      // "input", not "change": it runs before the form's input listener re-renders.
+      box.addEventListener("input", () => {
+        if (box.checked) selectedDays.add(day);
+        else selectedDays.delete(day);
+      });
+      dateMenu.append(el("label", { "data-value": day }, box, el("span", { text: tabLabel(day) })));
+    }
+  }
+  const syncDates = () =>
+    dateMenu.querySelectorAll("input").forEach((box) => { box.checked = selectedDays.has(box.value); });
+  function setDateMenu(open) {
+    dateMenu.hidden = !open;
+    dateButton.setAttribute("aria-expanded", String(open));
+  }
+  dateButton.addEventListener("click", () => setDateMenu(dateMenu.hidden));
+  document.addEventListener("click", (e) => {
+    if (!dateMenu.hidden && !dateMenu.parentElement.contains(e.target)) setDateMenu(false);
+  });
+  dateMenu.parentElement.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || dateMenu.hidden) return;
+    e.stopPropagation();
+    setDateMenu(false);
+    dateButton.focus();
+  });
+
+  // The button names the ticked days ("Sat 24, Sun 25"), or counts them past three.
+  function labelDates() {
+    const days = [...selectedDays].sort();
+    dateButton.textContent = !days.length ? "Any date"
+      : days.length <= 3 ? days.map(tabLabel).join(", ") : `${days.length} dates`;
+    dateButton.classList.toggle("active", days.length > 0);
+  }
+
+  // A day most cinemas haven't published yet keeps its B10d dot in the list.
   function markPartialDays() {
-    for (const chip of $("#date-chips").children) {
-      const partial = isPartial(chip.dataset.value);
-      if (partial === Boolean(chip.querySelector(".dot"))) continue;
+    for (const option of dateMenu.children) {
+      const partial = isPartial(option.dataset.value);
+      if (partial === Boolean(option.querySelector(".dot"))) continue;
       if (partial) {
-        chip.append(el("span", { class: "dot", "aria-hidden": "true" }), el("span", { class: "sr-only", text: " (not fully published)" }));
-        chip.title = "Not fully published yet";
+        option.append(el("span", { class: "dot", "aria-hidden": "true" }), el("span", { class: "sr-only", text: " (not fully published)" }));
+        option.title = "Not fully published yet";
       } else {
-        chip.querySelectorAll(".dot, .sr-only").forEach((n) => n.remove());
-        chip.removeAttribute("title");
+        option.querySelectorAll(".dot, .sr-only").forEach((n) => n.remove());
+        option.removeAttribute("title");
       }
     }
   }
@@ -594,7 +696,7 @@
     if (fields.director.value.trim()) list.push([fields.director.value.trim(), clearField("director")]);
     if (fields.type.value) list.push([TYPE_LABELS[fields.type.value], clearField("type")]);
     for (const day of [...selectedDays].sort()) {
-      list.push([tabLabel(day), () => { selectedDays.delete(day); syncChips($("#date-chips"), selectedDays); }]);
+      list.push([tabLabel(day), () => { selectedDays.delete(day); syncDates(); }]);
     }
     const from = fields.from.value, to = fields.to.value;
     if (from || to) {
@@ -622,7 +724,7 @@
   }
 
   function markActive() {
-    for (const field of form.querySelectorAll("input, select")) {
+    for (const field of form.querySelectorAll("input:not([type=checkbox]), select")) {
       field.classList.toggle("active", field.value !== (field.dataset.default || ""));
     }
   }
@@ -816,6 +918,7 @@
   function render() {
     markActive();
     markPartialDays();
+    labelDates();
     updateFilterBar();
     const f = currentFilters();
     const days = new Map(); // day -> film id -> showings, in start order
@@ -852,7 +955,7 @@
 
   function populateFilters() {
     const days = [...new Set(data.showings.map((s) => s.day))].sort();
-    populateChips($("#date-chips"), days, selectedDays, tabLabel);
+    populateDates(days);
     populateChips($("#region-chips"), data.regions || [], selectedRegions, (region) => region);
     for (const film of data.films) {
       for (const name of (film.director || "").split(", ")) if (name) showingDirectors.add(name);
@@ -954,7 +1057,7 @@
   form.addEventListener("reset", () => {
     selectedDays.clear();
     selectedRegions.clear();
-    syncChips($("#date-chips"), selectedDays);
+    syncDates();
     syncChips($("#region-chips"), selectedRegions);
     setTimeout(() => data && render());
   });
