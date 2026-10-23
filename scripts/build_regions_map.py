@@ -14,9 +14,8 @@ from html import escape
 from pathlib import Path
 
 import requests
-import yaml
 
-from export import VENUES_PATH, load_regions, load_venues
+from export import load_regions, load_venues
 
 OUT = Path(__file__).resolve().parent.parent / "public" / "regions-map.svg"
 QUERY = "https://geo.abs.gov.au/arcgis/rest/services/ASGS2025/LGA/MapServer/1/query"
@@ -77,9 +76,9 @@ def fetch_boundaries() -> dict[str, list]:
     back = {v: k for k, v in ABS_NAMES.items()}
     shapes = {}
     for feature in response.json()["features"]:
-        geometry = feature["geometry"]
-        polygons = [geometry["coordinates"]] if geometry["type"] == "Polygon" else geometry["coordinates"]
-        shapes[back.get(feature["properties"]["LGA_NAME_2025"], feature["properties"]["LGA_NAME_2025"])] = polygons
+        geometry, name = feature["geometry"], feature["properties"]["LGA_NAME_2025"]
+        polygons = geometry["coordinates"]
+        shapes[back.get(name, name)] = [polygons] if geometry["type"] == "Polygon" else polygons
     missing = set(ours) - set(shapes)
     if missing:
         raise SystemExit(f"No ABS boundary for {sorted(missing)}")
@@ -124,14 +123,14 @@ def draw(shapes: dict[str, list], regions: dict[str, list[str]], venues: dict[st
             f"{escape(region_of[lga])}</title></path>"
         )
     out.append("</g>")
-    for region, ((lon, lat), reach) in LABELS.items():
+    for (lon, lat), reach in LABELS.values():
         if reach:
             (x1, y1), (x2, y2) = xy(lon, lat), xy(*reach)
             out.append(
                 f'<line x1="{x1:.1f}" y1="{y1 - 5:.1f}" x2="{x2:.1f}" y2="{y2:.1f}" '
                 f'stroke="{INK}" stroke-width="1" stroke-opacity="0.7"/>'
             )
-    for slug, venue in sorted(venues.items(), key=lambda kv: kv[1]["name"]):
+    for venue in sorted(venues.values(), key=lambda v: v["name"]):
         x, y = xy(venue["at"][1], venue["at"][0])
         out.append(
             f'<circle cx="{x:.1f}" cy="{y:.1f}" r="4.2" fill="{INK}" stroke="{NAVY}" '
@@ -156,7 +155,6 @@ def draw(shapes: dict[str, list], regions: dict[str, list[str]], venues: dict[st
 def main() -> None:
     regions = load_regions()
     venues = load_venues()
-    yaml.safe_load(VENUES_PATH.read_text(encoding="utf-8"))  # fail early on a broken file
     svg = draw(fetch_boundaries(), regions, venues)
     OUT.write_text(svg, encoding="utf-8")
     print(f"Wrote {OUT} ({len(svg.encode()) // 1024} KB)")
