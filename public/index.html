@@ -197,6 +197,15 @@
     font-weight: 800;
     border-bottom: 1px solid var(--border);
   }
+  /* Cinema sort (B19): each cinema a sub-heading within the day. */
+  .cinema-heading {
+    margin: 18px 0 2px;
+    color: var(--accent);
+    font-size: 0.8rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+  }
   .film { border-bottom: 1px solid var(--divider); }
   /* Poster at left; beside it title (count at the far right), then year · director ·
      rating, then the type tag (B14). Same on phone and desktop. The whole row toggles
@@ -411,6 +420,7 @@
       <select name="sort" data-default="popular">
         <option value="popular">Popular</option>
         <option value="az">A–Z</option>
+        <option value="cinema">Cinema</option>
       </select>
     </label>
     <fieldset class="regions" hidden>
@@ -617,7 +627,8 @@
   // open); the type tag on its own line. Tapping the row opens its session box in
   // place beneath it (B10c, B14); several can be open; tapping again closes.
   const openers = new WeakMap(); // entry -> open(), for #film= links
-  function filmEntry(film, showings, day) {
+  // venue: set under the Cinema sort, so the box lists that cinema's sessions first.
+  function filmEntry(film, showings, day, venue = null) {
     const extra = details[film.id] || {};
     const meta = el("p", { class: "meta" });
     const parts = [film.year, film.director].filter(Boolean).map(String);
@@ -645,7 +656,7 @@
     let detail = null; // built on first open
     function setOpen(open) {
       if (open && !detail) {
-        entry.append((detail = filmDetail(film, day, detailId)));
+        entry.append((detail = filmDetail(film, day, detailId, venue)));
         fitBox(detail);
       }
       if (detail) detail.hidden = !open;
@@ -720,11 +731,14 @@
 
   // A box: a tab per day with sessions, over that day's `time · cinema · tags` rows.
   // Starts on the row's own day.
-  function filmDetail(film, day, id) {
+  function filmDetail(film, day, id, venue = null) {
     const byDay = new Map();
     for (const s of byFilm.get(film.id) || []) {
       if (!byDay.has(s.day)) byDay.set(s.day, []);
       byDay.get(s.day).push(s);
+    }
+    if (venue) { // that cinema first, each part still in time order (sort is stable)
+      for (const list of byDay.values()) list.sort((a, b) => (b.venue === venue) - (a.venue === venue));
     }
     const days = [...byDay.keys()];
 
@@ -799,6 +813,27 @@
   }
   window.addEventListener("hashchange", () => data && openFromHash());
 
+  // Cinema sort (B19): cinemas A–Z, each with its films by first session there. A
+  // film at several cinemas is listed under each (DECISIONS 2026-10-23).
+  function appendByCinema(section, day, films) {
+    const byVenue = new Map(); // venue -> film id -> that cinema's sessions
+    for (const [id, showings] of films) {
+      for (const s of showings) {
+        if (!byVenue.has(s.venue)) byVenue.set(s.venue, new Map());
+        const venueFilms = byVenue.get(s.venue);
+        if (!venueFilms.has(id)) venueFilms.set(id, []);
+        venueFilms.get(id).push(s);
+      }
+    }
+    const first = (showings) => showings.reduce((min, s) => (s.start < min ? s.start : min), showings[0].start);
+    const venues = [...byVenue.keys()].sort((a, b) => venueName(a).localeCompare(venueName(b), "en", { sensitivity: "base" }));
+    for (const venue of venues) {
+      section.append(el("h3", { class: "cinema-heading", text: venueName(venue) }));
+      const entries = [...byVenue.get(venue)].sort(([, a], [, b]) => first(a).localeCompare(first(b)));
+      for (const [id, showings] of entries) section.append(filmEntry(filmsById.get(id), showings, day, venue));
+    }
+  }
+
   function render() {
     markActive();
     updateFilterBar();
@@ -819,7 +854,8 @@
     for (const [day, films] of [...days].sort(([a], [b]) => a.localeCompare(b))) {
       const section = el("section", { class: "day" }, el("h2", { text: dayHeading(day) }));
       if (isPartial(day)) section.append(partialNote());
-      for (const { film, showings } of orderFilms(day, films, f.sort)) section.append(filmEntry(film, showings, day));
+      if (f.sort === "cinema") appendByCinema(section, day, films);
+      else for (const { film, showings } of orderFilms(day, films, f.sort)) section.append(filmEntry(film, showings, day));
       listings.append(section);
     }
 
