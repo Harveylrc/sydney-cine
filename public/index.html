@@ -72,7 +72,7 @@
     gap: 8px;
     margin: 18px 0 12px;
   }
-  .views button, .filters button {
+  .views button, .filters button, .filter-bar button {
     font: inherit;
     font-size: 0.9rem;
     color: var(--label);
@@ -87,6 +87,27 @@
     background: var(--accent);
     border-color: var(--accent);
     font-weight: 600;
+  }
+
+  /* Filters toggle (B16): collapsed, the row shows what's set as removable chips. */
+  .filter-bar {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 6px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid var(--border);
+  }
+  .filter-bar.open { padding-bottom: 0; border-bottom: 0; }
+  .filter-toggle::after { content: " ▸"; }
+  .filter-toggle[aria-expanded="true"]::after { content: " ▾"; }
+  .filter-bar .filter-toggle { color: var(--heading); }
+  .active-chips { display: contents; }
+  .filter-bar .active-chips button {
+    padding: 3px 10px;
+    font-size: 0.85rem;
+    color: var(--accent);
+    border-color: var(--accent);
   }
 
   .filters {
@@ -356,7 +377,12 @@
     <button type="button" data-view="retro" aria-pressed="false">Retrospectives</button>
   </nav>
 
-  <form class="filters" id="filters" autocomplete="off">
+  <div class="filter-bar" id="filter-bar">
+    <button type="button" class="filter-toggle" id="filter-toggle" aria-expanded="false" aria-controls="filters">Filters<span id="filter-count"></span></button>
+    <div class="active-chips" id="active-chips"></div>
+  </div>
+
+  <form class="filters" id="filters" autocomplete="off" hidden>
     <label>Film
       <input type="search" name="film" placeholder="Any film">
     </label>
@@ -532,6 +558,59 @@
       chips.append(chip);
     }
     $(".regions").hidden = !chips.childNodes.length;
+  }
+  const syncChips = (container, selected) =>
+    container.querySelectorAll("button").forEach((chip) =>
+      chip.setAttribute("aria-pressed", String(selected.has(chip.textContent))));
+
+  // Filters toggle (B16): the block starts collapsed; its open state is remembered
+  // in this browser. Collapsed, each active filter shows as a chip that clears it.
+  const filterBar = $("#filter-bar");
+  const filterToggle = $("#filter-toggle");
+  const activeChips = $("#active-chips");
+  const FILTERS_OPEN = "sydney-cine.filtersOpen";
+  function setFiltersOpen(open) {
+    form.hidden = !open;
+    activeChips.hidden = open;
+    filterToggle.setAttribute("aria-expanded", String(open));
+    filterBar.classList.toggle("open", open);
+    try { localStorage.setItem(FILTERS_OPEN, open ? "1" : "0"); } catch { /* private mode */ }
+  }
+  try { setFiltersOpen(localStorage.getItem(FILTERS_OPEN) === "1"); } catch { setFiltersOpen(false); }
+  filterToggle.addEventListener("click", () => setFiltersOpen(form.hidden));
+
+  // [label, clear()] for each filter that is set; Sort is an order, not a filter.
+  function activeFilters() {
+    const fields = form.elements;
+    const clearField = (name) => () => { fields[name].value = ""; };
+    const list = [];
+    if (fields.film.value.trim()) list.push([`“${fields.film.value.trim()}”`, clearField("film")]);
+    if (fields.director.value.trim()) list.push([fields.director.value.trim(), clearField("director")]);
+    if (fields.type.value) list.push([TYPE_LABELS[fields.type.value], clearField("type")]);
+    if (fields.day.value) list.push([dayShort(fields.day.value), clearField("day")]);
+    const from = fields.from.value, to = fields.to.value;
+    if (from || to) {
+      const label = from && to ? `Released ${from}–${to}` : from ? `Released from ${from}` : `Released to ${to}`;
+      list.push([label, () => { fields.from.value = ""; fields.to.value = ""; }]);
+    }
+    for (const region of selectedRegions) {
+      list.push([region, () => { selectedRegions.delete(region); syncChips($("#region-chips"), selectedRegions); }]);
+    }
+    return list;
+  }
+
+  function updateFilterBar() {
+    const list = activeFilters();
+    $("#filter-count").textContent = list.length ? ` · ${list.length}` : "";
+    activeChips.replaceChildren(...list.map(([label, clear]) => {
+      const chip = el("button", { type: "button", "aria-label": `Remove filter: ${label}`, text: `${label} ×` });
+      chip.addEventListener("click", () => {
+        clear();
+        render();
+        filterToggle.focus(); // the chip is gone; keep keyboard focus in the row
+      });
+      return chip;
+    }));
   }
 
   function markActive() {
@@ -728,6 +807,7 @@
 
   function render() {
     markActive();
+    updateFilterBar();
     const f = currentFilters();
     const days = new Map(); // day -> film id -> showings, in start order
     let count = 0;
@@ -869,7 +949,7 @@
   form.addEventListener("input", () => data && render());
   form.addEventListener("reset", () => {
     selectedRegions.clear();
-    form.querySelectorAll(".chips button").forEach((chip) => chip.setAttribute("aria-pressed", "false"));
+    syncChips($("#region-chips"), selectedRegions);
     setTimeout(() => data && render());
   });
   form.addEventListener("submit", (e) => e.preventDefault());
