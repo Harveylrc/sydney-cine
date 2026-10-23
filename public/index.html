@@ -163,15 +163,15 @@
   .suggestions li[aria-selected="true"], .suggestions li:hover { background: var(--bg); color: var(--accent); }
   .years { display: flex; gap: 6px; align-items: center; }
   .filters .reset { align-self: end; justify-self: start; }
-  /* Region chips (B12): none pressed means every region. */
-  .regions {
+  /* Date (B18) and Region (B12) chips: none pressed means all. */
+  .chip-group {
     grid-column: 1 / -1;
     margin: 0;
     padding: 0;
     border: 0;
     min-width: 0;
   }
-  .regions legend {
+  .chip-group legend {
     padding: 0;
     margin-bottom: 4px;
     font-size: 0.75rem;
@@ -304,7 +304,7 @@
   /* Days most cinemas haven't published yet (B10d). */
   .partial-note { margin: 6px 0 0; font-size: 0.85rem; color: var(--muted); }
   .day-sessions .partial-note { margin: 0 0 6px; }
-  .tabs .dot {
+  .tabs .dot, .chips .dot {
     display: inline-block;
     width: 5px;
     height: 5px;
@@ -398,9 +398,6 @@
         <option value="special">Special</option>
       </select>
     </label>
-    <label>Date
-      <select name="day"><option value="">Any date</option></select>
-    </label>
     <label>Released
       <span class="years">
         <input type="number" name="from" inputmode="numeric" placeholder="From" min="1890" max="2100">
@@ -413,7 +410,11 @@
         <option value="az">A–Z</option>
       </select>
     </label>
-    <fieldset class="regions" hidden>
+    <fieldset class="chip-group dates" hidden>
+      <legend>Date</legend>
+      <div class="chips" id="date-chips"></div>
+    </fieldset>
+    <fieldset class="chip-group regions" hidden>
       <legend>Region</legend>
       <div class="chips" id="region-chips"></div>
     </fieldset>
@@ -470,11 +471,6 @@
       weekday: "long", day: "numeric", month: "long", timeZone: "UTC",
     });
 
-  const dayShort = (iso) =>
-    new Date(iso + "T00:00:00Z").toLocaleDateString("en-AU", {
-      weekday: "short", day: "numeric", month: "short", timeZone: "UTC",
-    });
-
   const safeUrl = (url) => (url && /^https?:\/\//.test(url) ? url : null);
 
   function currentFilters() {
@@ -484,7 +480,7 @@
       film: fold(f.get("film").trim()),
       director: fold(f.get("director").trim()),
       type: f.get("type"),
-      day: f.get("day"),
+      days: selectedDays,
       from: year(f.get("from")),
       to: year(f.get("to")),
       sort: f.get("sort"),
@@ -530,32 +526,48 @@
     if (f.director && !fold(film.director).includes(f.director)) return false;
     if (f.type && s.type !== f.type) return false;
     if (f.regions.size && !s.regions.some((r) => f.regions.has(r))) return false;
-    if (f.day && s.day !== f.day) return false;
+    if (f.days.size && !f.days.has(s.day)) return false;
     if ((f.from || f.to) && film.year == null) return false;
     if (f.from && film.year < f.from) return false;
     if (f.to && film.year > f.to) return false;
     return true;
   }
 
-  // Region chips: built from data.json's regions; several can be on at once.
+  // Chip groups: Date (one chip per day with sessions, B18) and Region (from
+  // data.json's regions, B12). Any number can be on at once; none means all.
+  const selectedDays = new Set();
   const selectedRegions = new Set();
-  function populateRegions() {
-    const chips = $("#region-chips");
-    for (const region of data.regions || []) {
-      const chip = el("button", { type: "button", "aria-pressed": "false", text: region });
+  function populateChips(container, values, selected, label) {
+    for (const value of values) {
+      const chip = el("button", { type: "button", "aria-pressed": "false", "data-value": value, text: label(value) });
       chip.addEventListener("click", () => {
-        if (selectedRegions.has(region)) selectedRegions.delete(region);
-        else selectedRegions.add(region);
-        chip.setAttribute("aria-pressed", String(selectedRegions.has(region)));
+        if (selected.has(value)) selected.delete(value);
+        else selected.add(value);
+        chip.setAttribute("aria-pressed", String(selected.has(value)));
         render();
       });
-      chips.append(chip);
+      container.append(chip);
     }
-    $(".regions").hidden = !chips.childNodes.length;
+    container.parentElement.hidden = !container.childNodes.length;
   }
   const syncChips = (container, selected) =>
     container.querySelectorAll("button").forEach((chip) =>
-      chip.setAttribute("aria-pressed", String(selected.has(chip.textContent))));
+      chip.setAttribute("aria-pressed", String(selected.has(chip.dataset.value))));
+
+  // A day most cinemas haven't published yet keeps its B10d dot on the Date chip.
+  function markPartialDays() {
+    for (const chip of $("#date-chips").children) {
+      const partial = isPartial(chip.dataset.value);
+      if (partial === Boolean(chip.querySelector(".dot"))) continue;
+      if (partial) {
+        chip.append(el("span", { class: "dot", "aria-hidden": "true" }), el("span", { class: "sr-only", text: " (not fully published)" }));
+        chip.title = "Not fully published yet";
+      } else {
+        chip.querySelectorAll(".dot, .sr-only").forEach((n) => n.remove());
+        chip.removeAttribute("title");
+      }
+    }
+  }
 
   // Filters toggle (B16): the block starts collapsed; its open state is remembered
   // in this browser. Collapsed, each active filter shows as a chip that clears it.
@@ -581,7 +593,9 @@
     if (fields.film.value.trim()) list.push([`“${fields.film.value.trim()}”`, clearField("film")]);
     if (fields.director.value.trim()) list.push([fields.director.value.trim(), clearField("director")]);
     if (fields.type.value) list.push([TYPE_LABELS[fields.type.value], clearField("type")]);
-    if (fields.day.value) list.push([dayShort(fields.day.value), clearField("day")]);
+    for (const day of [...selectedDays].sort()) {
+      list.push([tabLabel(day), () => { selectedDays.delete(day); syncChips($("#date-chips"), selectedDays); }]);
+    }
     const from = fields.from.value, to = fields.to.value;
     if (from || to) {
       const label = from && to ? `Released ${from}–${to}` : from ? `Released from ${from}` : `Released to ${to}`;
@@ -801,6 +815,7 @@
 
   function render() {
     markActive();
+    markPartialDays();
     updateFilterBar();
     const f = currentFilters();
     const days = new Map(); // day -> film id -> showings, in start order
@@ -836,10 +851,9 @@
   }
 
   function populateFilters() {
-    const daySelect = form.elements.day;
-    for (const day of [...new Set(data.showings.map((s) => s.day))].sort()) {
-      daySelect.append(el("option", { value: day, text: dayShort(day) }));
-    }
+    const days = [...new Set(data.showings.map((s) => s.day))].sort();
+    populateChips($("#date-chips"), days, selectedDays, tabLabel);
+    populateChips($("#region-chips"), data.regions || [], selectedRegions, (region) => region);
     for (const film of data.films) {
       for (const name of (film.director || "").split(", ")) if (name) showingDirectors.add(name);
     }
@@ -938,7 +952,9 @@
   });
   form.addEventListener("input", () => data && render());
   form.addEventListener("reset", () => {
+    selectedDays.clear();
     selectedRegions.clear();
+    syncChips($("#date-chips"), selectedDays);
     syncChips($("#region-chips"), selectedRegions);
     setTimeout(() => data && render());
   });
@@ -975,7 +991,6 @@
       $("#updated").textContent = `Updated ${updated}. Cinemas: ${
         Object.values(data.venues).map((v) => v.name).join(", ")}.`;
       populateFilters();
-      populateRegions();
       render();
       openFromHash(); // a linked #film=<id>
     })
