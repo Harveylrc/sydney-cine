@@ -177,24 +177,45 @@
     border-bottom: 1px solid var(--border);
   }
   .film { border-bottom: 1px solid var(--divider); }
-  /* Two lines: title, then year · director · rating · type; count on the right.
-     The whole row toggles its detail, which opens in place beneath it. */
+  /* Poster at left; beside it title (count at the far right), then year · director ·
+     rating, then the type tag (B14). Same on phone and desktop. The whole row toggles
+     its session box, which opens full width beneath it. */
   .film-head {
     display: flex;
-    align-items: baseline;
-    gap: 0 16px;
+    align-items: flex-start;
+    gap: 12px;
     margin: 0 -8px;
-    padding: 7px 8px;
+    padding: 8px;
     border-radius: 4px;
     cursor: pointer;
   }
   .film-head:hover { background: rgba(255, 255, 255, 0.04); }
+  .thumb {
+    flex: none;
+    display: block;
+    width: 64px;
+    height: 96px;
+    object-fit: cover;
+    border-radius: 4px;
+    background: var(--inset); /* also the placeholder when a film has no poster */
+  }
   .film-head .text { flex: 1; min-width: 0; }
+  .title-line { display: flex; align-items: baseline; gap: 0 16px; }
   .film h3 {
     margin: 0;
     color: var(--heading);
     font-size: 1.05rem;
     font-weight: 700;
+    line-height: 1.25;
+  }
+  /* Collapsed, a row is one poster tall: title and meta stop at two lines each.
+     Opening shows them in full. */
+  .film-head:not(.open) h3 button, .film-head:not(.open) .meta {
+    display: -webkit-box;
+    -webkit-box-orient: vertical;
+    -webkit-line-clamp: 2;
+    line-clamp: 2;
+    overflow: hidden;
   }
   .film h3 button {
     font: inherit;
@@ -214,46 +235,24 @@
   }
   .count::after { content: " ▸"; }
   .film-head.open .count::after { content: " ▾"; }
-  .meta { margin: 2px 0 0; font-size: 0.9rem; }
+  .meta { margin: 1px 0 0; font-size: 0.85rem; line-height: 1.3; }
   .meta .rating { color: var(--heading); font-weight: 600; }
   .kind {
+    margin: 2px 0 0;
+    line-height: 1.3;
     font-size: 0.72rem;
     color: var(--muted);
     text-transform: uppercase;
     letter-spacing: 0.06em;
   }
   @media (max-width: 480px) {
-    .count .where { display: none; } /* room for the title; the detail names the cinemas */
+    .count .where { display: none; } /* room for the title; the box names the cinemas */
   }
 
-  /* Detail: poster with year · runtime under it, beside a box of day tabs over that
-     day's sessions. The box keeps one height across tabs and scrolls inside. */
-  .detail {
-    display: flex;
-    gap: 16px;
-    align-items: flex-start;
-    padding: 2px 0 14px;
-  }
-  .poster {
-    flex: none;
-    width: 110px;
-    font-size: 0.8rem;
-    color: var(--muted);
-  }
-  .poster img {
-    display: block;
-    width: 100%;
-    height: auto;
-    aspect-ratio: 2 / 3;
-    object-fit: cover;
-    margin-bottom: 4px;
-    border-radius: 4px;
-    background: var(--inset);
-  }
+  /* Detail: a box of day tabs over that day's sessions, full width under the row.
+     It keeps one height across tabs and scrolls inside. */
+  .detail { padding: 2px 0 14px; }
   .box {
-    flex: 1;
-    min-width: 0;
-    max-width: 640px;
     background: var(--inset);
     border: 1px solid var(--border);
     border-radius: 4px;
@@ -307,10 +306,6 @@
     padding: 8px 10px;
   }
   @media (max-width: 480px) {
-    .detail { flex-direction: column; gap: 8px; }
-    .poster { width: auto; display: flex; align-items: flex-end; gap: 10px; }
-    .poster img { width: 64px; margin: 0; }
-    .box { width: 100%; }
     .day-sessions { max-height: 45vh; }
   }
   /* One row per session: time · cinema · tags */
@@ -542,24 +537,33 @@
     }
   }
 
-  // Two lines: title; year · director · rating · type tag. Tapping the row opens its
-  // detail in place beneath it (B10c); several can be open; tapping again closes.
+  // Poster, then beside it: title and count; year · director · rating (· runtime when
+  // open); the type tag on its own line. Tapping the row opens its session box in
+  // place beneath it (B10c, B14); several can be open; tapping again closes.
   const openers = new WeakMap(); // entry -> open(), for #film= links
   function filmEntry(film, showings, day) {
+    const extra = details[film.id] || {};
     const meta = el("p", { class: "meta" });
     const parts = [film.year, film.director].filter(Boolean).map(String);
     parts.forEach((p, i) => meta.append((i ? " · " : "") + p));
     if (film.rating != null) {
       meta.append(parts.length ? " · " : "", el("span", { class: "rating", text: film.rating.toFixed(1) }), " TMDB");
     }
+    const runtime = extra.runtime
+      ? el("span", { class: "runtime", text: `${meta.childNodes.length ? " · " : ""}${extra.runtime} min`, hidden: "" })
+      : null;
+    if (runtime) meta.append(runtime);
     const tags = typesOf(showings).filter((t) => ROW_TAGS[t]).map((t) => ROW_TAGS[t]);
-    if (tags.length) meta.append(meta.childNodes.length ? " · " : "", el("span", { class: "kind", text: tags.join(" · ") }));
 
     const detailId = `detail-${++entryCount}`;
-    const toggle = el("button", { type: "button", "aria-expanded": "false", "aria-controls": detailId, text: film.title });
-    const text = el("div", { class: "text" }, el("h3", {}, toggle));
+    const toggle = el("button", { type: "button", "aria-expanded": "false", "aria-controls": detailId, title: film.title, text: film.title });
+    const text = el("div", { class: "text" }, el("div", { class: "title-line" }, el("h3", {}, toggle), countLabel(showings)));
     if (meta.childNodes.length) text.append(meta);
-    const head = el("div", { class: "film-head" }, text, countLabel(showings));
+    if (tags.length) text.append(el("p", { class: "kind", text: tags.join(" · ") }));
+    const poster = extra.poster_path
+      ? el("img", { class: "thumb", src: POSTER + extra.poster_path, alt: "", width: "64", height: "96", loading: "lazy" })
+      : el("div", { class: "thumb", "aria-hidden": "true" });
+    const head = el("div", { class: "film-head" }, poster, text);
     const entry = el("article", { class: "film", "data-film": film.id }, head);
 
     let detail = null; // built on first open
@@ -569,6 +573,7 @@
         fitBox(detail);
       }
       if (detail) detail.hidden = !open;
+      if (runtime) runtime.hidden = !open;
       toggle.setAttribute("aria-expanded", String(open));
       head.classList.toggle("open", open);
       // The address names the last film opened, so it can be shared; no history entry.
@@ -620,17 +625,9 @@
     return rows;
   }
 
-  // poster_path and runtime live in films.json, fetched the first time a row opens.
-  const POSTER = "https://image.tmdb.org/t/p/w185";
-  let details = null;
-  let detailsLoading = null;
-  function loadDetails() {
-    detailsLoading = detailsLoading || fetch("films.json", { cache: "no-cache" })
-      .then((r) => (r.ok ? r.json() : {}))
-      .catch(() => ({}))
-      .then((json) => { details = json; });
-    return detailsLoading;
-  }
+  // poster_path and runtime live in films.json, loaded alongside data.json (B14).
+  const POSTER = "https://image.tmdb.org/t/p/w92";
+  let details = {};
 
   const PARTIAL_NOTE = "Most cinemas publish the following week's sessions on Wednesday.";
   // Not for retrospectives, festivals or special events (the Retrospectives view, or
@@ -645,8 +642,8 @@
   const tabLabel = (iso) =>
     new Date(iso + "T00:00:00Z").toLocaleDateString("en-AU", { weekday: "short", day: "numeric", timeZone: "UTC" });
 
-  // Poster (year · runtime under it) and a box: a tab per day with sessions, over that
-  // day's `time · cinema · tags` rows. Starts on the row's own day.
+  // A box: a tab per day with sessions, over that day's `time · cinema · tags` rows.
+  // Starts on the row's own day.
   function filmDetail(film, day, id) {
     const byDay = new Map();
     for (const s of byFilm.get(film.id) || []) {
@@ -654,20 +651,6 @@
       byDay.get(s.day).push(s);
     }
     const days = [...byDay.keys()];
-
-    const poster = el("div", { class: "poster" });
-    const fillPoster = () => {
-      const extra = (details && details[film.id]) || {};
-      const facts = [film.year, extra.runtime && `${extra.runtime} min`].filter(Boolean).join(" · ");
-      poster.replaceChildren();
-      if (extra.poster_path) {
-        poster.append(el("img", { src: POSTER + extra.poster_path, alt: "", width: "110", height: "165" }));
-      }
-      if (facts) poster.append(el("span", { text: facts }));
-      poster.hidden = !poster.childNodes.length;
-    };
-    fillPoster();
-    if (!details) loadDetails().then(fillPoster);
 
     const tabs = el("div", { class: "tabs", role: "tablist", "aria-label": `Sessions of ${film.title} by day` });
     const lists = el("div", { class: "day-sessions" });
@@ -706,7 +689,7 @@
       select((now + step + buttons.length) % buttons.length, true);
     });
 
-    const detail = el("div", { class: "detail", id }, poster, el("div", { class: "box" }, tabs, lists));
+    const detail = el("div", { class: "detail", id }, el("div", { class: "box" }, tabs, lists));
     detail.select = () => select(Math.max(days.indexOf(day), 0));
     return detail;
   }
@@ -888,13 +871,19 @@
   });
   form.addEventListener("submit", (e) => e.preventDefault());
 
+  // films.json is optional: without it, rows show the poster placeholder.
+  const filmDetails = fetch("films.json", { cache: "no-cache" })
+    .then((r) => (r.ok ? r.json() : {}))
+    .catch(() => ({}));
   fetch("data.json", { cache: "no-cache" })
     .then((r) => {
       if (!r.ok) throw new Error(r.status);
       return r.json();
     })
-    .then((json) => {
+    .then((json) => filmDetails.then((extra) => [json, extra]))
+    .then(([json, extra]) => {
       data = json;
+      details = extra || {};
       filmsById = new Map(data.films.map((f) => [f.id, f]));
       thisYear = Number(data.generated_at.slice(0, 4)) || thisYear;
       for (const s of data.showings) {
