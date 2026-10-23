@@ -18,6 +18,8 @@ Rules from DECISIONS.md:
   one of REGIONS; a venue may list more than one, e.g. Moore Park is City and
   East). Every session carries its venue's "regions" list, and the top-level
   "regions" lists those that have sessions, in REGIONS order, for the filter.
+  venues.yaml's region table (region -> its LGAs) is the one source for REGIONS
+  and goes into data.json as "region_lgas" for the page's Region popover (B20).
 - Partial days (B10d): a day with fewer than half the busiest day's sessions is
   "partial": the chains publish the next Thu–Wed week around Tuesday/Wednesday,
   and until then the days after the current week hold only advance sessions.
@@ -45,16 +47,14 @@ log = logging.getLogger("export")
 DATA_PATH = Path(__file__).resolve().parent / "public" / "data.json"
 FILMS_PATH = DATA_PATH.with_name("films.json")
 VENUES_PATH = Path(__file__).resolve().parent / "venues.yaml"
-REGIONS = (  # DECISIONS 2026-10-18 "Regions", in the page's order
-    "City",
-    "East",
-    "Inner West",
-    "North",
-    "Parramatta & Hills",
-    "Outer West",
-    "South West",
-    "St George & Sutherland",
-)
+
+
+def load_regions(path: Path = VENUES_PATH) -> dict[str, list[str]]:
+    """Region -> its LGAs, in the page's order (venues.yaml; DECISIONS 2026-10-18)."""
+    return yaml.safe_load(path.read_text(encoding="utf-8"))["regions"]
+
+
+REGIONS = tuple(load_regions())
 SYDNEY = ZoneInfo(SYDNEY_TZ)
 LATE_NIGHT_END = time(5, 0)
 NEW_DAYS = 7
@@ -163,16 +163,21 @@ def build_data(
 
 
 def load_venues(path: Path = VENUES_PATH) -> dict[str, dict]:
-    """slug -> {slug, name, lga, regions, screens} from venues.yaml, where "region"
-    is one region or a list of them; it comes back as the list "regions"."""
-    entries = yaml.safe_load(path.read_text(encoding="utf-8"))
+    """slug -> {slug, name, lga, regions, screens, at} from venues.yaml, where
+    "region" is one region or a list of them; it comes back as the list "regions".
+    A venue's LGA must be in one of its regions' LGAs."""
+    doc = yaml.safe_load(path.read_text(encoding="utf-8"))
+    table = doc["regions"]
     venues = {}
-    for entry in entries:
+    for entry in doc["venues"]:
         region = entry.pop("region")
         entry["regions"] = region if isinstance(region, list) else [region]
         for name in entry["regions"]:
-            if name not in REGIONS:
+            if name not in table:
                 raise ValueError(f"{path.name}: {entry['slug']} has unknown region {name!r}")
+        if not any(entry["lga"] in table[name] for name in entry["regions"]):
+            slug, lga = entry["slug"], entry["lga"]
+            raise ValueError(f"{path.name}: {slug}'s LGA {lga!r} is in none of its regions")
         venues[entry["slug"]] = entry
     return venues
 
@@ -290,6 +295,7 @@ if __name__ == "__main__":
         log.warning("Venue %s is not in venues.yaml: no region", slug)
     data = build_data(showings, load_previous(), datetime.now(SYDNEY).date(), venue_info)
     data["coverage"] = coverage(venue_info, data["showings"])
+    data["region_lgas"] = load_regions()
     write(data)
     write(build_film_details(showings, data, details), FILMS_PATH)
     new = sum(f["new_this_week"] for f in data["films"])
