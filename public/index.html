@@ -6,6 +6,9 @@
 <title>Sydney Cinema Guide</title>
 <meta name="description" content="Every showing at Sydney cinemas on one page, filterable by film, director, type and date.">
 <link rel="canonical" href="https://sydneycinema.com/">
+<link rel="icon" href="favicon.svg" type="image/svg+xml">
+<link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
+<link rel="apple-touch-icon" href="favicon-180.png">
 <meta property="og:title" content="Sydney Cinema Guide">
 <meta property="og:description" content="What's on at Sydney cinemas.">
 <meta property="og:url" content="https://sydneycinema.com/">
@@ -59,6 +62,14 @@
     font-size: 2rem;
     font-weight: 800;
     letter-spacing: -0.01em;
+  }
+  /* The S mark (B15): as tall as the heading's capitals, sitting on its baseline. */
+  h1 .mark {
+    height: 0.7em;
+    height: 1cap;
+    width: auto;
+    margin-right: 10px;
+    vertical-align: baseline;
   }
   .standfirst { margin: 4px 0 0; }
 
@@ -343,7 +354,7 @@
 <body>
 <div class="page">
   <header>
-    <h1>Sydney Cinema Guide</h1>
+    <h1><img class="mark" src="logo-s.svg" alt="" width="61" height="103">Sydney Cinema Guide</h1>
     <p class="standfirst">What's on at Sydney cinemas.</p>
   </header>
 
