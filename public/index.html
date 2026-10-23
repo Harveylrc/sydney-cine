@@ -10,7 +10,7 @@
 <link rel="icon" href="favicon-32.png" sizes="32x32" type="image/png">
 <link rel="apple-touch-icon" href="favicon-180.png">
 <meta property="og:title" content="Sydney Cinema Guide">
-<meta property="og:description" content="What's on at Sydney cinemas.">
+<meta property="og:description" content="Every showing at Sydney cinemas on one page, filterable by film, director, type and date.">
 <meta property="og:url" content="https://sydneycinema.com/">
 <meta property="og:type" content="website">
 <style>
@@ -63,7 +63,6 @@
     font-weight: 800;
     letter-spacing: -0.01em;
   }
-  .standfirst { margin: 4px 0 0; }
 
   /* Views and filters */
   .views {
@@ -187,8 +186,6 @@
     border-color: var(--accent);
     font-weight: 600;
   }
-
-  .summary { margin: 14px 0 0; font-size: 0.9rem; }
 
   /* Listings */
   .day { margin-top: 28px; }
@@ -368,7 +365,6 @@
 <div class="page">
   <header>
     <h1>Sydney Cinema Guide</h1>
-    <p class="standfirst">What's on at Sydney cinemas.</p>
   </header>
 
   <nav class="views" aria-label="Views">
@@ -424,8 +420,7 @@
     <button type="reset" class="reset">Clear filters</button>
   </form>
 
-  <p class="summary" id="summary" aria-live="polite">Loading showings…</p>
-  <main id="listings"></main>
+  <main id="listings"><p class="empty">Loading showings…</p></main>
 
   <footer>
     <p id="updated"></p>
@@ -449,7 +444,6 @@
   const $ = (sel) => document.querySelector(sel);
   const form = $("#filters");
   const listings = $("#listings");
-  const summary = $("#summary");
   let data = null;
   let filmsById = new Map();
   let entryCount = 0;
@@ -829,10 +823,6 @@
       listings.append(section);
     }
 
-    const filmCount = new Set([...days.values()].flatMap((films) => [...films.keys()])).size;
-    summary.textContent = count
-      ? `${count} showing${count === 1 ? "" : "s"} of ${filmCount} film${filmCount === 1 ? "" : "s"}`
-      : "";
     if (!count) {
       const director = form.elements.director.value.trim();
       const msg = view === "new"
@@ -990,7 +980,7 @@
       openFromHash(); // a linked #film=<id>
     })
     .catch(() => {
-      summary.textContent = "Couldn't load showings. Try again later.";
+      listings.replaceChildren(el("p", { class: "empty", text: "Couldn't load showings. Try again later." }));
     });
 })();
 </script>
