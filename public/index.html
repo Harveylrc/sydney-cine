@@ -179,6 +179,38 @@
     letter-spacing: 0.06em;
   }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  /* Regions ⓘ (B20): which LGAs make up each region, and a link to the map. */
+  .regions { position: relative; }
+  .filters .info {
+    padding: 0 4px;
+    margin-left: 2px;
+    border: 0;
+    font-size: 0.95rem;
+    line-height: 1;
+    color: var(--accent);
+    vertical-align: -1px;
+  }
+  .popover {
+    position: absolute;
+    z-index: 3;
+    top: 20px;
+    left: 0;
+    width: min(380px, calc(100vw - 2 * var(--gutter)));
+    max-height: 70vh;
+    overflow-y: auto;
+    padding: 10px 14px 12px;
+    font-size: 0.85rem;
+    color: var(--label);
+    background: var(--inset);
+    border: 1px solid var(--border);
+    border-radius: 4px;
+    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+  }
+  .popover dl { margin: 0; }
+  .popover dt { margin-top: 8px; color: var(--heading); font-weight: 700; }
+  .popover dt:first-child { margin-top: 0; }
+  .popover dd { margin: 1px 0 0; }
+  .popover p { margin: 12px 0 0; }
   .filters .chips button { padding: 3px 12px; font-size: 0.85rem; }
   .filters .chips button[aria-pressed="true"] {
     color: var(--bg);
@@ -424,7 +456,9 @@
       </select>
     </label>
     <fieldset class="regions" hidden>
-      <legend>Region</legend>
+      <legend>Region<button type="button" class="info" id="region-info-button" aria-expanded="false"
+        aria-controls="region-info" aria-label="Which areas are in each region" title="Which areas are in each region" hidden>ⓘ</button></legend>
+      <div class="popover" id="region-info" role="dialog" aria-label="Regions" hidden></div>
       <div class="chips" id="region-chips"></div>
     </fieldset>
     <button type="reset" class="reset">Clear filters</button>
@@ -549,6 +583,33 @@
 
   // Region chips: built from data.json's regions; several can be on at once.
   const selectedRegions = new Set();
+  // Regions ⓘ: each region's LGAs, from data.json's region_lgas (venues.yaml).
+  const regionInfo = $("#region-info");
+  const regionInfoButton = $("#region-info-button");
+  function populateRegionInfo() {
+    const table = data.region_lgas || {};
+    const list = el("dl");
+    for (const [region, lgas] of Object.entries(table)) {
+      list.append(el("dt", { text: region }), el("dd", { text: lgas.join(", ") }));
+    }
+    const map = el("a", { href: "regions-map.svg", target: "_blank", rel: "noopener", text: "See on a map" });
+    regionInfo.replaceChildren(list, el("p", {}, map));
+    regionInfoButton.hidden = !Object.keys(table).length;
+  }
+  function setRegionInfo(open) {
+    regionInfo.hidden = !open;
+    regionInfoButton.setAttribute("aria-expanded", String(open));
+  }
+  regionInfoButton.addEventListener("click", () => setRegionInfo(regionInfo.hidden));
+  document.addEventListener("click", (e) => {
+    if (!regionInfo.hidden && !regionInfo.contains(e.target) && e.target !== regionInfoButton) setRegionInfo(false);
+  });
+  document.addEventListener("keydown", (e) => {
+    if (e.key !== "Escape" || regionInfo.hidden) return;
+    setRegionInfo(false);
+    regionInfoButton.focus();
+  });
+
   function populateRegions() {
     const chips = $("#region-chips");
     for (const region of data.regions || []) {
@@ -1012,6 +1073,7 @@
         Object.values(data.venues).map((v) => v.name).join(", ")}.`;
       populateFilters();
       populateRegions();
+      populateRegionInfo();
       render();
       openFromHash(); // a linked #film=<id>
     })

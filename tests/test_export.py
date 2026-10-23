@@ -13,6 +13,7 @@ from export import (
     display_day,
     effective_type,
     load_previous,
+    load_regions,
     load_venues,
     scrape_all,
     time_label,
@@ -369,9 +370,37 @@ def test_cinema_in_two_regions_appears_under_both():
 
 def test_unknown_region_rejected(tmp_path):
     path = tmp_path / "venues.yaml"
-    path.write_text("- {slug: x, name: X, lga: Y, region: Westish, screens: null}\n")
+    path.write_text(
+        "regions: {East: [Y]}\n"
+        "venues:\n- {slug: x, name: X, lga: Y, region: Westish, screens: null}\n"
+    )
     with pytest.raises(ValueError, match="Westish"):
         load_venues(path)
+
+
+def test_venue_lga_must_be_in_its_region(tmp_path):
+    path = tmp_path / "venues.yaml"
+    path.write_text(
+        "regions: {East: [Randwick], North: [Ryde]}\n"
+        "venues:\n- {slug: x, name: X, lga: Ryde, region: East, screens: 1}\n"
+    )
+    with pytest.raises(ValueError, match="Ryde"):
+        load_venues(path)
+
+
+def test_region_table_matches_decisions():
+    regions = load_regions()
+    assert tuple(regions) == REGIONS
+    assert REGIONS[0] == "City" and REGIONS[-1] == "St George & Sutherland" and len(REGIONS) == 8
+    lgas = [lga for names in regions.values() for lga in names]
+    assert len(lgas) == len(set(lgas)) == 33  # each LGA in exactly one region
+    assert "Mosman" in regions["North"] and "Wollondilly" in regions["South West"]
+
+
+def test_every_venue_has_a_map_position():
+    for slug, v in load_venues().items():
+        lat, lon = v["at"]
+        assert -34.5 < lat < -33.0 and 150.0 < lon < 151.4, slug
 
 
 # --- partial days (B10d) --------------------------------------------------------

@@ -18,62 +18,78 @@
 # Westfield (6, maybe 7), Reading Auburn (8 or 9). Unknown, left out of the
 # figure: Dumaresq Street. United Opera Quays is closed for refurbishment (closed: true).
 
-- {slug: ritz-randwick, name: Ritz Randwick, lga: Randwick, region: East, screens: 8}
+# Regions (DECISIONS 2026-10-18), in the page's order: each region's local
+# government areas, all of them, cinema or not. The page's Region ⓘ popover and
+# public/regions-map.svg are built from this table (B20).
+regions:
+  City: [City of Sydney]
+  East: [Waverley, Woollahra, Randwick, Bayside]
+  Inner West: [Inner West, Burwood, Strathfield, Canada Bay]
+  North: [North Sydney, Mosman, Willoughby, Lane Cove, Hunters Hill, Ryde, Ku-ring-gai, Hornsby, Northern Beaches]
+  Parramatta & Hills: [Parramatta, Cumberland, The Hills, Hawkesbury]
+  Outer West: [Blacktown, Penrith, Blue Mountains]
+  South West: [Fairfield, Liverpool, Canterbury-Bankstown, Camden, Campbelltown, Wollondilly]
+  St George & Sutherland: [Georges River, Sutherland]
 
-- {slug: hoyts-bankstown, name: Hoyts Bankstown, lga: Canterbury-Bankstown, region: South West, screens: 8}
-- {slug: hoyts-blacktown, name: Hoyts Blacktown, lga: Blacktown, region: Outer West, screens: 10}
-- {slug: hoyts-broadway, name: Hoyts Broadway, lga: City of Sydney, region: City, screens: 12}
-- {slug: hoyts-chatswood-mandarin, name: Hoyts Chatswood Mandarin, lga: Willoughby, region: North, screens: 8}
-- {slug: hoyts-chatswood-westfield, name: Hoyts Chatswood Westfield, lga: Willoughby, region: North, screens: 6}
-- {slug: hoyts-cronulla, name: Hoyts Cronulla, lga: Sutherland, region: St George & Sutherland, screens: 6}
-- {slug: hoyts-eastgardens, name: Hoyts Eastgardens, lga: Bayside, region: East, screens: 8}
+# `at`: [latitude, longitude], for the dots on the regions map (B20; OpenStreetMap
+# Nominatim, 2026-10-23, each checked to fall inside its own LGA's boundary).
+venues:
+- {slug: ritz-randwick, name: Ritz Randwick, lga: Randwick, region: East, screens: 8, at: [-33.9202, 151.2433]}
+
+- {slug: hoyts-bankstown, name: Hoyts Bankstown, lga: Canterbury-Bankstown, region: South West, screens: 8, at: [-33.9157, 151.0365]}
+- {slug: hoyts-blacktown, name: Hoyts Blacktown, lga: Blacktown, region: Outer West, screens: 10, at: [-33.7701, 150.9074]}
+- {slug: hoyts-broadway, name: Hoyts Broadway, lga: City of Sydney, region: City, screens: 12, at: [-33.8837, 151.1939]}
+- {slug: hoyts-chatswood-mandarin, name: Hoyts Chatswood Mandarin, lga: Willoughby, region: North, screens: 8, at: [-33.798, 151.1823]}
+- {slug: hoyts-chatswood-westfield, name: Hoyts Chatswood Westfield, lga: Willoughby, region: North, screens: 6, at: [-33.797, 151.1836]}
+- {slug: hoyts-cronulla, name: Hoyts Cronulla, lga: Sutherland, region: St George & Sutherland, screens: 6, at: [-34.0517, 151.1533]}
+- {slug: hoyts-eastgardens, name: Hoyts Eastgardens, lga: Bayside, region: East, screens: 8, at: [-33.9451, 151.2232]}
 # Moore Park (the Entertainment Quarter) is in the City of Sydney but also counts as
 # East: Harvey's exception, DECISIONS 2026-10-18 "Moore Park cinemas are City and East".
-- {slug: hoyts-entertainment-quarter, name: Hoyts Entertainment Quarter, lga: City of Sydney, region: [City, East], screens: 12}
-- {slug: hoyts-mt-druitt, name: Hoyts Mt Druitt, lga: Blacktown, region: Outer West, screens: 8}
-- {slug: hoyts-penrith, name: Hoyts Penrith, lga: Penrith, region: Outer West, screens: 10}
-- {slug: hoyts-warringah-mall, name: Hoyts Warringah Mall, lga: Northern Beaches, region: North, screens: 9}
-- {slug: hoyts-wetherill-park, name: Hoyts Wetherill Park, lga: Fairfield, region: South West, screens: 11}
+- {slug: hoyts-entertainment-quarter, name: Hoyts Entertainment Quarter, lga: City of Sydney, region: [City, East], screens: 12, at: [-33.895, 151.2263]}
+- {slug: hoyts-mt-druitt, name: Hoyts Mt Druitt, lga: Blacktown, region: Outer West, screens: 8, at: [-33.7669, 150.8191]}
+- {slug: hoyts-penrith, name: Hoyts Penrith, lga: Penrith, region: Outer West, screens: 10, at: [-33.7509, 150.6938]}
+- {slug: hoyts-warringah-mall, name: Hoyts Warringah Mall, lga: Northern Beaches, region: North, screens: 9, at: [-33.7674, 151.2652]}
+- {slug: hoyts-wetherill-park, name: Hoyts Wetherill Park, lga: Fairfield, region: South West, screens: 11, at: [-33.8576, 150.899]}
 
-- {slug: palace-central, name: Palace Central, lga: City of Sydney, region: City, screens: 13}
-- {slug: palace-moore-park, name: Palace Moore Park, lga: City of Sydney, region: [City, East], screens: 4}  # see Hoyts EQ
-- {slug: palace-norton-street, name: Palace Norton Street, lga: Inner West, region: Inner West, screens: 8}
+- {slug: palace-central, name: Palace Central, lga: City of Sydney, region: City, screens: 13, at: [-33.8846, 151.2009]}
+- {slug: palace-moore-park, name: Palace Moore Park, lga: City of Sydney, region: [City, East], screens: 4, at: [-33.8943, 151.2258]}  # see Hoyts EQ
+- {slug: palace-norton-street, name: Palace Norton Street, lga: Inner West, region: Inner West, screens: 8, at: [-33.8849, 151.1576]}
 
-- {slug: orpheum, name: Hayden Orpheum, lga: North Sydney, region: North, screens: 6}
-- {slug: golden-age, name: Golden Age, lga: City of Sydney, region: City, screens: 1}
-- {slug: roseville, name: Roseville Cinemas, lga: Ku-ring-gai, region: North, screens: 2}
+- {slug: orpheum, name: Hayden Orpheum, lga: North Sydney, region: North, screens: 6, at: [-33.8281, 151.2297]}
+- {slug: golden-age, name: Golden Age, lga: City of Sydney, region: City, screens: 1, at: [-33.8794, 151.2112]}
+- {slug: roseville, name: Roseville Cinemas, lga: Ku-ring-gai, region: North, screens: 2, at: [-33.7844, 151.1763]}
 
-- {slug: event-bondi, name: Event Bondi, lga: Waverley, region: East, screens: 11, closed: true}  # refurbishment; remove when it reopens
-- {slug: event-burwood, name: Event Burwood, lga: Burwood, region: Inner West, screens: 12}
-- {slug: event-campbelltown, name: Event Campbelltown, lga: Campbelltown, region: South West, screens: 11}
-- {slug: event-castle-hill, name: Event Castle Hill, lga: The Hills, region: Parramatta & Hills, screens: 15}
-- {slug: event-drive-in-blacktown, name: Event Drive-In Blacktown, lga: Blacktown, region: Outer West, screens: 2}
-- {slug: event-ed-square, name: Event Ed Square, lga: Liverpool, region: South West, screens: 6}
-- {slug: event-george-street, name: Event George Street, lga: City of Sydney, region: City, screens: 15}
-- {slug: event-hornsby, name: Event Hornsby, lga: Hornsby, region: North, screens: 9}
-- {slug: event-hurstville, name: Event Hurstville, lga: Georges River, region: St George & Sutherland, screens: 8}
-- {slug: event-imax-sydney, name: Event IMAX Sydney, lga: City of Sydney, region: City, screens: 1}
-- {slug: event-liverpool, name: Event Liverpool, lga: Liverpool, region: South West, screens: 12}
-- {slug: event-macquarie, name: Event Macquarie, lga: Ryde, region: North, screens: 16}
-- {slug: event-miranda, name: Event Miranda, lga: Sutherland, region: St George & Sutherland, screens: 10}
-- {slug: event-parramatta, name: Event Parramatta, lga: Parramatta, region: Parramatta & Hills, screens: 11}
-- {slug: event-top-ryde-city, name: Event Top Ryde City, lga: Ryde, region: North, screens: 8}
+- {slug: event-bondi, name: Event Bondi, lga: Waverley, region: East, screens: 11, closed: true, at: [-33.8923, 151.2509]}  # refurbishment; remove when it reopens
+- {slug: event-burwood, name: Event Burwood, lga: Burwood, region: Inner West, screens: 12, at: [-33.8753, 151.1049]}
+- {slug: event-campbelltown, name: Event Campbelltown, lga: Campbelltown, region: South West, screens: 11, at: [-34.0726, 150.7977]}
+- {slug: event-castle-hill, name: Event Castle Hill, lga: The Hills, region: Parramatta & Hills, screens: 15, at: [-33.732, 151.0043]}
+- {slug: event-drive-in-blacktown, name: Event Drive-In Blacktown, lga: Blacktown, region: Outer West, screens: 2, at: [-33.8056, 150.9042]}
+- {slug: event-ed-square, name: Event Ed Square, lga: Liverpool, region: South West, screens: 6, at: [-33.9714, 150.8624]}
+- {slug: event-george-street, name: Event George Street, lga: City of Sydney, region: City, screens: 15, at: [-33.8752, 151.2059]}
+- {slug: event-hornsby, name: Event Hornsby, lga: Hornsby, region: North, screens: 9, at: [-33.7036, 151.1011]}
+- {slug: event-hurstville, name: Event Hurstville, lga: Georges River, region: St George & Sutherland, screens: 8, at: [-33.9656, 151.1058]}
+- {slug: event-imax-sydney, name: Event IMAX Sydney, lga: City of Sydney, region: City, screens: 1, at: [-33.8757, 151.2017]}
+- {slug: event-liverpool, name: Event Liverpool, lga: Liverpool, region: South West, screens: 12, at: [-33.9188, 150.9234]}
+- {slug: event-macquarie, name: Event Macquarie, lga: Ryde, region: North, screens: 16, at: [-33.7771, 151.1193]}
+- {slug: event-miranda, name: Event Miranda, lga: Sutherland, region: St George & Sutherland, screens: 10, at: [-34.035, 151.1001]}
+- {slug: event-parramatta, name: Event Parramatta, lga: Parramatta, region: Parramatta & Hills, screens: 11, at: [-33.8173, 151.0037]}
+- {slug: event-top-ryde-city, name: Event Top Ryde City, lga: Ryde, region: North, screens: 8, at: [-33.8125, 151.1066]}
 
 # --- Not scraped (B7: counted in coverage as uncovered) ---------------------------
-- {slug: dendy-newtown, name: Dendy Newtown, lga: Inner West, region: Inner West, screens: 11, scraped: false}  # robots-disallowed GraphQL
-- {slug: reading-auburn, name: Reading Auburn, lga: Cumberland, region: Parramatta & Hills, screens: 9}  # scraped since B8a (AU-only API: saved copy)
-- {slug: reading-rhodes, name: Reading Rhodes, lga: Canada Bay, region: Inner West, screens: 8}  # scraped since B8a
-- {slug: reading-rouse-hill, name: Reading Rouse Hill, lga: The Hills, region: Parramatta & Hills, screens: 9}  # scraped since B8a
-- {slug: united-warriewood, name: United Cinemas Warriewood, lga: Northern Beaches, region: North, screens: 7, source: manual, source_url: "https://www.unitedcinemas.com.au/"}  # B13g: Cloudflare-blocked
-- {slug: united-avalon, name: United Cinemas Avalon, lga: Northern Beaches, region: North, screens: 2, source: manual, source_url: "https://www.unitedcinemas.com.au/"}  # B13g: Cloudflare-blocked
-- {slug: united-narellan, name: United Cinemas Narellan, lga: Camden, region: South West, screens: 8, source: manual, source_url: "https://www.unitedcinemas.com.au/"}  # B13g: Cloudflare-blocked
-- {slug: united-the-edge-katoomba, name: United Cinemas The Edge Katoomba, lga: Blue Mountains, region: Outer West, screens: 4, source: manual, source_url: "https://www.unitedcinemas.com.au/"}  # B13g: Cloudflare-blocked
-- {slug: united-opera-quays, name: United Cinemas Opera Quays, lga: City of Sydney, region: City, screens: 3, scraped: false, closed: true}  # closed for refurbishment (Harvey, 2026-10-19); add a manual stub when it reopens
-- {slug: richmond-regent, name: Richmond Regent, lga: Hawkesbury, region: Parramatta & Hills, screens: 1, source: manual, source_url: "https://www.theregentrichmond.com.au/cinema"}  # one auditorium (venue page); B13d: sessions only on SimpleTix
-- {slug: glenbrook-cinema, name: Glenbrook Cinema, lga: Blue Mountains, region: Outer West, screens: 1}  # scraped since B13b
-- {slug: mount-vic-flicks, name: Mount Vic Flicks, lga: Blue Mountains, region: Outer West, screens: 1}  # scraped since B13c
-- {slug: dumaresq-street, name: Dumaresq Street Cinemas, lga: Campbelltown, region: South West, screens: null, source: manual, source_url: "https://dscinema.com.au/"}  # count unknown; B13e: data only via robots-disallowed /graphql
-- {slug: govindas, name: Govinda's Movie Room, lga: City of Sydney, region: City, screens: 1}  # scraped since B13f
+- {slug: dendy-newtown, name: Dendy Newtown, lga: Inner West, region: Inner West, screens: 11, scraped: false, at: [-33.8959, 151.1804]}  # robots-disallowed GraphQL
+- {slug: reading-auburn, name: Reading Auburn, lga: Cumberland, region: Parramatta & Hills, screens: 9, at: [-33.8423, 151.0379]}  # scraped since B8a (AU-only API: saved copy)
+- {slug: reading-rhodes, name: Reading Rhodes, lga: Canada Bay, region: Inner West, screens: 8, at: [-33.8341, 151.0858]}  # scraped since B8a
+- {slug: reading-rouse-hill, name: Reading Rouse Hill, lga: The Hills, region: Parramatta & Hills, screens: 9, at: [-33.691, 150.9242]}  # scraped since B8a
+- {slug: united-warriewood, name: United Cinemas Warriewood, lga: Northern Beaches, region: North, screens: 7, source: manual, source_url: "https://www.unitedcinemas.com.au/", at: [-33.6938, 151.3026]}  # B13g: Cloudflare-blocked
+- {slug: united-avalon, name: United Cinemas Avalon, lga: Northern Beaches, region: North, screens: 2, source: manual, source_url: "https://www.unitedcinemas.com.au/", at: [-33.6367, 151.3287]}  # B13g: Cloudflare-blocked
+- {slug: united-narellan, name: United Cinemas Narellan, lga: Camden, region: South West, screens: 8, source: manual, source_url: "https://www.unitedcinemas.com.au/", at: [-34.0431, 150.7365]}  # B13g: Cloudflare-blocked
+- {slug: united-the-edge-katoomba, name: United Cinemas The Edge Katoomba, lga: Blue Mountains, region: Outer West, screens: 4, source: manual, source_url: "https://www.unitedcinemas.com.au/", at: [-33.7063, 150.3185]}  # B13g: Cloudflare-blocked
+- {slug: united-opera-quays, name: United Cinemas Opera Quays, lga: City of Sydney, region: City, screens: 3, scraped: false, closed: true, at: [-33.8595, 151.213]}  # closed for refurbishment (Harvey, 2026-10-19); add a manual stub when it reopens
+- {slug: richmond-regent, name: Richmond Regent, lga: Hawkesbury, region: Parramatta & Hills, screens: 1, source: manual, source_url: "https://www.theregentrichmond.com.au/cinema", at: [-33.6017, 150.7631]}  # one auditorium (venue page); B13d: sessions only on SimpleTix
+- {slug: glenbrook-cinema, name: Glenbrook Cinema, lga: Blue Mountains, region: Outer West, screens: 1, at: [-33.7655, 150.6223]}  # scraped since B13b
+- {slug: mount-vic-flicks, name: Mount Vic Flicks, lga: Blue Mountains, region: Outer West, screens: 1, at: [-33.5902, 150.2569]}  # scraped since B13c
+- {slug: dumaresq-street, name: Dumaresq Street Cinemas, lga: Campbelltown, region: South West, screens: null, source: manual, source_url: "https://dscinema.com.au/", at: [-34.0684, 150.8134]}  # count unknown; B13e: data only via robots-disallowed /graphql
+- {slug: govindas, name: Govinda's Movie Room, lga: City of Sydney, region: City, screens: 1, at: [-33.8788, 151.2201]}  # scraped since B13f
 # Manual: the gallery's site is bot-walled, so its programme is pasted in by hand
 # (manual/sydney-cinematheque.yaml via scripts/paste_to_manual.py; B13a-ii).
-- {slug: sydney-cinematheque, name: Sydney Cinémathèque, lga: City of Sydney, region: City, screens: 1, source: manual, source_url: "https://www.artgallery.nsw.gov.au/whats-on/cinema"}
+- {slug: sydney-cinematheque, name: Sydney Cinémathèque, lga: City of Sydney, region: City, screens: 1, source: manual, source_url: "https://www.artgallery.nsw.gov.au/whats-on/cinema", at: [-33.8686, 151.2174]}
