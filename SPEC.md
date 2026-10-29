@@ -1,17 +1,18 @@
-# SPEC — Sydney Cinema Guide (v1, 2026-10-15)
+# SPEC — Sydney Cinema Guide (v2, 2026-10-29)
 
 ## Problem
 Finding what's on in Sydney means visiting every cinema's site in turn. Paris has
 a single page for this (Paris Ciné Info); Sydney does not.
 
-## Product (v1)
-One page. Every current and upcoming showing in Greater Sydney, enriched with year,
-director and ratings, filterable by: film, director, film type (new release /
-retrospective / festival / special), showing date, release date. Grouped views:
-"new this week" (new releases first seen in our data within the last 7 days) and
-"retrospectives". "Last chance" was dropped (see DECISIONS.md 2026-10-15).
+## Product (v2)
+One page, two views in the header nav:
+- **What's on this week** (default): the current cinema week — today through the coming Sunday.
+- **All showings**: everything in the 14-day horizon, one section per week (Mon–Sun; the first starts today, the last ends at the horizon), headed "30 Oct - 1 Nov" style.
+Listings are grouped by week: one row per film per week (poster, title, year · director · rating, type tag, count); expanding a row shows day tabs with that film's sessions. Each week is paginated by film (default 10 per page). Filters: film, director, cinema, type (new release / retrospective / festival / special, plus "new this week" = first seen within 7 days), date, release year, region; sort Popular / A–Z / Cinema.
+Look: the light "Stripe docs" palette, navy accent #0E2245 (DECISIONS 2026-10-29). No footer.
+Dropped since v1: the "Retrospectives" and "New this week" views (the Type filter covers both), the per-day grouping, the "Partial" tag.
 
-## Not in v1
+## Not in v2
 Accounts, saved lists, notifications, reviews, non-Sydney cities, mobile app.
 Dendy Newtown (its only data path is robots-disallowed — see DECISIONS.md).
 Outdoor/seasonal cinemas (Moonlight, Westpac OpenAir, Mov'in Bed) until a season is live.
@@ -52,5 +53,5 @@ Coverage: % of Sydney screens whose showtimes appear on the page, measured weekl
 v1 target: ≥ 80% of screens; 100% of independents that are scrapeable within the
 rules above (Dendy excluded and reported as uncovered).
 
-## Success for v1
-Harvey uses it instead of venue sites for two consecutive weeks.
+## Success for v2
+Harvey uses it instead of venue sites for two consecutive weeks; one other person does too.
