@@ -55,7 +55,16 @@
   }
 
   /* Masthead */
-  header { border-bottom: 1px solid var(--border); padding-bottom: 14px; }
+  header {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    justify-content: space-between;
+    gap: 8px 24px;
+    border-bottom: 1px solid var(--border);
+    padding-bottom: 10px;
+    margin-bottom: 16px;
+  }
   h1 {
     margin: 0;
     color: var(--heading);
@@ -64,14 +73,24 @@
     letter-spacing: -0.01em;
   }
 
-  /* Views and filters */
-  .views {
-    display: flex;
-    flex-wrap: wrap;
-    gap: 8px;
-    margin: 18px 0 12px;
+  /* Views (B21): header nav, the active one underlined. */
+  .views { display: flex; gap: 20px; }
+  .views button {
+    font: inherit;
+    font-size: 0.95rem;
+    font-weight: 600;
+    color: var(--muted);
+    background: none;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    padding: 4px 0;
+    cursor: pointer;
   }
-  .views button, .filters button, .filter-bar button {
+  .views button:hover { color: var(--heading); }
+  .views button[aria-pressed="true"] { color: var(--heading); border-bottom-color: var(--accent); }
+
+  /* Filters */
+  .filters button, .filter-bar button {
     font: inherit;
     font-size: 0.9rem;
     color: var(--label);
@@ -81,13 +100,6 @@
     padding: 5px 14px;
     cursor: pointer;
   }
-  .views button[aria-pressed="true"] {
-    color: var(--bg);
-    background: var(--accent);
-    border-color: var(--accent);
-    font-weight: 600;
-  }
-
   /* Filters toggle (B16): collapsed, the row shows what's set as removable chips. */
   .filter-bar {
     display: flex;
@@ -230,15 +242,6 @@
     font-weight: 800;
     border-bottom: 1px solid var(--border);
   }
-  /* Cinema sort (B19): each cinema a sub-heading within the day. */
-  .cinema-heading {
-    margin: 18px 0 2px;
-    color: var(--accent);
-    font-size: 0.8rem;
-    font-weight: 700;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
   .film { border-bottom: 1px solid var(--divider); }
   /* Poster at left; beside it title (count at the far right), then year · director ·
      rating, then the type tag (B14). Same on phone and desktop. The whole row toggles
@@ -345,7 +348,6 @@
   }
   /* Days most cinemas haven't published yet (B10d). */
   .partial-note { margin: 6px 0 0; font-size: 0.85rem; color: var(--muted); }
-  .day-sessions .partial-note { margin: 0 0 6px; }
   .tabs .dot {
     display: inline-block;
     width: 5px;
@@ -363,14 +365,7 @@
     clip-path: inset(50%);
     white-space: nowrap;
   }
-  .day-sessions {
-    max-height: 320px;
-    overflow-y: auto;
-    padding: 8px 10px;
-  }
-  @media (max-width: 480px) {
-    .day-sessions { max-height: 45vh; }
-  }
+  .day-sessions { padding: 8px 10px; } /* natural height, no inner scroll (B21) */
   /* One row per session: time · cinema · tags */
   .sessions {
     margin: 0;
@@ -407,13 +402,11 @@
 <div class="page">
   <header>
     <h1>Sydney Cinema Guide</h1>
+    <nav class="views" aria-label="Views">
+      <button type="button" data-view="week" aria-pressed="true">What's on this week</button>
+      <button type="button" data-view="all" aria-pressed="false">All showings</button>
+    </nav>
   </header>
-
-  <nav class="views" aria-label="Views">
-    <button type="button" data-view="all" aria-pressed="true">All showings</button>
-    <button type="button" data-view="new" aria-pressed="false">New this week</button>
-    <button type="button" data-view="retro" aria-pressed="false">Retrospectives</button>
-  </nav>
 
   <div class="filter-bar" id="filter-bar">
     <button type="button" class="filter-toggle" id="filter-toggle" aria-expanded="false" aria-controls="filters">Filters<span id="filter-count"></span></button>
@@ -460,7 +453,6 @@
       <select name="sort" data-default="popular">
         <option value="popular">Popular</option>
         <option value="az">A–Z</option>
-        <option value="cinema">Cinema</option>
       </select>
     </label>
     <fieldset class="regions" hidden>
@@ -500,9 +492,9 @@
   let filmsById = new Map();
   let entryCount = 0;
   let thisYear = new Date().getFullYear();
-  let unfiltered = new Map(); // day -> film id -> all that day's showings, for ranking
+  let unfiltered = new Map(); // week start -> film id -> all that week's showings, for ranking
   let byFilm = new Map(); // film id -> all its showings in start order, for a row's detail
-  let view = "all";
+  let view = "week"; // "week": this week only; "all": every week (B21)
 
   // Element helper: text is always set as text, never parsed as HTML.
   function el(tag, attrs = {}, ...children) {
@@ -516,11 +508,6 @@
   }
 
   const fold = (s) => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
-
-  const dayHeading = (iso) =>
-    new Date(iso + "T00:00:00Z").toLocaleDateString("en-AU", {
-      weekday: "long", day: "numeric", month: "long", timeZone: "UTC",
-    });
 
   const dayShort = (iso) =>
     new Date(iso + "T00:00:00Z").toLocaleDateString("en-AU", {
@@ -566,12 +553,12 @@
     az: byTitle,
   };
 
-  // Ranks on all of a film's sessions that day, whatever the filters (Harvey, B9b).
-  function orderFilms(day, films, sort) {
+  // Ranks on all of a film's sessions that week, whatever the filters (Harvey, B9b, B21).
+  function orderFilms(week, films, sort) {
     return [...films]
       .map(([id, showings]) => {
         const film = filmsById.get(id);
-        return { film, showings, score: rankScore(film, unfiltered.get(day).get(id), thisYear) };
+        return { film, showings, score: rankScore(film, unfiltered.get(week.start).get(id), thisYear) };
       })
       .sort(ORDERS[sort] || ORDERS.popular);
   }
@@ -583,8 +570,6 @@
   }
 
   function matches(s, film, f) {
-    if (view === "new" && !(film.new_this_week && s.type === "new_release")) return false;
-    if (view === "retro" && s.type !== "retrospective") return false;
     if (f.film && !fold(film.title).includes(f.film) && !fold(s.title).includes(f.film)) return false;
     if (f.director && !fold(film.director).includes(f.director)) return false;
     if (f.cinema && !cinemaMatches(s.venue, f.cinema)) return false;
@@ -705,8 +690,9 @@
   // open); the type tag on its own line. Tapping the row opens its session box in
   // place beneath it (B10c, B14); several can be open; tapping again closes.
   const openers = new WeakMap(); // entry -> open(), for #film= links
-  // venue: set under the Cinema sort, so the box lists that cinema's sessions first.
-  function filmEntry(film, showings, day, venue = null) {
+  // One row per film per week (B21): showings are that week's, in start order.
+  function filmEntry(film, showings, week) {
+    const day = showings[0].day; // the box opens on the film's first day that week
     const extra = details[film.id] || {};
     const meta = el("p", { class: "meta" });
     const parts = [film.year, film.director].filter(Boolean).map(String);
@@ -734,8 +720,8 @@
     let detail = null; // built on first open
     function setOpen(open) {
       if (open && !detail) {
-        entry.append((detail = filmDetail(film, day, detailId, venue)));
-        fitBox(detail);
+        entry.append((detail = filmDetail(film, week, day, detailId)));
+        detail.select();
       }
       if (detail) detail.hidden = !open;
       if (runtime) runtime.hidden = !open;
@@ -795,30 +781,55 @@
   let details = {};
 
   const PARTIAL_NOTE = "Most cinemas publish the following week's sessions on Wednesday.";
-  // Not for retrospectives, festivals or special events (the Retrospectives view, or
-  // the Type filter on one of those): they're programmed well ahead, not on the
-  // chains' Wednesday cycle. Only all showings and new releases get the note.
+  // Not for retrospectives, festivals or special events (the Type filter on one of
+  // those): they're programmed well ahead, not on the chains' Wednesday cycle.
   const PLANNED_AHEAD = new Set(["retrospective", "festival", "special"]);
-  const plannedAheadOnly = () => view === "retro" || PLANNED_AHEAD.has(form.elements.type.value);
+  const plannedAheadOnly = () => PLANNED_AHEAD.has(form.elements.type.value);
   const isPartial = (day) =>
     !plannedAheadOnly() && Boolean(data.days && data.days[day] && data.days[day].partial);
+  // A week gets the note when most of its days are partial (or have no sessions yet).
+  const isPartialWeek = (week) => {
+    const days = weekDays(week);
+    return !plannedAheadOnly()
+      && days.filter((d) => !data.days || !data.days[d] || data.days[d].partial).length > days.length / 2;
+  };
+
+  // Weeks (DECISIONS 2026-10-29): the first runs from the export day to the coming
+  // Sunday (just that day if it is a Sunday), then Monday–Sunday, the last cut at
+  // the horizon. Dates are ISO strings read as UTC so no time zone shifts them.
+  const HORIZON_DAYS = 14; // as export.py
+  const addDays = (iso, n) => new Date(Date.parse(iso + "T00:00:00Z") + n * 864e5).toISOString().slice(0, 10);
+  let firstDay = null;
+  let lastDay = null;
+  function weekOf(iso) {
+    const monday = addDays(iso, -((new Date(iso + "T00:00:00Z").getUTCDay() + 6) % 7));
+    const sunday = addDays(monday, 6);
+    return { start: monday < firstDay ? firstDay : monday, end: sunday > lastDay ? lastDay : sunday };
+  }
+  function weekDays(week) {
+    const days = [];
+    for (let d = week.start; d <= week.end; d = addDays(d, 1)) days.push(d);
+    return days;
+  }
+  const shortDate = (iso) =>
+    new Date(iso + "T00:00:00Z").toLocaleDateString("en-AU", { day: "numeric", month: "short", timeZone: "UTC" });
+  const weekHeading = (week) =>
+    week.start === week.end ? shortDate(week.start) : `${shortDate(week.start)} - ${shortDate(week.end)}`;
   const partialNote = () => el("p", { class: "partial-note", text: PARTIAL_NOTE });
 
   const tabLabel = (iso) =>
     new Date(iso + "T00:00:00Z").toLocaleDateString("en-AU", { weekday: "short", day: "numeric", timeZone: "UTC" });
 
-  // A box: a tab per day with sessions, over that day's `time · cinema · tags` rows.
-  // Starts on the row's own day.
-  function filmDetail(film, day, id, venue = null) {
+  // A box: a tab per day of the row's week with sessions, over that day's
+  // `time · cinema · tags` rows, at its natural height. Starts on the row's first day.
+  function filmDetail(film, week, day, id) {
     const byDay = new Map();
     const cinema = currentFilters().cinema; // with a cinema chosen, only its sessions (B19b)
     for (const s of byFilm.get(film.id) || []) {
+      if (s.day < week.start || s.day > week.end) continue;
       if (cinema && !cinemaMatches(s.venue, cinema)) continue;
       if (!byDay.has(s.day)) byDay.set(s.day, []);
       byDay.get(s.day).push(s);
-    }
-    if (venue) { // that cinema first, each part still in time order (sort is stable)
-      for (const list of byDay.values()) list.sort((a, b) => (b.venue === venue) - (a.venue === venue));
     }
     const days = [...byDay.keys()];
 
@@ -827,9 +838,8 @@
     const buttons = days.map((d, i) => {
       const list = el("div", { role: "tabpanel", id: `${id}-day-${i}`, "aria-labelledby": `${id}-tab-${i}` });
       // A retrospective, festival or special screening is programmed ahead, so a
-      // day where all of this film's sessions are one of those gets no note or dot.
+      // day where all of this film's sessions are one of those gets no dot.
       const noted = isPartial(d) && !byDay.get(d).every((s) => PLANNED_AHEAD.has(s.type));
-      if (noted) list.append(partialNote());
       list.append(sessionRows(film, byDay.get(d)));
       lists.append(list);
       const button = el("button", { type: "button", role: "tab", id: `${id}-tab-${i}`, "aria-controls": `${id}-day-${i}`, text: tabLabel(d) });
@@ -847,7 +857,6 @@
         b.tabIndex = i === j ? 0 : -1;
         lists.children[j].hidden = i !== j;
       });
-      lists.scrollTop = 0;
       tabs.scrollLeft = buttons[i].offsetLeft - tabs.offsetLeft - 24;
       if (focus) buttons[i].focus();
     }
@@ -864,89 +873,59 @@
     return detail;
   }
 
-  // Once in the page: give the session box the height of its busiest day, up to its
-  // max-height, so switching days never moves the rows below.
-  function fitBox(detail) {
-    const lists = detail.querySelector(".day-sessions");
-    const cap = parseFloat(getComputedStyle(lists).maxHeight) || Infinity;
-    let tallest = 0;
-    for (const list of lists.children) {
-      for (const other of lists.children) other.hidden = other !== list;
-      tallest = Math.max(tallest, lists.scrollHeight);
-    }
-    lists.style.height = `${Math.min(tallest, cap)}px`;
-    detail.select();
-  }
-
   const hashFilm = () => {
     const m = location.hash.match(/^#film=(.+)$/);
     return m ? decodeURIComponent(m[1]) : null;
   };
 
-  // #film=<id>: open that film's first row and bring it into view.
+  // #film=<id>: open that film's first row and bring it into view; a film not on
+  // this week opens in All showings, in the first week it appears.
   function openFromHash() {
     const id = hashFilm();
-    const entry = id && listings.querySelector(`.film[data-film="${CSS.escape(id)}"]`);
+    const find = () => id && listings.querySelector(`.film[data-film="${CSS.escape(id)}"]`);
+    let entry = find();
+    if (!entry && id && view === "week") {
+      setView("all");
+      entry = find();
+    }
     if (!entry) return;
     openers.get(entry)();
     entry.scrollIntoView({ block: "start" });
   }
   window.addEventListener("hashchange", () => data && openFromHash());
 
-  // Cinema sort (B19): cinemas A–Z, each with its films by first session there. A
-  // film at several cinemas is listed under each (DECISIONS 2026-10-23).
-  function appendByCinema(section, day, films) {
-    const byVenue = new Map(); // venue -> film id -> that cinema's sessions
-    for (const [id, showings] of films) {
-      for (const s of showings) {
-        if (!byVenue.has(s.venue)) byVenue.set(s.venue, new Map());
-        const venueFilms = byVenue.get(s.venue);
-        if (!venueFilms.has(id)) venueFilms.set(id, []);
-        venueFilms.get(id).push(s);
-      }
-    }
-    const first = (showings) => showings.reduce((min, s) => (s.start < min ? s.start : min), showings[0].start);
-    const venues = [...byVenue.keys()].sort((a, b) => venueName(a).localeCompare(venueName(b), "en", { sensitivity: "base" }));
-    for (const venue of venues) {
-      section.append(el("h3", { class: "cinema-heading", text: venueName(venue) }));
-      const entries = [...byVenue.get(venue)].sort(([, a], [, b]) => first(a).localeCompare(first(b)));
-      for (const [id, showings] of entries) section.append(filmEntry(filmsById.get(id), showings, day, venue));
-    }
-  }
-
   function render() {
     markActive();
     updateFilterBar();
     const f = currentFilters();
-    const days = new Map(); // day -> film id -> showings, in start order
+    const weeks = new Map(); // week start -> { week, films: film id -> showings, in start order }
     let count = 0;
     for (const s of data.showings) {
       const film = filmsById.get(s.film);
       if (!film || !matches(s, film, f)) continue;
+      const week = weekOf(s.day);
+      if (view === "week" && week.start !== firstDay) continue; // this week only
       count++;
-      if (!days.has(s.day)) days.set(s.day, new Map());
-      const films = days.get(s.day);
+      if (!weeks.has(week.start)) weeks.set(week.start, { week, films: new Map() });
+      const films = weeks.get(week.start).films;
       if (!films.has(s.film)) films.set(s.film, []);
       films.get(s.film).push(s);
     }
 
     listings.replaceChildren();
-    for (const [day, films] of [...days].sort(([a], [b]) => a.localeCompare(b))) {
-      const section = el("section", { class: "day" }, el("h2", { text: dayHeading(day) }));
-      if (isPartial(day)) section.append(partialNote());
-      if (f.sort === "cinema") appendByCinema(section, day, films);
-      else for (const { film, showings } of orderFilms(day, films, f.sort)) section.append(filmEntry(film, showings, day));
+    for (const [, { week, films }] of [...weeks].sort(([a], [b]) => a.localeCompare(b))) {
+      const section = el("section", { class: "day" }, el("h2", { text: weekHeading(week) }));
+      if (isPartialWeek(week)) section.append(partialNote());
+      for (const { film, showings } of orderFilms(week, films, f.sort)) section.append(filmEntry(film, showings, week));
       listings.append(section);
     }
 
     if (!count) {
       const director = form.elements.director.value.trim();
-      const msg = view === "new"
-        ? "No new releases have appeared this week yet."
-        : directorNames && directorNames.some((d) => d.key === f.director)
+      const msg = directorNames && directorNames.some((d) => d.key === f.director)
           && !data.films.some((film) => fold(film.director).includes(f.director))
-          ? `Nothing by ${director} in the next two weeks.` // a known director, not on now
-          : "No showings match these filters.";
+        ? `Nothing by ${director} in the next two weeks.` // a known director, not on now
+        : view === "week" ? "No showings match these filters this week." : "No showings match these filters.";
       listings.append(el("p", { class: "empty", text: msg }));
     }
   }
@@ -1049,13 +1028,14 @@
   typeAhead(form.elements.cinema, $("#cinema-list"), "cinema", () => cinemaNames,
     (a, b) => a.rank - b.rank, () => Promise.resolve());
 
+  function setView(next) {
+    view = next;
+    document.querySelectorAll(".views button").forEach((b) =>
+      b.setAttribute("aria-pressed", String(b.dataset.view === view)));
+    render();
+  }
   document.querySelectorAll(".views button").forEach((button) => {
-    button.addEventListener("click", () => {
-      view = button.dataset.view;
-      document.querySelectorAll(".views button").forEach((b) =>
-        b.setAttribute("aria-pressed", String(b === button)));
-      render();
-    });
+    button.addEventListener("click", () => setView(button.dataset.view));
   });
   form.addEventListener("input", () => data && render());
   form.addEventListener("reset", () => {
@@ -1080,9 +1060,12 @@
       details = extra || {};
       filmsById = new Map(data.films.map((f) => [f.id, f]));
       thisYear = Number(data.generated_at.slice(0, 4)) || thisYear;
+      firstDay = data.today || data.showings.map((s) => s.day).sort()[0];
+      lastDay = addDays(firstDay, HORIZON_DAYS - 1);
       for (const s of data.showings) {
-        if (!unfiltered.has(s.day)) unfiltered.set(s.day, new Map());
-        const films = unfiltered.get(s.day);
+        const start = weekOf(s.day).start;
+        if (!unfiltered.has(start)) unfiltered.set(start, new Map());
+        const films = unfiltered.get(start);
         if (!films.has(s.film)) films.set(s.film, []);
         films.get(s.film).push(s);
         if (!byFilm.has(s.film)) byFilm.set(s.film, []);
