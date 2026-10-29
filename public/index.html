@@ -14,142 +14,171 @@
 <meta property="og:url" content="https://sydneycinema.com/">
 <meta property="og:type" content="website">
 <style>
+  /* v2 palette (B22; DECISIONS 2026-10-29): one light theme. Colours live only here. */
   :root {
-    --bg: #181D3B;        /* page background */
-    --inset: #131934;     /* inset fields */
-    --divider: #0E1227;   /* rules between entries */
-    --heading: #F2EAF1;   /* headings and key figures */
-    --label: #CAD0E5;     /* labels and body text */
-    --border: #4D5884;    /* field and button borders */
-    --accent: #E8B86D;    /* links and the active filter */
-    --muted: #9AA3C7;     /* secondary figures (session counts) */
+    --bg: #FFFFFF;           /* page */
+    --band: #F4F7FA;         /* header band, poster placeholder, format tags */
+    --panel: #F7FAFC;        /* filter panel, session box, row hover */
+    --border: #C1C9D2;       /* lines around things */
+    --divider: #E3E8EE;      /* rules between rows */
+    --accent: #0E2245;       /* title, week headings, film titles, times, nav line, chosen day */
+    --accent-hover: #2A4475;
+    --text: #3C4257;         /* body */
+    --label: #50617A;        /* nav, labels, type tag */
+    --muted: #697386;        /* secondary: counts, notes */
+    --tag: #4F566B;          /* format tags */
+    --mono: Menlo, Consolas, monospace;
 
     --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --gutter: 32px;
+    --column: 1100px;
+  }
+  @media (max-width: 480px) {
+    :root { --gutter: 16px; }
   }
 
   * { box-sizing: border-box; }
-  [hidden] { display: none !important; } /* beats display rules such as .detail's flex */
+  [hidden] { display: none !important; } /* beats display rules such as .chips' flex */
 
-  html { color-scheme: dark; }
+  html { color-scheme: light; }
 
   body {
     margin: 0;
     background: var(--bg);
-    color: var(--label);
+    color: var(--text);
     font-family: var(--font);
-    font-size: 16px;
-    line-height: 1.45;
+    font-size: 14px;
+    line-height: 1.5;
   }
 
-  a { color: var(--accent); }
+  a { color: var(--text); }
   a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
-    outline: 2px solid var(--accent);
+    outline: 2px solid var(--label);
     outline-offset: 2px;
   }
 
-  .page {
-    max-width: 1400px;
-    margin: 0 auto;
-    padding: 28px var(--gutter) 48px;
+  /* Header band: full width; its contents sit in the content column. */
+  .band {
+    background: var(--band);
+    border-bottom: 1px solid var(--border);
   }
-
-  /* Masthead */
-  header {
+  .band-inner, .page {
+    max-width: calc(var(--column) + 2 * var(--gutter));
+    margin: 0 auto;
+    padding-left: var(--gutter);
+    padding-right: var(--gutter);
+  }
+  .band-inner {
     display: flex;
     flex-wrap: wrap;
-    align-items: flex-end;
+    align-items: center;
     justify-content: space-between;
     gap: 8px 24px;
-    border-bottom: 1px solid var(--border);
-    padding-bottom: 10px;
-    margin-bottom: 16px;
+    padding-top: 20px;
+    padding-bottom: 18px;
   }
   h1 {
     margin: 0;
-    color: var(--heading);
-    font-size: 2rem;
-    font-weight: 800;
+    color: var(--accent);
+    font-size: 32px;
+    font-weight: 700;
+    line-height: 1.2;
     letter-spacing: -0.01em;
   }
+  .page { padding-top: 24px; padding-bottom: 48px; }
 
-  /* Views (B21): header nav, the active one underlined. */
-  .views { display: flex; gap: 20px; }
+  /* Views (B21): header nav, the active one underlined in the accent. */
+  .views { display: flex; gap: 24px; }
   .views button {
     font: inherit;
-    font-size: 0.95rem;
+    font-size: 14px;
     font-weight: 600;
-    color: var(--muted);
+    color: var(--label);
     background: none;
     border: 0;
     border-bottom: 2px solid transparent;
     padding: 4px 0;
     cursor: pointer;
   }
-  .views button:hover { color: var(--heading); }
-  .views button[aria-pressed="true"] { color: var(--heading); border-bottom-color: var(--accent); }
+  .views button:hover { color: var(--text); }
+  .views button[aria-pressed="true"] { color: var(--accent); border-bottom-color: var(--accent); }
 
-  /* Filters */
-  .filters button, .filter-bar button {
+  /* Buttons: white, 1px border, 6px radius, 14/600; chips the same but pill-shaped. */
+  .filter-panel button, .detail button {
     font: inherit;
-    font-size: 0.9rem;
+    font-size: 14px;
+    font-weight: 600;
     color: var(--label);
-    background: transparent;
+    background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 999px;
-    padding: 5px 14px;
+    border-radius: 6px;
+    padding: 5px 12px;
     cursor: pointer;
   }
-  /* Filters toggle (B16): collapsed, the row shows what's set as removable chips. */
+  .filter-panel button:hover, .detail button:hover { border-color: var(--label); }
+  .active-chips button, .chips button { border-radius: 999px; font-weight: 500; color: var(--text); }
+
+  /* Filter panel (B16, B22): a toggle row with active-filter chips and Sort; the
+     fields open beneath it inside the panel. */
+  .filter-panel {
+    background: var(--panel);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+  }
   .filter-bar {
     display: flex;
     flex-wrap: wrap;
     align-items: center;
-    gap: 6px;
-    padding-bottom: 12px;
-    border-bottom: 1px solid var(--border);
+    gap: 8px;
+    padding: 10px 16px;
   }
-  .filter-bar.open { padding-bottom: 0; border-bottom: 0; }
-  .filter-toggle::after { content: " ▸"; }
+  .filter-panel .filter-toggle {
+    padding: 5px 4px;
+    color: var(--label);
+    background: none;
+    border: 0;
+  }
+  .filter-toggle::after { content: " ▸"; font-size: 10px; vertical-align: 1px; }
   .filter-toggle[aria-expanded="true"]::after { content: " ▾"; }
-  .filter-bar .filter-toggle { color: var(--heading); }
   .active-chips { display: contents; }
-  .filter-bar .active-chips button {
-    padding: 3px 10px;
-    font-size: 0.85rem;
-    color: var(--accent);
-    border-color: var(--accent);
+  .sort {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-left: auto;
+    font-weight: 600;
+    color: var(--label);
   }
 
   .filters {
     display: grid;
-    grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-    gap: 10px 12px;
-    padding: 14px 0 18px;
-    border-bottom: 1px solid var(--border);
+    grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
+    gap: 12px 16px;
+    padding: 16px;
+    border-top: 1px solid var(--border);
   }
-  .filters label {
+  .filters label, .chip-group legend {
     display: flex;
     flex-direction: column;
     gap: 4px;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
+    font-size: 14px;
+    font-weight: 600;
+    color: var(--label);
   }
-  .filters input, .filters select {
+  .filter-panel input, .filter-panel select {
     font: inherit;
-    font-size: 0.95rem;
-    text-transform: none;
-    letter-spacing: normal;
-    color: var(--heading);
-    background: var(--inset);
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text);
+    background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 4px;
+    border-radius: 6px;
     padding: 6px 8px;
     width: 100%;
     min-width: 0;
   }
-  .filters .active { border-color: var(--accent); }
+  .sort select { width: auto; padding-right: 4px; }
+  .filters .active { border-color: var(--label); box-shadow: inset 0 0 0 1px var(--label); }
   /* Type-ahead suggestions (Director, Cinema), under the field. */
   .combo { position: relative; }
   .suggestions {
@@ -163,85 +192,80 @@
     margin: 0;
     padding: 4px 0;
     list-style: none;
-    font-size: 0.95rem;
-    text-transform: none;
-    letter-spacing: normal;
-    color: var(--heading);
-    background: var(--inset);
+    font-size: 14px;
+    font-weight: 400;
+    color: var(--text);
+    background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 4px;
+    border-radius: 6px;
   }
   .suggestions.from-left { left: 0; right: auto; } /* Cinema can be the first column */
   .suggestions li { padding: 5px 10px; cursor: pointer; }
-  .suggestions li[aria-selected="true"], .suggestions li:hover { background: var(--bg); color: var(--accent); }
+  .suggestions li[aria-selected="true"], .suggestions li:hover { background: var(--band); }
   .years { display: flex; gap: 6px; align-items: center; }
   .filters .reset { align-self: end; justify-self: start; }
   /* Region chips (B12): none pressed means every region. */
-  .regions {
+  .chip-group {
     grid-column: 1 / -1;
     margin: 0;
     padding: 0;
     border: 0;
     min-width: 0;
   }
-  .regions legend {
-    padding: 0;
-    margin-bottom: 4px;
-    font-size: 0.75rem;
-    text-transform: uppercase;
-    letter-spacing: 0.06em;
-  }
+  .chip-group legend { display: block; padding: 0; margin-bottom: 4px; }
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
+  .chips button { padding: 3px 12px; }
+  .chips button[aria-pressed="true"] {
+    background: var(--band);
+    border-color: var(--label);
+    font-weight: 600;
+  }
+  .chips button[aria-pressed="true"]::before { content: "✓ "; }
   /* Regions ⓘ (B20): which LGAs make up each region, and a link to the map. */
   .regions { position: relative; }
-  .filters .info {
+  .filter-panel .info {
     padding: 0 4px;
     margin-left: 2px;
     border: 0;
-    font-size: 0.95rem;
+    background: none;
+    font-size: 15px;
     line-height: 1;
-    color: var(--accent);
+    color: var(--label);
     vertical-align: -1px;
   }
   .popover {
     position: absolute;
     z-index: 3;
-    top: 20px;
+    top: 24px;
     left: 0;
     width: min(380px, calc(100vw - 2 * var(--gutter)));
     max-height: 70vh;
     overflow-y: auto;
-    padding: 10px 14px 12px;
-    font-size: 0.85rem;
-    color: var(--label);
-    background: var(--inset);
+    padding: 12px 16px 14px;
+    color: var(--text);
+    background: var(--bg);
     border: 1px solid var(--border);
-    border-radius: 4px;
-    box-shadow: 0 6px 20px rgba(0, 0, 0, 0.35);
+    border-radius: 8px;
+    box-shadow: 0 8px 24px rgba(14, 34, 69, 0.12);
   }
   .popover dl { margin: 0; }
-  .popover dt { margin-top: 8px; color: var(--heading); font-weight: 700; }
+  .popover dt { margin-top: 8px; color: var(--text); font-weight: 600; }
   .popover dt:first-child { margin-top: 0; }
-  .popover dd { margin: 1px 0 0; }
+  .popover dd { margin: 1px 0 0; color: var(--muted); }
   .popover p { margin: 12px 0 0; }
-  .filters .chips button { padding: 3px 12px; font-size: 0.85rem; }
-  .filters .chips button[aria-pressed="true"] {
-    color: var(--bg);
-    background: var(--accent);
-    border-color: var(--accent);
-    font-weight: 600;
-  }
 
-  /* Listings */
-  .day { margin-top: 28px; }
+  /* Listings: a week heading, then its films. */
+  .day { margin-top: 36px; }
   .day h2 {
     margin: 0;
-    padding-bottom: 6px;
-    color: var(--heading);
-    font-size: 1.35rem;
-    font-weight: 800;
+    padding-bottom: 10px;
+    color: var(--accent);
+    font-size: 21px;
+    font-weight: 700;
     border-bottom: 1px solid var(--border);
   }
+  /* Days most cinemas haven't published yet (B10d), under a week heading. */
+  .partial-note { margin: 12px 0 0; font-size: 14px; color: var(--muted); }
   .film { border-bottom: 1px solid var(--divider); }
   /* Poster at left; beside it title (count at the far right), then year · director ·
      rating, then the type tag (B14). Same on phone and desktop. The whole row toggles
@@ -249,13 +273,13 @@
   .film-head {
     display: flex;
     align-items: flex-start;
-    gap: 12px;
+    gap: 16px;
     margin: 0 -8px;
-    padding: 8px;
-    border-radius: 4px;
+    padding: 16px 8px;
+    border-radius: 6px;
     cursor: pointer;
   }
-  .film-head:hover { background: rgba(255, 255, 255, 0.04); }
+  .film-head:hover { background: var(--panel); }
   .thumb {
     flex: none;
     display: block;
@@ -263,16 +287,16 @@
     height: 96px;
     object-fit: cover;
     border-radius: 4px;
-    background: var(--inset); /* also the placeholder when a film has no poster */
   }
+  div.thumb { background: var(--band); border: 1px solid var(--border); } /* no poster */
   .film-head .text { flex: 1; min-width: 0; }
   .title-line { display: flex; align-items: baseline; gap: 0 16px; }
   .film h3 {
     margin: 0;
-    color: var(--heading);
-    font-size: 1.05rem;
-    font-weight: 700;
-    line-height: 1.25;
+    color: var(--accent);
+    font-size: 16px;
+    font-weight: 500;
+    line-height: 1.35;
   }
   /* Collapsed, a row is one poster tall: title and meta stop at two lines each.
      Opening shows them in full. */
@@ -292,70 +316,58 @@
     text-align: left;
     cursor: pointer;
   }
-  .film-head:hover h3 button { text-decoration: underline; }
+  .film-head:hover h3 button { color: var(--accent-hover); }
   .count {
     margin-left: auto;
-    font-size: 0.85rem;
+    font-size: 14px;
     color: var(--muted);
     white-space: nowrap;
   }
-  .count::after { content: " ▸"; }
+  .count::after { content: " ▸"; font-size: 10px; vertical-align: 1px; }
   .film-head.open .count::after { content: " ▾"; }
-  .meta { margin: 1px 0 0; font-size: 0.85rem; line-height: 1.3; }
-  .meta .rating { color: var(--heading); font-weight: 600; }
+  .meta { margin: 4px 0 0; font-size: 14px; line-height: 1.4; color: var(--text); }
   .kind {
-    margin: 2px 0 0;
+    margin: 4px 0 0;
     line-height: 1.3;
-    font-size: 0.72rem;
-    color: var(--muted);
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--label);
     text-transform: uppercase;
-    letter-spacing: 0.06em;
+    letter-spacing: 0.08em;
   }
   @media (max-width: 480px) {
     .count .where { display: none; } /* room for the title; the box names the cinemas */
   }
 
-  /* Detail: a box of day tabs over that day's sessions, full width under the row.
+  /* Detail: a panel of day tabs over that day's sessions, full width under the row.
      It keeps one height across tabs and scrolls inside. */
-  .detail { padding: 2px 0 14px; }
+  .detail { padding: 0 0 16px; }
   .box {
-    background: var(--inset);
+    background: var(--panel);
     border: 1px solid var(--border);
-    border-radius: 4px;
+    border-radius: 8px;
   }
   .tabs {
     display: flex;
+    gap: 8px;
     overflow-x: auto;
-    border-bottom: 1px solid var(--border);
-    scrollbar-width: thin;
+    padding: 14px 14px 4px;
+    scrollbar-width: none; /* still scrolls sideways; no bar, as in the mock */
   }
-  .tabs button {
-    flex: none;
-    padding: 6px 10px;
-    font: inherit;
-    font-size: 0.8rem;
-    color: var(--label);
-    white-space: nowrap;
-    background: none;
-    border: 0;
-    border-bottom: 2px solid transparent;
-    cursor: pointer;
+  .detail .tabs button { flex: none; padding: 6px 14px; white-space: nowrap; }
+  .detail .tabs button[aria-selected="true"] {
+    color: var(--bg);
+    background: var(--accent);
+    border-color: var(--accent);
   }
-  .tabs button[aria-selected="true"] {
-    color: var(--accent);
-    font-weight: 600;
-    border-bottom-color: var(--accent);
-  }
-  /* Days most cinemas haven't published yet (B10d). */
-  .partial-note { margin: 6px 0 0; font-size: 0.85rem; color: var(--muted); }
   .tabs .dot {
     display: inline-block;
-    width: 5px;
-    height: 5px;
-    margin-left: 4px;
+    width: 4px;
+    height: 4px;
+    margin-left: 5px;
     vertical-align: middle;
     border-radius: 50%;
-    background: var(--muted);
+    background: currentColor;
   }
   .sr-only {
     position: absolute;
@@ -368,56 +380,69 @@
   .day-sessions {
     max-height: 320px;
     overflow-y: auto;
-    padding: 8px 10px;
+    padding: 8px 14px 12px;
   }
   @media (max-width: 480px) {
     .day-sessions { max-height: 45vh; }
   }
-  /* One row per session: time · cinema · tags */
+  /* One row per session: time, cinema, format tags. */
   .sessions {
     margin: 0;
     padding: 0;
     list-style: none;
-    font-size: 0.9rem;
   }
-  .sessions li + li { margin-top: 2px; }
+  .sessions li {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: baseline;
+    gap: 2px 10px;
+    padding: 5px 0;
+  }
+  .sessions .when { min-width: 6.5em; }
   .sessions .time {
     color: var(--accent);
-    font-weight: 600;
+    font-size: 16px;
+    font-weight: 500;
     font-variant-numeric: tabular-nums;
     text-decoration: none;
   }
-  .sessions a.time:hover { text-decoration: underline; }
-  .sessions .late, .sessions .tags { font-size: 0.75rem; }
-
-  @media (max-width: 480px) {
-    :root { --gutter: 16px; }
+  .sessions a.time:hover { color: var(--accent-hover); text-decoration: underline; }
+  .sessions .late { font-size: 12px; color: var(--muted); }
+  .sessions .tag {
+    padding: 0 5px;
+    font-family: var(--mono);
+    font-size: 12px;
+    color: var(--tag);
+    background: var(--band);
+    border: 1px solid var(--border);
+    border-radius: 4px;
   }
 
-  .empty { margin-top: 28px; }
-
-  footer {
-    margin-top: 40px;
-    padding-top: 14px;
-    border-top: 1px solid var(--border);
-    font-size: 0.8rem;
-  }
-  footer p { margin: 4px 0; }
+  .empty { margin-top: 28px; color: var(--muted); }
 </style>
 </head>
 <body>
-<div class="page">
-  <header>
+<header class="band">
+  <div class="band-inner">
     <h1>Sydney Cinema Guide</h1>
     <nav class="views" aria-label="Views">
       <button type="button" data-view="week" aria-pressed="true">What's on this week</button>
       <button type="button" data-view="all" aria-pressed="false">All showings</button>
     </nav>
-  </header>
+  </div>
+</header>
 
+<div class="page">
+  <div class="filter-panel">
   <div class="filter-bar" id="filter-bar">
     <button type="button" class="filter-toggle" id="filter-toggle" aria-expanded="false" aria-controls="filters">Filters<span id="filter-count"></span></button>
     <div class="active-chips" id="active-chips"></div>
+    <label class="sort">Sort
+      <select name="sort" form="filters" data-default="popular">
+        <option value="popular">Popular</option>
+        <option value="az">A–Z</option>
+      </select>
+    </label>
   </div>
 
   <form class="filters" id="filters" autocomplete="off" hidden>
@@ -456,13 +481,7 @@
         <input type="number" name="to" inputmode="numeric" placeholder="To" min="1890" max="2100">
       </span>
     </label>
-    <label>Sort
-      <select name="sort" data-default="popular">
-        <option value="popular">Popular</option>
-        <option value="az">A–Z</option>
-      </select>
-    </label>
-    <fieldset class="regions" hidden>
+    <fieldset class="chip-group regions" hidden>
       <legend>Region<button type="button" class="info" id="region-info-button" aria-expanded="false"
         aria-controls="region-info" aria-label="Which areas are in each region" title="Which areas are in each region" hidden>ⓘ</button></legend>
       <div class="popover" id="region-info" role="dialog" aria-label="Regions" hidden></div>
@@ -470,14 +489,9 @@
     </fieldset>
     <button type="reset" class="reset">Clear filters</button>
   </form>
+  </div>
 
   <main id="listings"><p class="empty">Loading showings…</p></main>
-
-  <footer>
-    <p id="updated"></p>
-    <p>Film details from <a href="https://www.themoviedb.org/">TMDB</a>. This product uses the TMDB API but is not endorsed or certified by TMDB.</p>
-    <p>Times link to each cinema's own booking page. Check there before you go.</p>
-  </footer>
 </div>
 
 <script>
@@ -705,7 +719,7 @@
     const parts = [film.year, film.director].filter(Boolean).map(String);
     parts.forEach((p, i) => meta.append((i ? " · " : "") + p));
     if (film.rating != null) {
-      meta.append(parts.length ? " · " : "", el("span", { class: "rating", text: film.rating.toFixed(1) }), " TMDB");
+      meta.append(parts.length ? " · " : "", film.rating.toFixed(1), " TMDB");
     }
     const runtime = extra.runtime
       ? el("span", { class: "runtime", text: `${meta.childNodes.length ? " · " : ""}${extra.runtime} min`, hidden: "" })
@@ -773,10 +787,10 @@
       const time = url
         ? el("a", { class: "time", href: url, rel: "noopener", target: "_blank", text: s.time })
         : el("span", { class: "time", text: s.time });
-      const row = el("li", {}, time);
-      if (s.late) row.append(" ", el("span", { class: "late", text: "(late)" }));
-      row.append(" · " + venueName(s.venue));
-      if (s.attributes.length) row.append(" · ", el("span", { class: "tags", text: s.attributes.join(", ") }));
+      const when = el("span", { class: "when" }, time);
+      if (s.late) when.append(" ", el("span", { class: "late", text: "(late)" }));
+      const row = el("li", {}, when, el("span", { class: "where", text: venueName(s.venue) }));
+      for (const tag of s.attributes) row.append(el("span", { class: "tag", text: tag }));
       if (s.title !== film.title) row.title = s.title;
       rows.append(row);
     }
@@ -1060,6 +1074,7 @@
     button.addEventListener("click", () => setView(button.dataset.view));
   });
   form.addEventListener("input", () => data && render());
+  form.elements.sort.addEventListener("input", () => data && render()); // Sort sits outside the form, in the filter bar
   form.addEventListener("reset", () => {
     selectedRegions.clear();
     syncChips($("#region-chips"), selectedRegions);
@@ -1094,12 +1109,6 @@
         byFilm.get(s.film).push(s);
       }
       for (const showings of byFilm.values()) showings.sort((a, b) => a.start.localeCompare(b.start));
-      const updated = new Date(data.generated_at).toLocaleString("en-AU", {
-        timeZone: "Australia/Sydney", weekday: "short", day: "numeric", month: "short",
-        hour: "numeric", minute: "2-digit",
-      });
-      $("#updated").textContent = `Updated ${updated}. Cinemas: ${
-        Object.values(data.venues).map((v) => v.name).join(", ")}.`;
       cinemaNames = [...new Set(data.showings.map((s) => venueName(s.venue)))]
         .sort((a, b) => a.localeCompare(b, "en", { sensitivity: "base" }))
         .map((name, rank) => ({ name, key: fold(name), rank }));
