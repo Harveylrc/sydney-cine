@@ -421,6 +421,50 @@
     border-radius: 4px;
   }
 
+  /* Pagination per week (B23): per-page choice, range, previous / next. */
+  .pager {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: flex-end;
+    gap: 8px 16px;
+    padding-top: 16px;
+  }
+  .pager label {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    font-weight: 600;
+    color: var(--label);
+  }
+  .pager select {
+    font: inherit;
+    font-size: 14px;
+    color: var(--text);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 6px 8px;
+  }
+  .pager .range { color: var(--muted); font-variant-numeric: tabular-nums; }
+  .pager .pages { display: flex; gap: 8px; }
+  .pager .pages button {
+    display: grid;
+    place-items: center;
+    flex: none;
+    width: 36px;
+    height: 36px;
+    padding: 0;
+    color: var(--accent);
+    background: var(--bg);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    cursor: pointer;
+  }
+  .pager .pages button:hover:not(:disabled) { border-color: var(--label); }
+  .pager .pages button:disabled { color: var(--border); background: var(--panel); cursor: default; }
+  .pager svg { width: 16px; height: 16px; }
+
   .empty { margin-top: 28px; color: var(--muted); }
 </style>
 </head>
@@ -917,11 +961,22 @@
     return m ? decodeURIComponent(m[1]) : null;
   };
 
-  // #film=<id>: open that film's first row and bring it into view; a film not on
-  // this week opens in All showings, in the first week it appears.
+  // #film=<id>: open that film's first row and bring it into view, turning its week
+  // to the page it is on; a film not on this week opens in All showings, in the
+  // first week it appears.
   function openFromHash() {
     const id = hashFilm();
-    const find = () => id && listings.querySelector(`.film[data-film="${CSS.escape(id)}"]`);
+    const find = () => {
+      if (!id) return null;
+      for (const pager of pagers) {
+        const at = pager.ordered.findIndex((o) => o.film.id === id);
+        if (at >= 0) {
+          pager.show(Math.floor(at / perPage) + 1);
+          return listings.querySelector(`.film[data-film="${CSS.escape(id)}"]`);
+        }
+      }
+      return null;
+    };
     let entry = find();
     if (!entry && id && view === "week") {
       setView("all");
@@ -932,6 +987,80 @@
     entry.scrollIntoView({ block: "start" });
   }
   window.addEventListener("hashchange", () => data && openFromHash());
+
+  // Pagination per week (B23): each week shows `perPage` films at a time, after sort
+  // and filters, with its own page. A new render (any filter, sort or view change)
+  // starts every week at page 1. The choice of 5/10/20 is remembered in this browser.
+  const PER_PAGE_KEY = "sydney-cine.perPage";
+  const PER_PAGE_CHOICES = [5, 10, 20];
+  let perPage = 10;
+  try {
+    const saved = Number(localStorage.getItem(PER_PAGE_KEY));
+    if (PER_PAGE_CHOICES.includes(saved)) perPage = saved;
+  } catch { /* private mode: the default */ }
+  let pagers = []; // this render's weeks: { ordered, show(page) }, for #film= links
+
+  function chevron(path) {
+    const ns = "http://www.w3.org/2000/svg";
+    const svg = document.createElementNS(ns, "svg");
+    svg.setAttribute("viewBox", "0 0 16 16");
+    svg.setAttribute("aria-hidden", "true");
+    const line = document.createElementNS(ns, "path");
+    for (const [k, v] of Object.entries({ d: path, fill: "none", stroke: "currentColor", "stroke-width": "2", "stroke-linecap": "round", "stroke-linejoin": "round" })) {
+      line.setAttribute(k, v);
+    }
+    svg.append(line);
+    return svg;
+  }
+
+  function setPerPage(n, weekIndex) {
+    perPage = n;
+    try { localStorage.setItem(PER_PAGE_KEY, String(n)); } catch { /* private mode */ }
+    render();
+    const select = listings.querySelectorAll(".pager select")[weekIndex];
+    if (select) select.focus(); // the select was rebuilt; keep the keyboard where it was
+  }
+
+  // One week's rows, a page at a time, and the pager under them.
+  function pagedWeek(section, week, ordered, weekIndex) {
+    const rows = el("div", { class: "rows" });
+    const id = `per-page-${weekIndex}`;
+    const select = el("select", { id });
+    for (const n of PER_PAGE_CHOICES) {
+      const option = el("option", { value: String(n), text: String(n) });
+      if (n === perPage) option.selected = true;
+      select.append(option);
+    }
+    select.addEventListener("change", () => setPerPage(Number(select.value), weekIndex));
+    const range = el("span", { class: "range", "aria-live": "polite" });
+    const prev = el("button", { type: "button", "aria-label": "Previous page" }, chevron("M10 3 5 8l5 5"));
+    const next = el("button", { type: "button", "aria-label": "Next page" }, chevron("m6 3 5 5-5 5"));
+    const pager = el("div", { class: "pager" },
+      el("label", { for: id, text: "Movies shown per page" }), select, range,
+      el("div", { class: "pages" }, prev, next));
+    section.append(rows, pager);
+
+    const pages = Math.max(1, Math.ceil(ordered.length / perPage));
+    let current = 1;
+    function show(page) {
+      current = Math.min(Math.max(page, 1), pages);
+      const from = (current - 1) * perPage;
+      const shown = ordered.slice(from, from + perPage);
+      rows.replaceChildren(...shown.map(({ film, showings }) => filmEntry(film, showings, week)));
+      range.textContent = `${from + 1}–${from + shown.length} of ${ordered.length}`;
+      prev.disabled = current === 1;
+      next.disabled = current === pages;
+    }
+    const turn = (step, button) => {
+      show(current + step);
+      if (section.getBoundingClientRect().top < 0) section.scrollIntoView({ block: "start" }); // back to the week's first row
+      if (button.disabled) (step < 0 ? next : prev).focus(); // a disabled button drops focus
+    };
+    prev.addEventListener("click", () => turn(-1, prev));
+    next.addEventListener("click", () => turn(1, next));
+    show(1);
+    return { ordered, show };
+  }
 
   function render() {
     markActive();
@@ -952,10 +1081,11 @@
     }
 
     listings.replaceChildren();
+    pagers = [];
     for (const [, { week, films }] of [...weeks].sort(([a], [b]) => a.localeCompare(b))) {
       const section = el("section", { class: "day" }, el("h2", { text: weekHeading(week) }));
       if (isPartialWeek(week)) section.append(partialNote());
-      for (const { film, showings } of orderFilms(week, films, f.sort)) section.append(filmEntry(film, showings, week));
+      pagers.push(pagedWeek(section, week, orderFilms(week, films, f.sort), pagers.length));
       listings.append(section);
     }
 
