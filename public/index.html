@@ -135,14 +135,17 @@
     gap: 8px;
     padding: 10px 16px;
   }
+  /* A funnel before "Filters" (B22c); aria-expanded carries open/closed. */
   .filter-panel .filter-toggle {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
     padding: 5px 4px;
     color: var(--label);
     background: none;
     border: 0;
   }
-  .filter-toggle::after { content: " ▸"; font-size: 10px; vertical-align: 1px; }
-  .filter-toggle[aria-expanded="true"]::after { content: " ▾"; }
+  .filter-toggle svg { flex: none; }
   .active-chips { display: contents; }
   .sort {
     display: flex;
@@ -482,7 +485,7 @@
 <div class="page">
   <div class="filter-panel">
   <div class="filter-bar" id="filter-bar">
-    <button type="button" class="filter-toggle" id="filter-toggle" aria-expanded="false" aria-controls="filters">Filters<span id="filter-count"></span></button>
+    <button type="button" class="filter-toggle" id="filter-toggle" aria-expanded="false" aria-controls="filters"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h12L9.5 8.5V13l-3 1.5V8.5L2 3Z"/></svg><span>Filters<span id="filter-count"></span></span></button>
     <div class="active-chips" id="active-chips"></div>
     <label class="sort">Sort
       <select name="sort" form="filters" data-default="popular">
