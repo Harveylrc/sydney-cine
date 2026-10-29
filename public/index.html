@@ -365,7 +365,14 @@
     clip-path: inset(50%);
     white-space: nowrap;
   }
-  .day-sessions { padding: 8px 10px; } /* natural height, no inner scroll (B21) */
+  .day-sessions {
+    max-height: 320px;
+    overflow-y: auto;
+    padding: 8px 10px;
+  }
+  @media (max-width: 480px) {
+    .day-sessions { max-height: 45vh; }
+  }
   /* One row per session: time · cinema · tags */
   .sessions {
     margin: 0;
@@ -720,8 +727,8 @@
     let detail = null; // built on first open
     function setOpen(open) {
       if (open && !detail) {
-        entry.append((detail = filmDetail(film, week, day, detailId)));
-        detail.select();
+        entry.append((detail = filmDetail(film, day, detailId)));
+        fitBox(detail);
       }
       if (detail) detail.hidden = !open;
       if (runtime) runtime.hidden = !open;
@@ -820,13 +827,13 @@
   const tabLabel = (iso) =>
     new Date(iso + "T00:00:00Z").toLocaleDateString("en-AU", { weekday: "short", day: "numeric", timeZone: "UTC" });
 
-  // A box: a tab per day of the row's week with sessions, over that day's
-  // `time · cinema · tags` rows, at its natural height. Starts on the row's first day.
-  function filmDetail(film, week, day, id) {
+  // A box: a tab per day with sessions in the next 14 days (not only the row's
+  // week; Harvey, 2026-10-29), over that day's `time · cinema · tags` rows. Starts
+  // on the row's first day in its week.
+  function filmDetail(film, day, id) {
     const byDay = new Map();
     const cinema = currentFilters().cinema; // with a cinema chosen, only its sessions (B19b)
     for (const s of byFilm.get(film.id) || []) {
-      if (s.day < week.start || s.day > week.end) continue;
       if (cinema && !cinemaMatches(s.venue, cinema)) continue;
       if (!byDay.has(s.day)) byDay.set(s.day, []);
       byDay.get(s.day).push(s);
@@ -857,6 +864,7 @@
         b.tabIndex = i === j ? 0 : -1;
         lists.children[j].hidden = i !== j;
       });
+      lists.scrollTop = 0;
       tabs.scrollLeft = buttons[i].offsetLeft - tabs.offsetLeft - 24;
       if (focus) buttons[i].focus();
     }
@@ -871,6 +879,20 @@
     const detail = el("div", { class: "detail", id }, el("div", { class: "box" }, tabs, lists));
     detail.select = () => select(Math.max(days.indexOf(day), 0));
     return detail;
+  }
+
+  // Once in the page: give the session box the height of its busiest day, up to its
+  // max-height, so switching days never moves the rows below.
+  function fitBox(detail) {
+    const lists = detail.querySelector(".day-sessions");
+    const cap = parseFloat(getComputedStyle(lists).maxHeight) || Infinity;
+    let tallest = 0;
+    for (const list of lists.children) {
+      for (const other of lists.children) other.hidden = other !== list;
+      tallest = Math.max(tallest, lists.scrollHeight);
+    }
+    lists.style.height = `${Math.min(tallest, cap)}px`;
+    detail.select();
   }
 
   const hashFilm = () => {
