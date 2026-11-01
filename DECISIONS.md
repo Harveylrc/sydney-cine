@@ -86,6 +86,14 @@ Independent, plain HTML, dated URLs, stable session ids, permissive robots. Exer
 Hoyts (API) → **Palace (`__NEXT_DATA__`)** → Orpheum (API) → Golden Age → Roseville (Veezi) → Event (print view) → Reading (from AU IP) → Moonlight (summer).
 
 Hoyts, Palace and Orpheum all use Vista `HO000…` movie ids, but **they are per-chain, not shared** (B5b: the same id names different films at Hoyts and Palace). `vista_movie_id` is only a within-chain key; TMDB lookups are cached per chain.
+- 2026-11-01 **v2.2 UI (B38)**: Hyperliquid-style two-panel layout (filter bar + list, `--inset`, 10px radius, no borders), all outlines removed except the view-heading underline and the two state underlines, and a gold dot-grid background behind everything. Exact `.dots` CSS:
+  ```
+  .dots{position:absolute;inset:0;pointer-events:none;z-index:0;
+   background:linear-gradient(315deg,#F3CD8C 0%,#E8B86D 35%,#C99A52 70%,#A87B3F 100%);
+   -webkit-mask-image:radial-gradient(circle,#000 1.1px,transparent 1.7px),radial-gradient(ellipse 140% 135% at 100% 100%,#000 0%,rgba(0,0,0,.75) 30%,rgba(0,0,0,.4) 55%,rgba(0,0,0,.12) 75%,transparent 92%),repeating-radial-gradient(ellipse 120% 90% at 105% 115%,#000 0px,rgba(0,0,0,.85) 30px,rgba(0,0,0,.1) 70px,rgba(0,0,0,.85) 110px,#000 130px),repeating-radial-gradient(ellipse 90% 120% at 60% 140%,#000 0px,rgba(0,0,0,.9) 45px,rgba(0,0,0,.2) 95px,rgba(0,0,0,.9) 145px,#000 170px);
+   -webkit-mask-size:20px 20px,100% 100%,100% 100%,100% 100%;-webkit-mask-position:10px 10px,0 0,0 0,0 0;-webkit-mask-composite:source-in,source-in,source-in;
+   mask-image:(the same four layers);mask-size:20px 20px,100% 100%,100% 100%,100% 100%;mask-position:10px 10px,0 0,0 0,0 0;mask-composite:intersect,intersect,intersect}
+  ```
 
 ## Open
 - **Event (from B5f):** (1) UA check done 2026-10-19: George Street's print view fetched with our User-Agent and with a Chrome one is byte-identical apart from a per-request Cloudflare token; no `aiagent` markup. (2) The print view has **no booking links or session ids** (the P1 row's "sessionId int in booking links" must come from the normal cinema page), so Event showings link to `/cinema/{slug}` and carry no session id. (3) Scraped: the 14 metro cinemas (Bondi, Burwood, Campbelltown, Castle Hill, Ed Square, George Street, Hornsby, Hurstville, IMAX Sydney, Liverpool, Macquarie, Miranda, Parramatta, Top Ryde City); left out like Hoyts Erina: Glendale, Kotara, Shellharbour, Tuggerah; Moonlight Cinema Sydney is seasonal (SPEC). Bondi is closed for refurbishment (its print view lists no films) and will reappear by itself. Drive In Blacktown: included (decision below).

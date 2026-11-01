@@ -134,3 +134,4 @@
 - 2026-11-02 B33b/B34b (Harvey): page number per view again (B26's pageOf), per-page still shared, default 10 kept as B33 set it; the Wednesday note back under the view heading (B24c's rule) as well as in the box on dotted days. Checked in a fresh profile: week page 3 → All page 1 → All page 2 → week still page 3; heading note in both views; in-box note on a dotted tab.
 - 2026-11-02 B36 reverted (Harvey): `git revert -m 1` of the B36 merge; index.html is byte-for-byte as before B36. Task left unticked with a note; DECISIONS records v2.1.1 (6) as withdrawn.
 - 2026-11-02 B37 reverted (Harvey wants to rethink the logic): `git revert -m 1` of the B37 merge; index.html is as before B37 (single-day Date dropdown). Task unticked with a note; DECISIONS records v2.1.1 (7) on hold.
+2026-11-01 Harvey: "FINAL UI" restyle (two panels, no outlines, dot background) → B38; UI only.
