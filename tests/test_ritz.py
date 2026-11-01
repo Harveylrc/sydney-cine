@@ -179,3 +179,18 @@ def test_film_type_precedence(tags, genre, expected):
 
 def test_empty_page():
     assert parse_day("<html><body></body></html>", DAY) == []
+
+
+def test_sold_out_session_without_link():
+    """2026-11-06: a sold-out session's link has no href (data-id still holds the
+    session id). On 2026-11-02 one such link failed the whole venue."""
+    html = (FIXTURES / "ritz_2026-11-06.html").read_text(encoding="utf-8")
+    found = parse_day(html, date(2026, 11, 6))
+    assert len(found) == 3
+    sold_out = [s for s in found if s.film_title == "Zombucha!"]
+    assert [(s.session_id, s.booking_url, s.start.time(), s.attributes) for s in sold_out] == [
+        ("92445", None, time(18, 30), ["NFT", "Q&A"])
+    ]
+    linked = [s for s in found if s.booking_url]
+    assert len(linked) == 2
+    assert all(s.booking_url.endswith(f"s={s.session_id}") for s in linked)

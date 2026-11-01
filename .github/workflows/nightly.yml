@@ -74,6 +74,8 @@ jobs:
         if: steps.clock.outputs.run == 'true'
         run: |
           scripts/fetch_live.sh data.json || echo "No published data.json yet: first-seen dates start today"
+          # Posters for a broken venue's kept sessions (B32 venue health).
+          scripts/fetch_live.sh films.json || echo "No published films.json yet"
 
       - name: Scrape, match and export
         if: steps.clock.outputs.run == 'true'

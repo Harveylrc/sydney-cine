@@ -2,7 +2,9 @@
 
 Each film is a div.Movie with a span.Title and one a.sessions-link per session.
 A link carries the session id (?s=), the time ("1:00 pm") and zero or more
-span.Attribute tags, some comma-joined ("NFT, Q&A"). Its data-genre lists genres
+span.Attribute tags, some comma-joined ("NFT, Q&A"). A sold-out session's link has
+no href (seen 2026-11-02; one such link failed the whole venue that night): its
+data-id is the same session id, and it gets no booking link. Its data-genre lists genres
 plus "New Release", "Retrospective" or "Film Festival". film_type comes from
 these and the tags, in the precedence set in DECISIONS.md. Ticket links are
 only linked to, never fetched.
@@ -67,13 +69,20 @@ def parse_day(html: str, day: date) -> list[Showing]:
                     venue_name=VENUE_NAME,
                     film_title=title,
                     start=datetime.combine(start_day, clock, tzinfo=SYDNEY),
-                    session_id=parse_qs(urlsplit(link["href"]).query)["s"][0],
-                    booking_url=urljoin(BASE_URL, link["href"]),
+                    session_id=session_id(link),
+                    booking_url=urljoin(BASE_URL, link["href"]) if link.get("href") else None,
                     attributes=attributes,
                     film_type=film_type(link.get("data-genre", ""), attributes),
                 )
             )
     return showings
+
+
+def session_id(link) -> str:
+    """data-id, which equals the ?s= of the booking link; sold out, there is no link."""
+    if link.get("data-id"):
+        return link["data-id"]
+    return parse_qs(urlsplit(link["href"]).query)["s"][0]
 
 
 def film_type(data_genre: str, tags: list[str]) -> str | None:
