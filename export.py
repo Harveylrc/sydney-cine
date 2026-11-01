@@ -26,6 +26,8 @@ Rules from DECISIONS.md:
 - Expanded row (B10c): poster_path and runtime from TMDB; with no TMDB runtime,
   the first venue running time we saw. They go in films.json, which the page
   loads the first time a row is opened, so data.json stays small. No synopsis.
+- Venue health (B32): a venue at 0 sessions, or below a quarter of last night's,
+  keeps last night's sessions for one night (health.py), flagged "stale".
 First-seen dates are carried forward from the previous data.json.
 """
 
@@ -39,6 +41,7 @@ from zoneinfo import ZoneInfo
 
 import yaml
 
+import health
 from enrich import normalise, search_terms
 from models import SYDNEY_TZ, Showing
 
@@ -293,13 +296,30 @@ if __name__ == "__main__":
     venue_info = load_venues()
     for slug in unplaced_venues(showings, venue_info):
         log.warning("Venue %s is not in venues.yaml: no region", slug)
-    data = build_data(showings, load_previous(), datetime.now(SYDNEY).date(), venue_info)
+    previous = load_previous()
+    previous_details = load_previous(FILMS_PATH) or {}  # last night's films.json, if downloaded
+    today = datetime.now(SYDNEY).date()
+    data = build_data(showings, previous, today, venue_info)
+    # Coverage counts tonight's sessions only: a broken venue is uncovered (B7).
     data["coverage"] = coverage(venue_info, data["showings"])
+    last_day = (today + timedelta(days=HORIZON_DAYS - 1)).isoformat()
+    problems = health.apply(data, previous, last_day)
+    if problems:  # last night's sessions kept for a broken venue (B32)
+        data["days"] = day_status(data["showings"])
+        rows = data["showings"]
+        data["regions"] = [r for r in REGIONS if any(r in row["regions"] for row in rows)]
+    health.report(problems)
     data["region_lgas"] = load_regions()
     write(data)
-    write(build_film_details(showings, data, details), FILMS_PATH)
+    film_details_out = build_film_details(showings, data, details)
+    for film in data["films"]:
+        if film["id"] not in film_details_out and film["id"] in previous_details:
+            film_details_out[film["id"]] = previous_details[film["id"]]
+    write(film_details_out, FILMS_PATH)
     new = sum(f["new_this_week"] for f in data["films"])
     print(
         f"Wrote {DATA_PATH}: {len(data['showings'])} showings, "
         f"{len(data['films'])} films, {new} new this week"
     )
+    by_venue = Counter(row["venue"] for row in data["showings"] if not row.get("stale"))
+    print("Sessions per venue: " + ", ".join(f"{v} {n}" for v, n in sorted(by_venue.items())))
