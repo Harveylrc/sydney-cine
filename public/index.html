@@ -1091,18 +1091,19 @@
   }
   window.addEventListener("hashchange", () => data && openFromHash());
 
-  // Pagination per view (B26, DECISIONS 2026-11-01): the list shows `perPage` films
-  // at a time, after sort and filters. The choice of 5/10/20 is one setting for both
-  // views, remembered in this browser; each view keeps its own page, and a change
-  // of per-page, sort or any filter goes back to page 1 of the view on screen.
+  // Pagination (B26, B33; DECISIONS 2026-11-01 v2.1.1 (3)): the list shows `perPage`
+  // films at a time, after sort and filters. One page number for both views:
+  // switching views keeps it, clamped to that view's last page. The choice of
+  // 5/10/20 (default 10) is remembered in this browser. A change of per-page, sort
+  // or any filter goes back to page 1.
   const PER_PAGE_KEY = "sydney-cine.perPage";
   const PER_PAGE_CHOICES = [5, 10, 20];
-  let perPage = 5;
+  let perPage = 10;
   try {
     const saved = Number(localStorage.getItem(PER_PAGE_KEY));
     if (PER_PAGE_CHOICES.includes(saved)) perPage = saved;
   } catch { /* private mode: the default */ }
-  const pageOf = { week: 1, all: 1 }; // each view's page
+  let page = 1; // shared by both views
   let pager = null; // this render's list: { ordered, show(page) }, for #film= links
 
   function chevron(path) {
@@ -1148,8 +1149,8 @@
 
     const pages = Math.max(1, Math.ceil(ordered.length / perPage));
     let current = 1;
-    function show(page) {
-      current = pageOf[view] = Math.min(Math.max(page, 1), pages);
+    function show(n) {
+      current = page = Math.min(Math.max(n, 1), pages);
       const from = (current - 1) * perPage;
       const shown = ordered.slice(from, from + perPage);
       rows.replaceChildren(...shown.map(({ film, showings }) => filmEntry(film, showings)));
@@ -1164,13 +1165,13 @@
     };
     prev.addEventListener("click", () => turn(-1, prev));
     next.addEventListener("click", () => turn(1, next));
-    show(pageOf[view]);
+    show(page);
     return { ordered, show };
   }
 
-  // keepPage: a view switch shows that view's page; anything else starts at page 1.
+  // keepPage: a view switch keeps the page number; anything else starts at page 1.
   function render(keepPage = false) {
-    if (!keepPage) pageOf[view] = 1;
+    if (!keepPage) page = 1;
     markActive();
     updateFilterBar();
     const f = currentFilters();
