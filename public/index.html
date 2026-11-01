@@ -17,9 +17,9 @@
   /* v2 final palette (B27; DECISIONS 2026-11-01 (6)): navy with one gold accent.
      Colours live only here. */
   :root {
-    --bg: #181D3B;           /* page */
-    --inset: #131934;        /* header band, filter bar, session box, poster placeholder */
-    --divider: #0E1227;      /* header line, rules between rows */
+    --bg: #181D3B;           /* page; session box and poster placeholder in the list panel */
+    --inset: #131934;        /* header band, the two panels */
+    --divider: #0E1227;      /* unused since B38 (no rules between rows) */
     --heading: #F2EAF1;      /* page and view headings, body text, cinema names */
     --label: #CAD0E5;        /* nav, labels, year · director · rating */
     --border: #4D5884;       /* lines around things, view heading underline */
@@ -57,12 +57,38 @@
     outline-offset: 2px;
   }
 
-  /* Header band: full width; the title and nav sit a gutter in from the window's
-     edges, not in the content column (B22b). */
-  .band {
-    background: var(--inset);
-    border-bottom: 1px solid var(--divider);
+  /* The page wrapper (B38, DECISIONS 2026-11-01 v2.2): a decorative gold dot grid
+     behind the header band and both panels, fading in from the bottom right. It is
+     the only place with colours outside :root, and never takes clicks. */
+  .site { position: relative; overflow: hidden; min-height: 100vh; }
+  .site > header, .site > .page { position: relative; z-index: 1; }
+  .dots {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    background: linear-gradient(315deg, #F3CD8C 0%, #E8B86D 35%, #C99A52 70%, #A87B3F 100%);
+    -webkit-mask-image:
+      radial-gradient(circle, #000 1.1px, transparent 1.7px),
+      radial-gradient(ellipse 140% 135% at 100% 100%, #000 0%, rgba(0,0,0,.75) 30%, rgba(0,0,0,.4) 55%, rgba(0,0,0,.12) 75%, transparent 92%),
+      repeating-radial-gradient(ellipse 120% 90% at 105% 115%, #000 0px, rgba(0,0,0,.85) 30px, rgba(0,0,0,.1) 70px, rgba(0,0,0,.85) 110px, #000 130px),
+      repeating-radial-gradient(ellipse 90% 120% at 60% 140%, #000 0px, rgba(0,0,0,.9) 45px, rgba(0,0,0,.2) 95px, rgba(0,0,0,.9) 145px, #000 170px);
+    -webkit-mask-size: 20px 20px, 100% 100%, 100% 100%, 100% 100%;
+    -webkit-mask-position: 10px 10px, 0 0, 0 0, 0 0;
+    -webkit-mask-composite: source-in, source-in, source-in;
+    mask-image:
+      radial-gradient(circle, #000 1.1px, transparent 1.7px),
+      radial-gradient(ellipse 140% 135% at 100% 100%, #000 0%, rgba(0,0,0,.75) 30%, rgba(0,0,0,.4) 55%, rgba(0,0,0,.12) 75%, transparent 92%),
+      repeating-radial-gradient(ellipse 120% 90% at 105% 115%, #000 0px, rgba(0,0,0,.85) 30px, rgba(0,0,0,.1) 70px, rgba(0,0,0,.85) 110px, #000 130px),
+      repeating-radial-gradient(ellipse 90% 120% at 60% 140%, #000 0px, rgba(0,0,0,.9) 45px, rgba(0,0,0,.2) 95px, rgba(0,0,0,.9) 145px, #000 170px);
+    mask-size: 20px 20px, 100% 100%, 100% 100%, 100% 100%;
+    mask-position: 10px 10px, 0 0, 0 0, 0 0;
+    mask-composite: intersect, intersect, intersect;
   }
+
+  /* Header band: full width; the title and nav sit a gutter in from the window's
+     edges, not in the content column (B22b). No line under it (B38). */
+  .band { background: var(--inset); }
   .page {
     max-width: calc(var(--column) + 2 * var(--gutter));
     margin: 0 auto;
@@ -127,10 +153,10 @@
 
   /* Filter panel (B16, B22): a toggle row with active-filter chips and Sort; the
      fields open beneath it inside the panel. */
+  /* Two panels on the page (B38): this one, and the list 8px under it. */
   .filter-panel {
     background: var(--inset);
-    border: 1px solid var(--border);
-    border-radius: 8px;
+    border-radius: 10px;
   }
   /* The bar (B28, mocks in design/v2): nothing boxed but the bar itself. Left, the
      Filters toggle, then each active filter as plain text with a ×; right, Sort, its
@@ -140,7 +166,7 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    padding: 10px 14px;
+    padding: 10px 18px;
   }
   .filter-bar button {
     font: inherit;
@@ -218,7 +244,6 @@
     grid-template-columns: repeat(auto-fit, minmax(130px, 1fr));
     gap: 12px 16px;
     padding: 16px;
-    border-top: 1px solid var(--border);
   }
   .filters label, .chip-group legend {
     display: flex;
@@ -316,11 +341,21 @@
   .popover dd { margin: 1px 0 0; color: var(--muted); }
   .popover p { margin: 12px 0 0; }
 
-  /* Listings: the view's heading, then its films (B24). */
-  .listing { margin-top: 36px; }
+  /* The list panel (B38): the view's heading, then its films (B24), then the pager. */
+  #listings {
+    margin-top: 8px;
+    padding: 8px 20px;
+    background: var(--inset);
+    border-radius: 10px;
+  }
+  @media (max-width: 600px) {
+    .page { padding-left: 12px; padding-right: 12px; }
+    #listings { padding: 6px 12px; }
+  }
+  .listing h2 { padding-top: 12px; }
   .listing h2 {
     margin: 0;
-    padding-bottom: 8px;
+    padding-bottom: 8px; /* the one line left on the page (B38) */
     color: var(--heading);
     font-size: 21px;
     font-weight: 700;
@@ -328,14 +363,13 @@
   }
   /* Film rows (B29, mocks in design/v2): poster at left; beside it the title (the
      expand button) with the count at the far right, then year · director · rating
-     (· runtime when open), then the type tag. Unboxed: a divider under each row's
-     head, so an open session box sits below the line. The whole head toggles. */
+     (· runtime when open), then the type tag. Unboxed, with no rules between rows
+     (B38). The whole head toggles. */
   .film-head {
     display: flex;
     align-items: flex-start;
     gap: 14px;
     padding: 12px 4px;
-    border-bottom: 1px solid var(--divider);
     cursor: pointer;
   }
   .thumb {
@@ -346,7 +380,7 @@
     object-fit: cover;
     border-radius: 4px;
   }
-  div.thumb { background: var(--inset); border: 1px solid var(--border); } /* no poster */
+  div.thumb { background: var(--bg); } /* no poster */
   .film-head .text { flex: 1; min-width: 0; }
   .title-line { display: flex; align-items: baseline; gap: 0 16px; }
   .film h3 {
@@ -403,13 +437,10 @@
      (Harvey, after B24). */
   .detail { padding: 12px 0 8px; }
   .box {
-    background: var(--inset);
-    border: 1px solid var(--border);
+    background: var(--bg);
     border-radius: 8px;
   }
-  /* Tabs: plain text on a 1px baseline as long as the tabs; the chosen day's 2px
-     underline sits on it. The baseline is an inset shadow, under the tabs' own
-     borders, so the sideways scroll can't clip the overlap. */
+  /* Tabs: plain text, no baseline (B38); the chosen day has a 2px underline. */
   .tabs {
     display: flex;
     width: fit-content;
@@ -417,7 +448,6 @@
     margin: 14px 14px 0;
     overflow-x: auto;
     scrollbar-width: none; /* still scrolls sideways; no bar, as in the mock */
-    box-shadow: inset 0 -1px 0 var(--border);
   }
   .detail .tabs button {
     flex: none;
@@ -548,10 +578,12 @@
     .pager .pages button { width: 32px; }
   }
 
-  .empty { margin-top: 28px; color: var(--muted); }
+  .empty { margin: 12px 0; color: var(--muted); }
 </style>
 </head>
 <body>
+<div class="site">
+<div aria-hidden="true" class="dots"></div>
 <header class="band">
   <div class="band-inner">
     <h1>Sydney Cinema Guide</h1>
@@ -632,6 +664,7 @@
   </div>
 
   <main id="listings"><p class="empty">Loading showings…</p></main>
+</div>
 </div>
 
 <script>
