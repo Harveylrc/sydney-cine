@@ -326,8 +326,6 @@
     font-weight: 700;
     border-bottom: 1px solid var(--border);
   }
-  /* Days most cinemas haven't published yet (B10d), under the view heading. */
-  .partial-note { margin: 12px 0 0; font-size: 14px; color: var(--muted); }
   /* Film rows (B29, mocks in design/v2): poster at left; beside it the title (the
      expand button) with the count at the far right, then year · director · rating
      (· runtime when open), then the type tag. Unboxed: a divider under each row's
@@ -453,6 +451,8 @@
     clip-path: inset(50%);
     white-space: nowrap;
   }
+  /* A dotted day's note (B34), at the top of that day's sessions. */
+  .partial-note { margin: 0 0 6px; font-size: 13px; color: var(--muted); }
   .day-sessions {
     max-height: 320px;
     overflow-y: auto;
@@ -970,7 +970,6 @@
   // Dates are ISO strings read as UTC so no time zone shifts them.
   const WEEK_DAYS = 7;
   const addDays = (iso, n) => new Date(Date.parse(iso + "T00:00:00Z") + n * 864e5).toISOString().slice(0, 10);
-  const HORIZON_DAYS = 14; // as export.py
   let firstDay = null; // today, the first day of both views
   let weekEnd = null; // the last day of "This week ahead"
   const VIEW_HEADINGS = { week: "This week ahead", all: "All Showings" };
@@ -983,16 +982,6 @@
   const plannedAheadOnly = () => PLANNED_AHEAD.has(form.elements.type.value);
   const isPartial = (day) =>
     !plannedAheadOnly() && Boolean(data.days && data.days[day] && data.days[day].partial);
-  // A view gets the note when any of its days is partial or has no sessions yet
-  // (Harvey, after B24): in practice the run-up to the chains' Wednesday release.
-  function viewIsPartial(v) {
-    if (plannedAheadOnly()) return false;
-    const last = v === "all" ? addDays(firstDay, HORIZON_DAYS - 1) : weekEnd;
-    for (let d = firstDay; d <= last; d = addDays(d, 1)) {
-      if (!data.days || !data.days[d] || data.days[d].partial) return true;
-    }
-    return false;
-  }
 
   const tabLabel = (iso) =>
     new Date(iso + "T00:00:00Z").toLocaleDateString("en-AU", { weekday: "short", day: "numeric", timeZone: "UTC" });
@@ -1017,6 +1006,8 @@
       // A retrospective, festival or special screening is programmed ahead, so a
       // day where all of this film's sessions are one of those gets no dot.
       const noted = isPartial(d) && !byDay.get(d).every((s) => PLANNED_AHEAD.has(s.type));
+      // A dotted day says why, above its sessions (B34); its height is in the box's.
+      if (noted) list.append(el("p", { class: "partial-note", text: PARTIAL_NOTE }));
       list.append(sessionRows(film, byDay.get(d)));
       lists.append(list);
       const button = el("button", { type: "button", role: "tab", id: `${id}-tab-${i}`, "aria-controls": `${id}-day-${i}`, text: tabLabel(d) });
@@ -1189,7 +1180,6 @@
     pager = null;
     if (count) {
       const section = el("section", { class: "listing" }, el("h2", { text: VIEW_HEADINGS[view] }));
-      if (viewIsPartial(view)) section.append(el("p", { class: "partial-note", text: PARTIAL_NOTE }));
       pager = pagedList(section, orderFilms(films, f.sort));
       listings.append(section);
     }
