@@ -487,33 +487,41 @@
   .sessions .where { color: var(--heading); }
   .sessions .tag { font-family: var(--mono); font-size: 12px; color: var(--muted); }
 
-  /* Pagination (B23): per-page choice, range, previous / next. */
+  /* Pager (B30, mocks in design/v2): under the list, unboxed. Per-page choice (a
+     bare select with its own chevron), range, then previous / next. Right-aligned
+     on desktop; on phones one line, spread edge to edge. */
   .pager {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     justify-content: flex-end;
-    gap: 8px 16px;
-    padding-top: 16px;
-  }
-  .pager label {
-    display: flex;
-    align-items: center;
-    gap: 12px;
-    font-weight: 600;
-    color: var(--label);
-  }
-  .pager select {
-    font: inherit;
+    gap: 28px;
+    padding-top: 39px;
     font-size: 14px;
-    color: var(--heading);
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 6px;
-    padding: 6px 8px;
+    white-space: nowrap;
   }
-  .pager .range { color: var(--muted); font-variant-numeric: tabular-nums; }
-  .pager .pages { display: flex; gap: 8px; }
+  .per-page { display: flex; align-items: center; gap: 8px; }
+  .per-page label { color: var(--label); }
+  .select-wrap { position: relative; display: inline-flex; align-items: center; }
+  .pager select {
+    appearance: none;
+    font: inherit;
+    color: var(--heading);
+    background: none;
+    border: 0;
+    border-radius: 4px;
+    padding: 6px 22px 6px 2px;
+    cursor: pointer;
+  }
+  .select-wrap svg {
+    position: absolute;
+    right: 0;
+    width: 12px;
+    height: 12px;
+    color: var(--muted);
+    pointer-events: none;
+  }
+  .pager .range { color: var(--heading); font-variant-numeric: tabular-nums; }
+  .pager .pages { display: flex; gap: 22px; }
   .pager .pages button {
     display: grid;
     place-items: center;
@@ -521,15 +529,22 @@
     width: 36px;
     height: 36px;
     padding: 0;
-    color: var(--accent);
-    background: var(--bg);
-    border: 1px solid var(--border);
-    border-radius: 6px;
+    color: var(--heading);
+    background: none;
+    border: 0;
+    border-radius: 4px;
     cursor: pointer;
   }
-  .pager .pages button:hover:not(:disabled) { border-color: var(--label); }
-  .pager .pages button:disabled { color: var(--border); background: var(--inset); cursor: default; }
-  .pager svg { width: 16px; height: 16px; }
+  .pager .pages button:hover:not(:disabled) { color: var(--accent-hover); }
+  .pager .pages button:disabled { color: var(--border); cursor: default; }
+  .pages svg { width: 16px; height: 16px; }
+  @media (max-width: 480px) {
+    .pager { justify-content: space-between; gap: 8px; font-size: 13px; }
+    .per-page { gap: 5px; }
+    .pager select { padding-right: 18px; }
+    .pager .pages { gap: 4px; }
+    .pager .pages button { width: 32px; }
+  }
 
   .empty { margin-top: 28px; color: var(--muted); }
 </style>
@@ -1126,8 +1141,9 @@
     const prev = el("button", { type: "button", "aria-label": "Previous page" }, chevron("M10 3 5 8l5 5"));
     const next = el("button", { type: "button", "aria-label": "Next page" }, chevron("m6 3 5 5-5 5"));
     const pager = el("div", { class: "pager" },
-      el("label", { for: id, text: "Movies shown per page" }), select, range,
-      el("div", { class: "pages" }, prev, next));
+      el("div", { class: "per-page" }, el("label", { for: id, text: "Movies shown per page:" }),
+        el("span", { class: "select-wrap" }, select, chevron("m4 6 4 4 4-4"))),
+      range, el("div", { class: "pages" }, prev, next));
     section.append(rows, pager);
 
     const pages = Math.max(1, Math.ceil(ordered.length / perPage));
