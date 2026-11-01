@@ -184,7 +184,6 @@
     white-space: nowrap;
   }
   .sort-label { font-weight: 600; color: var(--label); }
-  .filter-bar .sort-field { font-weight: 600; } /* the mocks show it semibold */
   .sort-menu-wrap { position: relative; }
   .sort-menu { left: auto; right: 0; min-width: 150px; }
   .sort-menu li { white-space: nowrap; }
@@ -329,20 +328,18 @@
   }
   /* Days most cinemas haven't published yet (B10d), under the view heading. */
   .partial-note { margin: 12px 0 0; font-size: 14px; color: var(--muted); }
-  .film { border-bottom: 1px solid var(--divider); }
-  /* Poster at left; beside it title (count at the far right), then year · director ·
-     rating, then the type tag (B14). Same on phone and desktop. The whole row toggles
-     its session box, which opens full width beneath it. */
+  /* Film rows (B29, mocks in design/v2): poster at left; beside it the title (the
+     expand button) with the count at the far right, then year · director · rating
+     (· runtime when open), then the type tag. Unboxed: a divider under each row's
+     head, so an open session box sits below the line. The whole head toggles. */
   .film-head {
     display: flex;
     align-items: flex-start;
-    gap: 16px;
-    margin: 0 -8px;
-    padding: 16px 8px;
-    border-radius: 6px;
+    gap: 14px;
+    padding: 12px 4px;
+    border-bottom: 1px solid var(--divider);
     cursor: pointer;
   }
-  .film-head:hover { background: var(--inset); }
   .thumb {
     flex: none;
     display: block;
@@ -390,39 +387,55 @@
   .film-head.open .count::after { content: " ▾"; }
   .meta { margin: 4px 0 0; font-size: 14px; line-height: 1.4; color: var(--label); }
   .kind {
-    margin: 4px 0 0;
+    margin: 6px 0 0;
     line-height: 1.3;
     font-size: 12px;
-    font-weight: 600;
-    color: var(--label);
+    font-weight: 400;
+    color: var(--muted);
     text-transform: uppercase;
-    letter-spacing: 0.08em;
   }
+  /* Phones: the count drops under a title too long to share its line, at the left. */
   @media (max-width: 480px) {
-    .count .where { display: none; } /* room for the title; the box names the cinemas */
+    .title-line { flex-wrap: wrap; justify-content: space-between; }
+    .count { margin-left: 0; font-size: 13px; }
   }
 
-  /* Detail: a panel of day tabs over that day's sessions, full width under the row.
-     It keeps one height across tabs and scrolls inside (Harvey, after B24). */
-  .detail { padding: 0 0 16px; }
+  /* Session box: day tabs over that day's sessions, full width under the row. It
+     keeps one height across tabs and scrolls inside, and the tabs scroll sideways
+     (Harvey, after B24). */
+  .detail { padding: 12px 0 8px; }
   .box {
     background: var(--inset);
     border: 1px solid var(--border);
     border-radius: 8px;
   }
+  /* Tabs: plain text on a 1px baseline as long as the tabs; the chosen day's 2px
+     underline sits on it. The baseline is an inset shadow, under the tabs' own
+     borders, so the sideways scroll can't clip the overlap. */
   .tabs {
     display: flex;
-    gap: 8px;
+    width: fit-content;
+    max-width: calc(100% - 28px);
+    margin: 14px 14px 0;
     overflow-x: auto;
-    padding: 14px 14px 4px;
     scrollbar-width: none; /* still scrolls sideways; no bar, as in the mock */
+    box-shadow: inset 0 -1px 0 var(--border);
   }
-  .detail .tabs button { flex: none; padding: 6px 14px; white-space: nowrap; }
-  .detail .tabs button[aria-selected="true"] {
-    color: var(--bg);
-    background: var(--accent);
-    border-color: var(--accent);
+  .detail .tabs button {
+    flex: none;
+    padding: 6px 14px;
+    font-size: 14px;
+    font-weight: 600;
+    white-space: nowrap;
+    color: var(--label);
+    background: none;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    border-radius: 0;
   }
+  .detail .tabs button:hover { color: var(--heading); }
+  .detail .tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
+  .detail .tabs button:focus-visible { outline-offset: -2px; } /* inside the scroller */
   .tabs .dot {
     display: inline-block;
     width: 4px;
@@ -443,7 +456,7 @@
   .day-sessions {
     max-height: 320px;
     overflow-y: auto;
-    padding: 8px 14px 12px;
+    padding: 12px 14px 10px;
   }
   @media (max-width: 480px) {
     .day-sessions { max-height: 45vh; }
@@ -458,10 +471,10 @@
     display: flex;
     flex-wrap: wrap;
     align-items: baseline;
-    gap: 2px 10px;
-    padding: 5px 0;
+    gap: 2px 12px;
+    padding: 4px 0;
   }
-  .sessions .when { min-width: 6.5em; }
+  .sessions .when { min-width: 76px; }
   .sessions .time {
     color: var(--accent);
     font-size: 16px;
@@ -471,15 +484,8 @@
   }
   .sessions a.time:hover { color: var(--accent-hover); text-decoration: underline; }
   .sessions .late { font-size: 12px; color: var(--muted); }
-  .sessions .tag {
-    padding: 0 5px;
-    font-family: var(--mono);
-    font-size: 12px;
-    color: var(--muted);
-    background: var(--inset);
-    border: 1px solid var(--border);
-    border-radius: 4px;
-  }
+  .sessions .where { color: var(--heading); }
+  .sessions .tag { font-family: var(--mono); font-size: 12px; color: var(--muted); }
 
   /* Pagination (B23): per-page choice, range, previous / next. */
   .pager {
@@ -915,7 +921,7 @@
   const venueName = (slug) => (data.venues[slug] && data.venues[slug].name) || slug;
 
   // "14 sessions · 9 cinemas"; one cinema is named: "1 session · Ritz Randwick".
-  // Phones show the sessions part only.
+  // Phones show it too, under the title when it doesn't fit beside it (B29).
   function countLabel(showings) {
     const venues = new Set(showings.map((s) => s.venue));
     const where = venues.size === 1 ? venueName([...venues][0]) : plural(venues.size, "cinema");
