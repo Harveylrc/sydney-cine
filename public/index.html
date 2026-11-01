@@ -326,6 +326,16 @@
     font-weight: 700;
     border-bottom: 1px solid var(--border);
   }
+  /* Cinema sort (B36): a sub-heading per cinema; a page starts with its cinema's. */
+  .cinema-heading {
+    margin: 28px 0 0;
+    padding-bottom: 8px;
+    color: var(--label);
+    font-size: 21px;
+    font-weight: 600;
+    border-bottom: 1px solid var(--divider);
+  }
+  .rows > .cinema-heading:first-child { margin-top: 20px; }
   /* Film rows (B29, mocks in design/v2): poster at left; beside it the title (the
      expand button) with the count at the far right, then year · director · rating
      (· runtime when open), then the type tag. Unboxed: a divider under each row's
@@ -349,7 +359,7 @@
   div.thumb { background: var(--inset); border: 1px solid var(--border); } /* no poster */
   .film-head .text { flex: 1; min-width: 0; }
   .title-line { display: flex; align-items: baseline; gap: 0 16px; }
-  .film h3 {
+  .film .film-title {
     margin: 0;
     color: var(--accent);
     font-size: 16px;
@@ -358,14 +368,14 @@
   }
   /* Collapsed, a row is one poster tall: title and meta stop at two lines each.
      Opening shows them in full. */
-  .film-head:not(.open) h3 button, .film-head:not(.open) .meta {
+  .film-head:not(.open) .film-title button, .film-head:not(.open) .meta {
     display: -webkit-box;
     -webkit-box-orient: vertical;
     -webkit-line-clamp: 2;
     line-clamp: 2;
     overflow: hidden;
   }
-  .film h3 button {
+  .film .film-title button {
     font: inherit;
     color: inherit;
     background: none;
@@ -374,7 +384,7 @@
     text-align: left;
     cursor: pointer;
   }
-  .film-head:hover h3 button { color: var(--accent-hover); }
+  .film-head:hover .film-title button { color: var(--accent-hover); }
   .count {
     margin-left: auto;
     font-size: 14px;
@@ -578,6 +588,7 @@
           <li role="menuitemradio" tabindex="-1" data-sort="popular" aria-checked="false">Popular</li>
           <li role="menuitemradio" tabindex="-1" data-sort="az" aria-checked="false">A–Z</li>
           <li role="menuitemradio" tabindex="-1" data-sort="year" aria-checked="false">Release date</li>
+          <li role="menuitemradio" tabindex="-1" data-sort="cinema" aria-checked="false">Cinema</li>
         </ul>
       </span>
       <span class="bar-divider"></span>
@@ -732,12 +743,34 @@
 
   // Ranks on all of a film's sessions in the view, whatever the filters (Harvey, B9b, B24).
   function orderFilms(films, sort) {
+    if (sort === "cinema") return byCinema(films);
     return [...films]
       .map(([id, showings]) => {
         const film = filmsById.get(id);
         return { film, showings, score: rankScore(film, unfiltered.get(view).get(id), thisYear) };
       })
       .sort(comparer(sort, reversed));
+  }
+
+  // Cinema sort (B36; DECISIONS 2026-11-01 v2.1.1 (6)): one row per film per cinema,
+  // cinemas A–Z (Z–A reversed), each cinema's films by their first session there.
+  // A row's showings are that cinema's only, so its count and its box are too.
+  function byCinema(films) {
+    const groups = new Map(); // venue -> rows
+    for (const [id, showings] of films) {
+      const film = filmsById.get(id);
+      for (const s of showings) {
+        if (!groups.has(s.venue)) groups.set(s.venue, new Map());
+        const rows = groups.get(s.venue);
+        if (!rows.has(id)) rows.set(id, { film, showings: [], venue: s.venue });
+        rows.get(id).showings.push(s);
+      }
+    }
+    const order = (a, b) => venueName(a).localeCompare(venueName(b), "en", { sensitivity: "base" });
+    return [...groups.keys()]
+      .sort(reversed ? (a, b) => order(b, a) : order)
+      .flatMap((venue) => [...groups.get(venue).values()]
+        .sort((a, b) => a.showings[0].start.localeCompare(b.showings[0].start) || byTitle(a, b)));
   }
 
   // A cinema's full name picks that cinema only; part of a name, any it is part of.
@@ -875,7 +908,7 @@
   // place beneath it (B10c, B14); several can be open; tapping again closes.
   const openers = new WeakMap(); // entry -> open(), for #film= links
   // One row per film per view (B24): showings are the view's, in start order.
-  function filmEntry(film, showings) {
+  function filmEntry(film, showings, venue = null) {
     const extra = details[film.id] || {};
     const meta = el("p", { class: "meta" });
     const parts = [film.year, film.director].filter(Boolean).map(String);
@@ -891,7 +924,8 @@
 
     const detailId = `detail-${++entryCount}`;
     const toggle = el("button", { type: "button", "aria-expanded": "false", "aria-controls": detailId, title: film.title, text: film.title });
-    const text = el("div", { class: "text" }, el("div", { class: "title-line" }, el("h3", {}, toggle), countLabel(showings)));
+    const title = el(venue ? "h4" : "h3", { class: "film-title" }, toggle); // under a cinema heading: h4
+    const text = el("div", { class: "text" }, el("div", { class: "title-line" }, title, countLabel(showings, !venue)));
     if (meta.childNodes.length) text.append(meta);
     if (tags.length) text.append(el("p", { class: "kind", text: tags.join(" · ") }));
     const poster = extra.poster_path
@@ -903,7 +937,7 @@
     let detail = null; // built on first open
     function setOpen(open) {
       if (open && !detail) {
-        entry.append((detail = filmDetail(film, detailId)));
+        entry.append((detail = filmDetail(film, detailId, venue)));
         fitBox(detail);
       }
       if (detail) detail.hidden = !open;
@@ -935,8 +969,10 @@
 
   // "14 sessions · 9 cinemas"; one cinema is named: "1 session · Ritz Randwick".
   // Phones show it too, under the title when it doesn't fit beside it (B29).
-  function countLabel(showings) {
+  // Under a cinema heading (Cinema sort) the cinema isn't repeated: "8 sessions".
+  function countLabel(showings, withWhere = true) {
     const venues = new Set(showings.map((s) => s.venue));
+    if (!withWhere) return el("span", { class: "count" }, plural(showings.length, "session"));
     const where = venues.size === 1 ? venueName([...venues][0]) : plural(venues.size, "cinema");
     return el("span", { class: "count" }, plural(showings.length, "session"),
       el("span", { class: "where", text: ` · ${where}` }));
@@ -998,11 +1034,13 @@
   // A box: a tab per day with sessions in the next 14 days, in either view (Harvey,
   // 2026-10-29), over that day's `time · cinema · tags` rows.
   // Starts on the first day.
-  function filmDetail(film, id) {
+  // venue: under the Cinema sort, that cinema's sessions only (B36).
+  function filmDetail(film, id, venue = null) {
     const byDay = new Map();
     const cinema = currentFilters().cinema; // with a cinema chosen, only its sessions (B19b)
     for (const s of byFilm.get(film.id) || []) {
       if (cinema && !cinemaMatches(s.venue, cinema)) continue;
+      if (venue && s.venue !== venue) continue;
       if (!byDay.has(s.day)) byDay.set(s.day, []);
       byDay.get(s.day).push(s);
     }
@@ -1153,7 +1191,16 @@
       current = pageOf[view] = Math.min(Math.max(n, 1), pages);
       const from = (current - 1) * perPage;
       const shown = ordered.slice(from, from + perPage);
-      rows.replaceChildren(...shown.map(({ film, showings }) => filmEntry(film, showings)));
+      // Under the Cinema sort a heading opens each cinema's rows, and every page
+      // starts with one, repeated when the cinema continues from the page before.
+      const items = [];
+      shown.forEach(({ film, showings, venue }, i) => {
+        if (venue && (i === 0 || shown[i - 1].venue !== venue)) {
+          items.push(el("h3", { class: "cinema-heading", text: venueName(venue) }));
+        }
+        items.push(filmEntry(film, showings, venue));
+      });
+      rows.replaceChildren(...items);
       range.textContent = `${from + 1}–${from + shown.length} of ${ordered.length}`;
       prev.disabled = current === 1;
       next.disabled = current === pages;
