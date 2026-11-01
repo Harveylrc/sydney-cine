@@ -283,6 +283,16 @@
     font-weight: 600;
   }
   .chips button[aria-pressed="true"]::before { content: "✓ "; }
+  /* Date chips (B37): a dot on days most cinemas haven't published yet, as on tabs. */
+  .chips .dot {
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    margin-left: 5px;
+    vertical-align: middle;
+    border-radius: 50%;
+    background: currentColor;
+  }
   /* Regions ⓘ (B20): which LGAs make up each region, and a link to the map. */
   .regions { position: relative; }
   .filter-panel .info {
@@ -612,15 +622,16 @@
         <option value="special">Special</option>
       </select>
     </label>
-    <label>Date
-      <select name="day"><option value="">Any date</option></select>
-    </label>
     <label>Released
       <span class="years">
         <input type="number" name="from" inputmode="numeric" placeholder="From" min="1890" max="2100">
         <input type="number" name="to" inputmode="numeric" placeholder="To" min="1890" max="2100">
       </span>
     </label>
+    <fieldset class="chip-group dates" hidden>
+      <legend>Date</legend>
+      <div class="chips" id="date-chips"></div>
+    </fieldset>
     <fieldset class="chip-group regions" hidden>
       <legend>Region<button type="button" class="info" id="region-info-button" aria-expanded="false"
         aria-controls="region-info" aria-label="Which areas are in each region" title="Which areas are in each region" hidden>ⓘ</button></legend>
@@ -670,10 +681,6 @@
 
   const fold = (s) => (s || "").normalize("NFD").replace(/[̀-ͯ]/g, "").toLowerCase();
 
-  const dayShort = (iso) =>
-    new Date(iso + "T00:00:00Z").toLocaleDateString("en-AU", {
-      weekday: "short", day: "numeric", month: "short", timeZone: "UTC",
-    });
 
   const safeUrl = (url) => (url && /^https?:\/\//.test(url) ? url : null);
 
@@ -685,7 +692,7 @@
       director: fold(f.get("director").trim()),
       cinema: fold(f.get("cinema").trim()),
       type: f.get("type"),
-      day: f.get("day"),
+      days: selectedDays,
       from: year(f.get("from")),
       to: year(f.get("to")),
       sort: sortField,
@@ -752,7 +759,7 @@
     if (f.cinema && !cinemaMatches(s.venue, f.cinema)) return false;
     if (f.type && s.type !== f.type) return false;
     if (f.regions.size && !s.regions.some((r) => f.regions.has(r))) return false;
-    if (f.day && s.day !== f.day) return false;
+    if (f.days.size && !f.days.has(s.day)) return false;
     if ((f.from || f.to) && film.year == null) return false;
     if (f.from && film.year < f.from) return false;
     if (f.to && film.year > f.to) return false;
@@ -806,6 +813,42 @@
     container.querySelectorAll("button").forEach((chip) =>
       chip.setAttribute("aria-pressed", String(selected.has(chip.textContent))));
 
+  // Date chips (B37; DECISIONS 2026-11-01 v2.1.1 (7)): one per day in the horizon,
+  // any number on, none = every day. This week ahead offers its 7 days, plus any
+  // later day already on (picked in All showings), so it can be switched off.
+  // Partial days carry the dot, as on a box's tabs.
+  const selectedDays = new Set();
+  const dateChips = $("#date-chips");
+  function populateDates() {
+    for (let d = firstDay, i = 0; i < HORIZON_DAYS; d = addDays(d, 1), i++) {
+      const day = d;
+      const chip = el("button", { type: "button", "aria-pressed": "false", "data-day": day }, tabLabel(day));
+      chip.addEventListener("click", () => {
+        if (selectedDays.has(day)) selectedDays.delete(day);
+        else selectedDays.add(day);
+        render();
+      });
+      dateChips.append(chip);
+    }
+    $(".dates").hidden = false;
+  }
+  function syncDates() {
+    for (const chip of dateChips.children) {
+      const day = chip.dataset.day;
+      chip.setAttribute("aria-pressed", String(selectedDays.has(day)));
+      chip.hidden = view === "week" && day > weekEnd && !selectedDays.has(day);
+      const partial = isPartial(day);
+      if (partial !== Boolean(chip.querySelector(".dot"))) {
+        if (partial) {
+          chip.append(el("span", { class: "dot", "aria-hidden": "true" }), el("span", { class: "sr-only", text: " (not fully published)" }));
+        } else {
+          chip.replaceChildren(tabLabel(day));
+        }
+      }
+      chip.title = partial ? "Not fully published yet" : "";
+    }
+  }
+
   // Filters toggle (B16): the block starts collapsed; its open state is remembered
   // in this browser. Collapsed, each active filter shows as a chip that clears it.
   const filterBar = $("#filter-bar");
@@ -836,11 +879,13 @@
     if (fields.director.value.trim()) list.push([fields.director.value.trim(), clearField("director")]);
     if (fields.cinema.value.trim()) list.push([fields.cinema.value.trim(), clearField("cinema")]);
     if (fields.type.value) list.push([TYPE_LABELS[fields.type.value], clearField("type")]);
-    if (fields.day.value) list.push([dayShort(fields.day.value), clearField("day")]);
     const from = fields.from.value, to = fields.to.value;
     if (from || to) {
       const label = from && to ? `Released ${from}–${to}` : from ? `Released from ${from}` : `Released to ${to}`;
       list.push([label, () => { fields.from.value = ""; fields.to.value = ""; }]);
+    }
+    for (const day of [...selectedDays].sort()) {
+      list.push([tabLabel(day), () => { selectedDays.delete(day); }]);
     }
     for (const region of selectedRegions) {
       list.push([region, () => { selectedRegions.delete(region); syncChips($("#region-chips"), selectedRegions); }]);
@@ -1000,9 +1045,10 @@
   // Starts on the first day.
   function filmDetail(film, id) {
     const byDay = new Map();
-    const cinema = currentFilters().cinema; // with a cinema chosen, only its sessions (B19b)
+    const { cinema, days: chosen } = currentFilters(); // with a cinema chosen, only its sessions (B19b)
     for (const s of byFilm.get(film.id) || []) {
       if (cinema && !cinemaMatches(s.venue, cinema)) continue;
+      if (chosen.size && !chosen.has(s.day)) continue; // with dates chosen, only those days (B37)
       if (!byDay.has(s.day)) byDay.set(s.day, []);
       byDay.get(s.day).push(s);
     }
@@ -1173,6 +1219,7 @@
   function render(keepPage = false) {
     if (!keepPage) pageOf[view] = 1;
     markActive();
+    syncDates();
     updateFilterBar();
     const f = currentFilters();
     const films = new Map(); // film id -> its showings in the view, in start order
@@ -1205,10 +1252,7 @@
   }
 
   function populateFilters() {
-    const daySelect = form.elements.day;
-    for (const day of [...new Set(data.showings.map((s) => s.day))].sort()) {
-      daySelect.append(el("option", { value: day, text: dayShort(day) }));
-    }
+    populateDates();
     for (const film of data.films) {
       for (const name of (film.director || "").split(", ")) if (name) showingDirectors.add(name);
     }
@@ -1380,6 +1424,7 @@
   form.addEventListener("reset", () => {
     selectedRegions.clear();
     syncChips($("#region-chips"), selectedRegions);
+    selectedDays.clear();
     setSort("relevant"); // Clear filters also puts Sort back to Relevant
     setTimeout(() => data && render());
   });
