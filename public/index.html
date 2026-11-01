@@ -14,19 +14,19 @@
 <meta property="og:url" content="https://sydneycinema.com/">
 <meta property="og:type" content="website">
 <style>
-  /* v2 palette (B22; DECISIONS 2026-10-29): one light theme. Colours live only here. */
+  /* v2 final palette (B27; DECISIONS 2026-11-01 (6)): navy with one gold accent.
+     Colours live only here. */
   :root {
-    --bg: #FFFFFF;           /* page */
-    --band: #F4F7FA;         /* header band, poster placeholder, format tags */
-    --panel: #F7FAFC;        /* filter panel, session box, row hover */
-    --border: #C1C9D2;       /* lines around things */
-    --divider: #E3E8EE;      /* rules between rows */
-    --accent: #0E2245;       /* title, view heading, film titles, times, nav line, chosen day */
-    --accent-hover: #2A4475;
-    --text: #3C4257;         /* body */
-    --label: #50617A;        /* nav, labels, type tag */
-    --muted: #697386;        /* secondary: counts, notes */
-    --tag: #4F566B;          /* format tags */
+    --bg: #181D3B;           /* page */
+    --inset: #131934;        /* header band, filter bar, session box, poster placeholder */
+    --divider: #0E1227;      /* header line, rules between rows */
+    --heading: #F2EAF1;      /* page and view headings, body text, cinema names */
+    --label: #CAD0E5;        /* nav, labels, year · director · rating */
+    --border: #4D5884;       /* lines around things, view heading underline */
+    --accent: #E8B86D;       /* film titles, times, active nav and day */
+    --accent-hover: #F3CD8C;
+    --muted: #9AA3C7;        /* secondary: counts, notes, type and format tags */
+    --shadow: rgba(0, 0, 0, 0.35);
     --mono: Menlo, Consolas, monospace;
 
     --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
@@ -40,18 +40,18 @@
   * { box-sizing: border-box; }
   [hidden] { display: none !important; } /* beats display rules such as .chips' flex */
 
-  html { color-scheme: light; }
+  html { color-scheme: dark; }
 
   body {
     margin: 0;
     background: var(--bg);
-    color: var(--text);
+    color: var(--heading);
     font-family: var(--font);
     font-size: 14px;
     line-height: 1.5;
   }
 
-  a { color: var(--text); }
+  a { color: var(--heading); }
   a:focus-visible, button:focus-visible, input:focus-visible, select:focus-visible {
     outline: 2px solid var(--label);
     outline-offset: 2px;
@@ -60,8 +60,8 @@
   /* Header band: full width; the title and nav sit a gutter in from the window's
      edges, not in the content column (B22b). */
   .band {
-    background: var(--band);
-    border-bottom: 1px solid var(--border);
+    background: var(--inset);
+    border-bottom: 1px solid var(--divider);
   }
   .page {
     max-width: calc(var(--column) + 2 * var(--gutter));
@@ -77,16 +77,20 @@
     align-items: center;
     justify-content: space-between;
     gap: 8px 24px;
-    padding-top: 20px;
-    padding-bottom: 18px;
+    padding-top: 24px;
+    padding-bottom: 22px;
   }
   h1 {
     margin: 0;
-    color: var(--accent);
+    color: var(--heading);
     font-size: 32px;
     font-weight: 700;
     line-height: 1.2;
     letter-spacing: -0.01em;
+  }
+  @media (max-width: 480px) {
+    h1 { font-size: 26px; } /* the nav wraps under it */
+    .band-inner { row-gap: 14px; padding-top: 20px; padding-bottom: 18px; }
   }
   .page { padding-top: 24px; padding-bottom: 48px; }
 
@@ -103,7 +107,7 @@
     padding: 4px 0;
     cursor: pointer;
   }
-  .views button:hover { color: var(--text); }
+  .views button:hover { color: var(--heading); }
   .views button[aria-pressed="true"] { color: var(--accent); border-bottom-color: var(--accent); }
 
   /* Buttons: white, 1px border, 6px radius, 14/600; chips the same but pill-shaped. */
@@ -119,12 +123,12 @@
     cursor: pointer;
   }
   .filter-panel button:hover, .detail button:hover { border-color: var(--label); }
-  .active-chips button, .chips button { border-radius: 999px; font-weight: 500; color: var(--text); }
+  .active-chips button, .chips button { border-radius: 999px; font-weight: 500; color: var(--heading); }
 
   /* Filter panel (B16, B22): a toggle row with active-filter chips and Sort; the
      fields open beneath it inside the panel. */
   .filter-panel {
-    background: var(--panel);
+    background: var(--inset);
     border: 1px solid var(--border);
     border-radius: 8px;
   }
@@ -175,7 +179,7 @@
     font: inherit;
     font-size: 14px;
     font-weight: 400;
-    color: var(--text);
+    color: var(--heading);
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 6px;
@@ -203,14 +207,14 @@
     list-style: none;
     font-size: 14px;
     font-weight: 400;
-    color: var(--text);
+    color: var(--heading);
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 6px;
   }
   .suggestions.from-left { left: 0; right: auto; } /* Cinema can be the first column */
   .suggestions li { padding: 5px 10px; cursor: pointer; }
-  .suggestions li[aria-selected="true"], .suggestions li:hover { background: var(--band); }
+  .suggestions li[aria-selected="true"], .suggestions li:hover { background: var(--inset); }
   .years { display: flex; gap: 6px; align-items: center; }
   .filters .reset { align-self: end; justify-self: start; }
   /* Region chips (B12): none pressed means every region. */
@@ -225,7 +229,7 @@
   .chips { display: flex; flex-wrap: wrap; gap: 6px; }
   .chips button { padding: 3px 12px; }
   .chips button[aria-pressed="true"] {
-    background: var(--band);
+    background: var(--inset);
     border-color: var(--label);
     font-weight: 600;
   }
@@ -251,14 +255,14 @@
     max-height: 70vh;
     overflow-y: auto;
     padding: 12px 16px 14px;
-    color: var(--text);
+    color: var(--heading);
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 8px;
-    box-shadow: 0 8px 24px rgba(14, 34, 69, 0.12);
+    box-shadow: 0 8px 24px var(--shadow);
   }
   .popover dl { margin: 0; }
-  .popover dt { margin-top: 8px; color: var(--text); font-weight: 600; }
+  .popover dt { margin-top: 8px; color: var(--heading); font-weight: 600; }
   .popover dt:first-child { margin-top: 0; }
   .popover dd { margin: 1px 0 0; color: var(--muted); }
   .popover p { margin: 12px 0 0; }
@@ -267,8 +271,8 @@
   .listing { margin-top: 36px; }
   .listing h2 {
     margin: 0;
-    padding-bottom: 10px;
-    color: var(--accent);
+    padding-bottom: 8px;
+    color: var(--heading);
     font-size: 21px;
     font-weight: 700;
     border-bottom: 1px solid var(--border);
@@ -288,7 +292,7 @@
     border-radius: 6px;
     cursor: pointer;
   }
-  .film-head:hover { background: var(--panel); }
+  .film-head:hover { background: var(--inset); }
   .thumb {
     flex: none;
     display: block;
@@ -297,7 +301,7 @@
     object-fit: cover;
     border-radius: 4px;
   }
-  div.thumb { background: var(--band); border: 1px solid var(--border); } /* no poster */
+  div.thumb { background: var(--inset); border: 1px solid var(--border); } /* no poster */
   .film-head .text { flex: 1; min-width: 0; }
   .title-line { display: flex; align-items: baseline; gap: 0 16px; }
   .film h3 {
@@ -334,7 +338,7 @@
   }
   .count::after { content: " ▸"; font-size: 10px; vertical-align: 1px; }
   .film-head.open .count::after { content: " ▾"; }
-  .meta { margin: 4px 0 0; font-size: 14px; line-height: 1.4; color: var(--text); }
+  .meta { margin: 4px 0 0; font-size: 14px; line-height: 1.4; color: var(--label); }
   .kind {
     margin: 4px 0 0;
     line-height: 1.3;
@@ -352,7 +356,7 @@
      It keeps one height across tabs and scrolls inside (Harvey, after B24). */
   .detail { padding: 0 0 16px; }
   .box {
-    background: var(--panel);
+    background: var(--inset);
     border: 1px solid var(--border);
     border-radius: 8px;
   }
@@ -421,8 +425,8 @@
     padding: 0 5px;
     font-family: var(--mono);
     font-size: 12px;
-    color: var(--tag);
-    background: var(--band);
+    color: var(--muted);
+    background: var(--inset);
     border: 1px solid var(--border);
     border-radius: 4px;
   }
@@ -446,7 +450,7 @@
   .pager select {
     font: inherit;
     font-size: 14px;
-    color: var(--text);
+    color: var(--heading);
     background: var(--bg);
     border: 1px solid var(--border);
     border-radius: 6px;
@@ -468,7 +472,7 @@
     cursor: pointer;
   }
   .pager .pages button:hover:not(:disabled) { border-color: var(--label); }
-  .pager .pages button:disabled { color: var(--border); background: var(--panel); cursor: default; }
+  .pager .pages button:disabled { color: var(--border); background: var(--inset); cursor: default; }
   .pager svg { width: 16px; height: 16px; }
 
   .empty { margin-top: 28px; color: var(--muted); }
