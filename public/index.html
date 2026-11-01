@@ -451,6 +451,8 @@
     clip-path: inset(50%);
     white-space: nowrap;
   }
+  /* The Wednesday note under the view heading (B24c, kept after B34). */
+  .list-note { margin: 12px 0 0; font-size: 14px; color: var(--muted); }
   /* A dotted day's note (B34), at the top of that day's sessions. */
   .partial-note { margin: 0 0 6px; font-size: 13px; color: var(--muted); }
   .day-sessions {
@@ -966,6 +968,7 @@
   // Dates are ISO strings read as UTC so no time zone shifts them.
   const WEEK_DAYS = 7;
   const addDays = (iso, n) => new Date(Date.parse(iso + "T00:00:00Z") + n * 864e5).toISOString().slice(0, 10);
+  const HORIZON_DAYS = 14; // as export.py
   let firstDay = null; // today, the first day of both views
   let weekEnd = null; // the last day of "This week ahead"
   const VIEW_HEADINGS = { week: "This week ahead", all: "All Showings" };
@@ -978,6 +981,16 @@
   const plannedAheadOnly = () => PLANNED_AHEAD.has(form.elements.type.value);
   const isPartial = (day) =>
     !plannedAheadOnly() && Boolean(data.days && data.days[day] && data.days[day].partial);
+  // The note also goes under the view heading when any day in the view is partial
+  // or has no sessions yet (Harvey: in both places, after B34).
+  function viewIsPartial(v) {
+    if (plannedAheadOnly()) return false;
+    const last = v === "all" ? addDays(firstDay, HORIZON_DAYS - 1) : weekEnd;
+    for (let d = firstDay; d <= last; d = addDays(d, 1)) {
+      if (!data.days || !data.days[d] || data.days[d].partial) return true;
+    }
+    return false;
+  }
 
   const tabLabel = (iso) =>
     new Date(iso + "T00:00:00Z").toLocaleDateString("en-AU", { weekday: "short", day: "numeric", timeZone: "UTC" });
@@ -1079,10 +1092,10 @@
   window.addEventListener("hashchange", () => data && openFromHash());
 
   // Pagination (B26, B33; DECISIONS 2026-11-01 v2.1.1 (3)): the list shows `perPage`
-  // films at a time, after sort and filters. One page number for both views:
-  // switching views keeps it, clamped to that view's last page. The choice of
-  // 5/10/20 (default 10) is remembered in this browser. A change of per-page, sort
-  // or any filter goes back to page 1.
+  // films at a time, after sort and filters. Each view keeps its own page (Harvey,
+  // after B33, back to B26's way). The choice of 5/10/20 (default 10) is one setting
+  // for both views, remembered in this browser. A change of per-page, sort or any
+  // filter goes back to page 1 of the view on screen.
   const PER_PAGE_KEY = "sydney-cine.perPage";
   const PER_PAGE_CHOICES = [5, 10, 20];
   let perPage = 10;
@@ -1090,7 +1103,7 @@
     const saved = Number(localStorage.getItem(PER_PAGE_KEY));
     if (PER_PAGE_CHOICES.includes(saved)) perPage = saved;
   } catch { /* private mode: the default */ }
-  let page = 1; // shared by both views
+  const pageOf = { week: 1, all: 1 }; // each view's page
   let pager = null; // this render's list: { ordered, show(page) }, for #film= links
 
   function chevron(path) {
@@ -1137,7 +1150,7 @@
     const pages = Math.max(1, Math.ceil(ordered.length / perPage));
     let current = 1;
     function show(n) {
-      current = page = Math.min(Math.max(n, 1), pages);
+      current = pageOf[view] = Math.min(Math.max(n, 1), pages);
       const from = (current - 1) * perPage;
       const shown = ordered.slice(from, from + perPage);
       rows.replaceChildren(...shown.map(({ film, showings }) => filmEntry(film, showings)));
@@ -1152,13 +1165,13 @@
     };
     prev.addEventListener("click", () => turn(-1, prev));
     next.addEventListener("click", () => turn(1, next));
-    show(page);
+    show(pageOf[view]);
     return { ordered, show };
   }
 
-  // keepPage: a view switch keeps the page number; anything else starts at page 1.
+  // keepPage: a view switch shows that view's page; anything else starts at page 1.
   function render(keepPage = false) {
-    if (!keepPage) page = 1;
+    if (!keepPage) pageOf[view] = 1;
     markActive();
     updateFilterBar();
     const f = currentFilters();
@@ -1176,6 +1189,7 @@
     pager = null;
     if (count) {
       const section = el("section", { class: "listing" }, el("h2", { text: VIEW_HEADINGS[view] }));
+      if (viewIsPartial(view)) section.append(el("p", { class: "list-note", text: PARTIAL_NOTE }));
       pager = pagedList(section, orderFilms(films, f.sort));
       listings.append(section);
     }
