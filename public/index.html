@@ -630,10 +630,13 @@
   // Sort (B25, DECISIONS 2026-11-01): Relevant is the score above and has no
   // direction; the others start in their own direction and Reverse flips it. Films
   // with no year (Release date) or no rating (Rating) stay last either way; ties go A–Z.
+  // Rating counts only from MIN_VOTES TMDB votes: a 10.0 from two votes says little,
+  // so those films sort with the unrated (Harvey, after B25). Rows still show it.
+  const MIN_VOTES = 20;
   const SORT_KEYS = {
     popular: { value: (o) => o.film.vote_count || 0, desc: true },
     year: { value: (o) => o.film.year, desc: true },
-    rating: { value: (o) => o.film.rating, desc: true },
+    rating: { value: (o) => ((o.film.vote_count || 0) >= MIN_VOTES ? o.film.rating : null), desc: true },
   };
   function comparer(sort, reversed) {
     if (sort === "az") return reversed ? (a, b) => byTitle(b, a) : byTitle;
