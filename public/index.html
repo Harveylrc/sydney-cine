@@ -576,11 +576,10 @@
           <li role="menuitemradio" tabindex="-1" data-sort="popular" aria-checked="false">Popular</li>
           <li role="menuitemradio" tabindex="-1" data-sort="az" aria-checked="false">A–Z</li>
           <li role="menuitemradio" tabindex="-1" data-sort="year" aria-checked="false">Release date</li>
-          <li role="menuitemradio" tabindex="-1" data-sort="rating" aria-checked="false">Rating</li>
         </ul>
       </span>
-      <span class="bar-divider" id="reverse-divider" hidden></span>
-      <button type="button" class="reverse" id="sort-reverse" aria-label="Reverse order" aria-pressed="false" hidden><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2v12M2 11l3 3 3-3M11 14V2M8 5l3-3 3 3"/></svg></button>
+      <span class="bar-divider"></span>
+      <button type="button" class="reverse" id="sort-reverse" aria-label="Reverse order" aria-pressed="false"><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2v12M2 11l3 3 3-3M11 14V2M8 5l3-3 3 3"/></svg></button>
     </div>
   </div>
 
@@ -708,21 +707,18 @@
   }
   // rank:end
   const byTitle = (a, b) => a.film.title.localeCompare(b.film.title, "en", { sensitivity: "base" });
-  // Sort (B25, DECISIONS 2026-11-01): Relevant is the score above and has no
-  // direction; the others start in their own direction and Reverse flips it. Films
-  // with no year (Release date) or no rating (Rating) stay last either way; ties go A–Z.
-  // Rating counts only from MIN_VOTES TMDB votes: a 10.0 from two votes says little,
-  // so those films sort with the unrated (Harvey, after B25). Rows still show it.
-  const MIN_VOTES = 20;
+  // Sort (B25, B35; DECISIONS 2026-11-01 v2.1.1 (5)): each field starts in its own
+  // direction and Reverse flips it, Relevant included (lowest score first). Popular
+  // is the film's sessions in the view, as its row counts them (after filters).
+  // Films with no year (Release date) stay last either way; ties go A–Z.
   const SORT_KEYS = {
-    popular: { value: (o) => o.film.vote_count || 0, desc: true },
+    relevant: { value: (o) => o.score, desc: true },
+    popular: { value: (o) => o.showings.length, desc: true },
     year: { value: (o) => o.film.year, desc: true },
-    rating: { value: (o) => ((o.film.vote_count || 0) >= MIN_VOTES ? o.film.rating : null), desc: true },
   };
   function comparer(sort, reversed) {
     if (sort === "az") return reversed ? (a, b) => byTitle(b, a) : byTitle;
-    const key = SORT_KEYS[sort];
-    if (!key) return (a, b) => b.score - a.score || byTitle(a, b); // Relevant
+    const key = SORT_KEYS[sort] || SORT_KEYS.relevant;
     const sign = (key.desc ? -1 : 1) * (reversed ? -1 : 1);
     return (a, b) => {
       const x = key.value(a), y = key.value(b);
@@ -1303,8 +1299,8 @@
   });
   form.addEventListener("input", () => data && render());
   // Sort (B25, B28) sits in the filter bar: a text button opening a menu of fields.
-  // A new field starts in its own direction; Reverse (and its divider) is hidden on
-  // Relevant, which has none. The menu: ↑ ↓ Home End move, Enter or Space picks,
+  // A new field starts in its own direction; Reverse is there for every field. The
+  // menu: ↑ ↓ Home End move, Enter or Space picks,
   // Esc or Tab closes; a click elsewhere closes it.
   let sortField = "relevant";
   const sortButton = $("#sort-field");
@@ -1314,7 +1310,6 @@
   function setReversed(on) {
     reversed = on;
     reverseButton.setAttribute("aria-pressed", String(on));
-    reverseButton.hidden = $("#reverse-divider").hidden = sortField === "relevant";
   }
   function setSort(field) {
     sortField = field;
