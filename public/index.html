@@ -123,7 +123,7 @@
     cursor: pointer;
   }
   .filter-panel button:hover, .detail button:hover { border-color: var(--label); }
-  .active-chips button, .chips button { border-radius: 999px; font-weight: 500; color: var(--heading); }
+  .chips button { border-radius: 999px; font-weight: 500; color: var(--heading); }
 
   /* Filter panel (B16, B22): a toggle row with active-filter chips and Sort; the
      fields open beneath it inside the panel. */
@@ -132,32 +132,86 @@
     border: 1px solid var(--border);
     border-radius: 8px;
   }
+  /* The bar (B28, mocks in design/v2): nothing boxed but the bar itself. Left, the
+     Filters toggle, then each active filter as plain text with a ×; right, Sort, its
+     field as a text button opening a menu, and Reverse. 44px tap areas sit in the
+     bar's padding rather than growing it. */
   .filter-bar {
     display: flex;
-    flex-wrap: wrap;
     align-items: center;
     gap: 8px;
-    padding: 10px 16px;
+    padding: 10px 14px;
   }
+  .filter-bar button {
+    font: inherit;
+    font-size: 14px;
+    color: var(--heading);
+    background: none;
+    border: 0;
+    border-radius: 4px;
+    padding: 5px 2px;
+    cursor: pointer;
+  }
+  .filter-bar button:hover { color: var(--accent-hover); }
   /* A funnel before "Filters" (B22c); aria-expanded carries open/closed. */
-  .filter-panel .filter-toggle {
+  .filter-bar .filter-toggle {
+    flex: none;
     display: inline-flex;
     align-items: center;
     gap: 8px;
     padding: 5px 4px;
-    color: var(--label);
-    background: none;
-    border: 0;
-  }
-  .filter-toggle svg { flex: none; }
-  .active-chips { display: contents; }
-  .sort {
-    display: flex;
-    align-items: center;
-    gap: 10px;
-    margin-left: auto;
     font-weight: 600;
     color: var(--label);
+  }
+  .filter-toggle svg { flex: none; }
+  .bar-divider {
+    flex: none;
+    width: 1px;
+    height: 18px;
+    margin: 0 4px;
+    background: var(--border);
+  }
+  .active-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; min-width: 0; }
+  .active-chips button { display: inline-flex; align-items: baseline; gap: 10px; white-space: nowrap; }
+  .active-chips .x { font-size: 15px; line-height: 1; color: var(--muted); }
+  .active-chips button:hover .x { color: var(--accent-hover); }
+  .sort {
+    flex: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-left: auto;
+    white-space: nowrap;
+  }
+  .sort-label { font-weight: 600; color: var(--label); }
+  .filter-bar .sort-field { font-weight: 600; } /* the mocks show it semibold */
+  .sort-menu-wrap { position: relative; }
+  .sort-menu { left: auto; right: 0; min-width: 150px; }
+  .sort-menu li { white-space: nowrap; }
+  .sort-menu li[aria-checked="true"] { color: var(--accent); }
+  .sort-menu li:focus { outline: none; background: var(--inset); }
+  .filter-bar .reverse {
+    display: grid;
+    place-items: center;
+    width: 44px;
+    height: 44px;
+    margin: -6px -13px -6px -14px;
+    padding: 0;
+    color: var(--muted);
+  }
+  .filter-bar .reverse[aria-pressed="true"] { color: var(--accent); }
+  .filter-bar .reverse:hover { color: var(--accent-hover); }
+  /* Phones: toggle and Sort on the first row (Sort never wraps alone), the chips
+     under them; no divider after Filters. */
+  @media (max-width: 600px) {
+    .filter-bar {
+      display: grid;
+      grid-template-columns: auto auto;
+      justify-content: space-between;
+      row-gap: 10px;
+    }
+    .filter-bar .active-chips { grid-column: 1 / -1; order: 2; gap: 0 14px; }
+    .chips-divider { display: none; }
   }
 
   .filters {
@@ -187,10 +241,6 @@
     width: 100%;
     min-width: 0;
   }
-  .sort select { width: auto; padding-right: 4px; }
-  /* Reverse order (B25): the current field's other direction; restyled in B28. */
-  .filter-panel .reverse { padding: 5px 8px; line-height: 0; }
-  .filter-panel .reverse[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
   .filters .active { border-color: var(--label); box-shadow: inset 0 0 0 1px var(--label); }
   /* Type-ahead suggestions (Director, Cinema), under the field. */
   .combo { position: relative; }
@@ -493,16 +543,22 @@
   <div class="filter-panel">
   <div class="filter-bar" id="filter-bar">
     <button type="button" class="filter-toggle" id="filter-toggle" aria-expanded="false" aria-controls="filters"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h12L9.5 8.5V13l-3 1.5V8.5L2 3Z"/></svg><span>Filters<span id="filter-count"></span></span></button>
-    <div class="active-chips" id="active-chips"></div>
+    <span class="bar-divider chips-divider" id="chips-divider" hidden></span>
+    <div class="active-chips" id="active-chips" hidden></div>
     <div class="sort">
-      <label for="sort-field">Sort</label>
-      <select id="sort-field" name="sort" form="filters" data-default="relevant">
-        <option value="relevant">Relevant</option>
-        <option value="popular">Popular</option>
-        <option value="az">A–Z</option>
-        <option value="year">Release date</option>
-        <option value="rating">Rating</option>
-      </select>
+      <span class="sort-label" id="sort-label">Sort</span>
+      <span class="sort-menu-wrap">
+        <button type="button" class="sort-field" id="sort-field" aria-haspopup="menu" aria-expanded="false"
+          aria-controls="sort-menu" aria-labelledby="sort-label sort-field">Relevant</button>
+        <ul class="suggestions sort-menu" id="sort-menu" role="menu" aria-label="Sort by" hidden>
+          <li role="menuitemradio" tabindex="-1" data-sort="relevant" aria-checked="true">Relevant</li>
+          <li role="menuitemradio" tabindex="-1" data-sort="popular" aria-checked="false">Popular</li>
+          <li role="menuitemradio" tabindex="-1" data-sort="az" aria-checked="false">A–Z</li>
+          <li role="menuitemradio" tabindex="-1" data-sort="year" aria-checked="false">Release date</li>
+          <li role="menuitemradio" tabindex="-1" data-sort="rating" aria-checked="false">Rating</li>
+        </ul>
+      </span>
+      <span class="bar-divider" id="reverse-divider" hidden></span>
       <button type="button" class="reverse" id="sort-reverse" aria-label="Reverse order" aria-pressed="false" hidden><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2v12M2 11l3 3 3-3M11 14V2M8 5l3-3 3 3"/></svg></button>
     </div>
   </div>
@@ -610,7 +666,7 @@
       day: f.get("day"),
       from: year(f.get("from")),
       to: year(f.get("to")),
-      sort: f.get("sort"),
+      sort: sortField,
       regions: selectedRegions,
     };
   }
@@ -737,9 +793,14 @@
   const filterToggle = $("#filter-toggle");
   const activeChips = $("#active-chips");
   const FILTERS_OPEN = "sydney-cine.filtersOpen";
+  const chipsDivider = $("#chips-divider");
+  // Chips show while the block is collapsed and something is set.
+  function showChips() {
+    activeChips.hidden = chipsDivider.hidden = !form.hidden || !activeChips.childNodes.length;
+  }
   function setFiltersOpen(open) {
     form.hidden = !open;
-    activeChips.hidden = open;
+    showChips();
     filterToggle.setAttribute("aria-expanded", String(open));
     filterBar.classList.toggle("open", open);
     try { localStorage.setItem(FILTERS_OPEN, open ? "1" : "0"); } catch { /* private mode */ }
@@ -772,7 +833,8 @@
     const list = activeFilters();
     $("#filter-count").textContent = list.length ? ` · ${list.length}` : "";
     activeChips.replaceChildren(...list.map(([label, clear]) => {
-      const chip = el("button", { type: "button", "aria-label": `Remove filter: ${label}`, text: `${label} ×` });
+      const chip = el("button", { type: "button", "aria-label": `Remove filter: ${label}` },
+        el("span", { text: label }), el("span", { class: "x", "aria-hidden": "true", text: "×" }));
       chip.addEventListener("click", () => {
         clear();
         render();
@@ -780,6 +842,7 @@
       });
       return chip;
     }));
+    showChips();
   }
 
   function markActive() {
@@ -1226,19 +1289,68 @@
     button.addEventListener("click", () => setView(button.dataset.view));
   });
   form.addEventListener("input", () => data && render());
-  // Sort sits outside the form, in the filter bar. A new field starts in its own
-  // direction; Reverse is hidden on Relevant, which has none.
+  // Sort (B25, B28) sits in the filter bar: a text button opening a menu of fields.
+  // A new field starts in its own direction; Reverse (and its divider) is hidden on
+  // Relevant, which has none. The menu: ↑ ↓ Home End move, Enter or Space picks,
+  // Esc or Tab closes; a click elsewhere closes it.
+  let sortField = "relevant";
+  const sortButton = $("#sort-field");
+  const sortMenu = $("#sort-menu");
+  const sortItems = [...sortMenu.querySelectorAll("li")];
   const reverseButton = $("#sort-reverse");
   function setReversed(on) {
     reversed = on;
     reverseButton.setAttribute("aria-pressed", String(on));
-    reverseButton.hidden = form.elements.sort.value === "relevant";
+    reverseButton.hidden = $("#reverse-divider").hidden = sortField === "relevant";
   }
-  form.elements.sort.addEventListener("input", () => {
+  function setSort(field) {
+    sortField = field;
+    for (const item of sortItems) item.setAttribute("aria-checked", String(item.dataset.sort === field));
+    sortButton.textContent = sortItems.find((item) => item.dataset.sort === field).textContent;
     setReversed(false);
-    if (data) render();
+  }
+  function setSortMenu(open, focusIndex) {
+    sortMenu.hidden = !open;
+    sortButton.setAttribute("aria-expanded", String(open));
+    if (open) sortItems[focusIndex ?? sortItems.findIndex((i) => i.dataset.sort === sortField)].focus();
+  }
+  sortButton.addEventListener("click", () => setSortMenu(sortMenu.hidden));
+  sortButton.addEventListener("keydown", (e) => {
+    if (e.key !== "ArrowDown" && e.key !== "ArrowUp") return;
+    e.preventDefault();
+    setSortMenu(true, e.key === "ArrowUp" ? sortItems.length - 1 : undefined);
   });
-  setReversed(false); // in case the browser kept a Sort choice over a reload
+  function pickSort(item, byKeyboard = false) {
+    setSortMenu(false);
+    sortButton.focus({ focusVisible: byKeyboard }); // a mouse pick leaves no ring behind
+    if (item.dataset.sort === sortField) return;
+    setSort(item.dataset.sort);
+    if (data) render();
+  }
+  sortMenu.addEventListener("click", (e) => {
+    const item = e.target.closest("li");
+    if (item) pickSort(item);
+  });
+  sortMenu.addEventListener("keydown", (e) => {
+    const at = sortItems.indexOf(document.activeElement);
+    const move = { ArrowDown: at + 1, ArrowUp: at - 1, Home: 0, End: sortItems.length - 1 }[e.key];
+    if (move !== undefined) {
+      e.preventDefault();
+      sortItems[(move + sortItems.length) % sortItems.length].focus();
+    } else if (e.key === "Enter" || e.key === " ") {
+      e.preventDefault();
+      pickSort(sortItems[at], true);
+    } else if (e.key === "Escape") {
+      e.preventDefault();
+      setSortMenu(false);
+      sortButton.focus();
+    } else if (e.key === "Tab") {
+      setSortMenu(false);
+    }
+  });
+  document.addEventListener("click", (e) => {
+    if (!sortMenu.hidden && !sortMenu.contains(e.target) && e.target !== sortButton) setSortMenu(false);
+  });
   reverseButton.addEventListener("click", () => {
     setReversed(!reversed);
     if (data) render();
@@ -1246,10 +1358,8 @@
   form.addEventListener("reset", () => {
     selectedRegions.clear();
     syncChips($("#region-chips"), selectedRegions);
-    setTimeout(() => {
-      setReversed(false); // the reset put Sort back to Relevant
-      if (data) render();
-    });
+    setSort("relevant"); // Clear filters also puts Sort back to Relevant
+    setTimeout(() => data && render());
   });
   form.addEventListener("submit", (e) => e.preventDefault());
 
