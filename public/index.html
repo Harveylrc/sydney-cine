@@ -270,6 +270,8 @@
     font-weight: 700;
     border-bottom: 1px solid var(--border);
   }
+  /* Days most cinemas haven't published yet (B10d), under the view heading. */
+  .partial-note { margin: 12px 0 0; font-size: 14px; color: var(--muted); }
   .film { border-bottom: 1px solid var(--divider); }
   /* Poster at left; beside it title (count at the far right), then year · director ·
      rating, then the type tag (B14). Same on phone and desktop. The whole row toggles
@@ -363,6 +365,23 @@
     color: var(--bg);
     background: var(--accent);
     border-color: var(--accent);
+  }
+  .tabs .dot {
+    display: inline-block;
+    width: 4px;
+    height: 4px;
+    margin-left: 5px;
+    vertical-align: middle;
+    border-radius: 50%;
+    background: currentColor;
+  }
+  .sr-only {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+    clip-path: inset(50%);
+    white-space: nowrap;
   }
   .day-sessions {
     max-height: 320px;
@@ -836,9 +855,29 @@
   // Dates are ISO strings read as UTC so no time zone shifts them.
   const WEEK_DAYS = 7;
   const addDays = (iso, n) => new Date(Date.parse(iso + "T00:00:00Z") + n * 864e5).toISOString().slice(0, 10);
+  const HORIZON_DAYS = 14; // as export.py
+  let firstDay = null; // today, the first day of both views
   let weekEnd = null; // the last day of "This week ahead"
   const VIEW_HEADINGS = { week: "This week ahead", all: "All Showings" };
   const inView = (s, v) => v === "all" || s.day <= weekEnd;
+
+  const PARTIAL_NOTE = "Most cinemas publish the following week's sessions on Wednesday.";
+  // Not for retrospectives, festivals or special events (the Type filter on one of
+  // those): they're programmed well ahead, not on the chains' Wednesday cycle.
+  const PLANNED_AHEAD = new Set(["retrospective", "festival", "special"]);
+  const plannedAheadOnly = () => PLANNED_AHEAD.has(form.elements.type.value);
+  const isPartial = (day) =>
+    !plannedAheadOnly() && Boolean(data.days && data.days[day] && data.days[day].partial);
+  // A view gets the note when any of its days is partial or has no sessions yet
+  // (Harvey, after B24): in practice the run-up to the chains' Wednesday release.
+  function viewIsPartial(v) {
+    if (plannedAheadOnly()) return false;
+    const last = v === "all" ? addDays(firstDay, HORIZON_DAYS - 1) : weekEnd;
+    for (let d = firstDay; d <= last; d = addDays(d, 1)) {
+      if (!data.days || !data.days[d] || data.days[d].partial) return true;
+    }
+    return false;
+  }
 
   const tabLabel = (iso) =>
     new Date(iso + "T00:00:00Z").toLocaleDateString("en-AU", { weekday: "short", day: "numeric", timeZone: "UTC" });
@@ -860,9 +899,16 @@
     const lists = el("div", { class: "day-sessions" });
     const buttons = days.map((d, i) => {
       const list = el("div", { role: "tabpanel", id: `${id}-day-${i}`, "aria-labelledby": `${id}-tab-${i}` });
+      // A retrospective, festival or special screening is programmed ahead, so a
+      // day where all of this film's sessions are one of those gets no dot.
+      const noted = isPartial(d) && !byDay.get(d).every((s) => PLANNED_AHEAD.has(s.type));
       list.append(sessionRows(film, byDay.get(d)));
       lists.append(list);
       const button = el("button", { type: "button", role: "tab", id: `${id}-tab-${i}`, "aria-controls": `${id}-day-${i}`, text: tabLabel(d) });
+      if (noted) {
+        button.append(el("span", { class: "dot", "aria-hidden": "true" }), el("span", { class: "sr-only", text: " (not fully published)" }));
+        button.title = "Not fully published yet";
+      }
       button.addEventListener("click", () => select(i));
       tabs.append(button);
       return button;
@@ -1026,6 +1072,7 @@
     pagers = [];
     if (count) {
       const section = el("section", { class: "listing" }, el("h2", { text: VIEW_HEADINGS[view] }));
+      if (viewIsPartial(view)) section.append(el("p", { class: "partial-note", text: PARTIAL_NOTE }));
       pagers.push(pagedList(section, orderFilms(films, f.sort), 0));
       listings.append(section);
     }
@@ -1171,7 +1218,8 @@
       details = extra || {};
       filmsById = new Map(data.films.map((f) => [f.id, f]));
       thisYear = Number(data.generated_at.slice(0, 4)) || thisYear;
-      weekEnd = addDays(data.today || data.showings.map((s) => s.day).sort()[0], WEEK_DAYS - 1);
+      firstDay = data.today || data.showings.map((s) => s.day).sort()[0];
+      weekEnd = addDays(firstDay, WEEK_DAYS - 1);
       for (const s of data.showings) {
         for (const v of Object.keys(VIEW_HEADINGS)) {
           if (!inView(s, v)) continue;
