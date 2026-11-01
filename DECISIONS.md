@@ -61,6 +61,7 @@
 - 2026-11-02 **Ritz is reachable from GitHub (B32 finding).** v2.1.1 (2)'s "now Ritz" assumed GitHub's runners were refused; the logs show the site answered and the scraper crashed on a sold-out session's link, which has no href (data-id carries the session id). Fixed in the scraper; Ritz stays a live fetch, and the generalised `make refresh VENUE=<slug>` was not built (Reading keeps `make reading-refresh`). Sold-out sessions are listed with no booking link.
 - 2026-11-02 **Per-view page and the Wednesday note in both places (Harvey, after B33/B34).** Reverses v2.1.1 (3)'s shared page number: each view keeps its own page again (per-page stays one shared setting, default 10). Changes v2.1.1 (4)'s "no note at list level": the note shows under the view heading when the view has a partial or empty day (the B24c rule) *and* inside the box on a dotted day.
 - 2026-11-02 **Cinema sort reverted (Harvey, after B36).** B36 shipped and was reverted completely the same night; v2.1.1 (6) is withdrawn and the Sort menu stays Relevant, Popular, A–Z, Release date.
+- 2026-11-02 **Multi-date filter reverted (Harvey, after B37).** B37's date chips were reverted the same night; v2.1.1 (7) is on hold until Harvey re-specs the logic. The single-day Date dropdown stays.
 
 ## P1 — Data access per venue (audited 2026-10-15; P4 browser pass same day)
 
