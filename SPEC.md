@@ -1,4 +1,4 @@
-# SPEC — Sydney Cinema Guide (v2, 2026-10-29)
+# SPEC — Sydney Cinema Guide (v2 final, 2026-11-01)
 
 ## Problem
 Finding what's on in Sydney means visiting every cinema's site in turn. Paris has
@@ -6,11 +6,11 @@ a single page for this (Paris Ciné Info); Sydney does not.
 
 ## Product (v2)
 One page, two views in the header nav:
-- **What's on this week** (default): the current cinema week — today through the coming Sunday.
-- **All showings**: everything in the 14-day horizon, one section per week (Mon–Sun; the first starts today, the last ends at the horizon), headed "30 Oct - 1 Nov" style.
-Listings are grouped by week: one row per film per week (poster, title, year · director · rating, type tag, count); expanding a row shows day tabs with that film's sessions. Each week is paginated by film (default 10 per page). Filters: film, director, cinema, type (new release / retrospective / festival / special, plus "new this week" = first seen within 7 days), date, release year, region; sort Popular / A–Z / Cinema.
-Look: the light "Stripe docs" palette, navy accent #0E2245 (DECISIONS 2026-10-29). No footer.
-Dropped since v1: the "Retrospectives" and "New this week" views (the Type filter covers both), the per-day grouping, the "Partial" tag.
+- **This week ahead** (default): today and the next 6 days, Sydney time, one heading "This week ahead".
+- **All showings**: every session in the 14-day horizon, one flat list, heading "All Showings".
+One row per film per view (poster, title, year · director · rating · runtime, type tag, "N sessions · M cinemas" summed over the view); expanding a row shows day tabs for the days that film has sessions and the sessions beneath, at natural height. Sort: Relevant (default), Popular, A–Z, Release date, Rating, with a reverse control. Pagination by film, 5 / 10 / 20 per page (default 5). Filters: film, director, cinema, type, date, release year, region.
+Look: navy palette, gold accent, nothing boxed except the filter bar and the session box (design mocks in `design/v2/`, DECISIONS 2026-11-01). No footer.
+Dropped: Retrospectives / New-this-week views, day and week grouping, the "Partial" tag and the Wednesday note, the light palette tried on 2026-10-29.
 
 ## Not in v2
 Accounts, saved lists, notifications, reviews, non-Sydney cities, mobile app.
