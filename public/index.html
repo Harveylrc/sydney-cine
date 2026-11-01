@@ -987,15 +987,10 @@
   function openFromHash() {
     const id = hashFilm();
     const find = () => {
-      if (!id) return null;
-      for (const pager of pagers) {
-        const at = pager.ordered.findIndex((o) => o.film.id === id);
-        if (at >= 0) {
-          pager.show(Math.floor(at / perPage) + 1);
-          return listings.querySelector(`.film[data-film="${CSS.escape(id)}"]`);
-        }
-      }
-      return null;
+      const at = id && pager ? pager.ordered.findIndex((o) => o.film.id === id) : -1;
+      if (at < 0) return null;
+      pager.show(Math.floor(at / perPage) + 1);
+      return listings.querySelector(`.film[data-film="${CSS.escape(id)}"]`);
     };
     let entry = find();
     if (!entry && id && view === "week") {
@@ -1008,16 +1003,19 @@
   }
   window.addEventListener("hashchange", () => data && openFromHash());
 
-  // Pagination (B23): the list shows `perPage` films at a time, after sort and
-  // filters. A new render (any filter, sort or view change) starts at page 1. The choice of 5/10/20 is remembered in this browser.
+  // Pagination per view (B26, DECISIONS 2026-11-01): the list shows `perPage` films
+  // at a time, after sort and filters. The choice of 5/10/20 is one setting for both
+  // views, remembered in this browser; each view keeps its own page, and a change
+  // of per-page, sort or any filter goes back to page 1 of the view on screen.
   const PER_PAGE_KEY = "sydney-cine.perPage";
   const PER_PAGE_CHOICES = [5, 10, 20];
-  let perPage = 10;
+  let perPage = 5;
   try {
     const saved = Number(localStorage.getItem(PER_PAGE_KEY));
     if (PER_PAGE_CHOICES.includes(saved)) perPage = saved;
   } catch { /* private mode: the default */ }
-  let pagers = []; // this render's list: { ordered, show(page) }, for #film= links
+  const pageOf = { week: 1, all: 1 }; // each view's page
+  let pager = null; // this render's list: { ordered, show(page) }, for #film= links
 
   function chevron(path) {
     const ns = "http://www.w3.org/2000/svg";
@@ -1032,25 +1030,25 @@
     return svg;
   }
 
-  function setPerPage(n, index) {
+  function setPerPage(n) {
     perPage = n;
     try { localStorage.setItem(PER_PAGE_KEY, String(n)); } catch { /* private mode */ }
     render();
-    const select = listings.querySelectorAll(".pager select")[index];
+    const select = listings.querySelector(".pager select");
     if (select) select.focus(); // the select was rebuilt; keep the keyboard where it was
   }
 
   // The list's rows, a page at a time, and the pager under them.
-  function pagedList(section, ordered, index) {
+  function pagedList(section, ordered) {
     const rows = el("div", { class: "rows" });
-    const id = `per-page-${index}`;
+    const id = "per-page";
     const select = el("select", { id });
     for (const n of PER_PAGE_CHOICES) {
       const option = el("option", { value: String(n), text: String(n) });
       if (n === perPage) option.selected = true;
       select.append(option);
     }
-    select.addEventListener("change", () => setPerPage(Number(select.value), index));
+    select.addEventListener("change", () => setPerPage(Number(select.value)));
     const range = el("span", { class: "range", "aria-live": "polite" });
     const prev = el("button", { type: "button", "aria-label": "Previous page" }, chevron("M10 3 5 8l5 5"));
     const next = el("button", { type: "button", "aria-label": "Next page" }, chevron("m6 3 5 5-5 5"));
@@ -1062,7 +1060,7 @@
     const pages = Math.max(1, Math.ceil(ordered.length / perPage));
     let current = 1;
     function show(page) {
-      current = Math.min(Math.max(page, 1), pages);
+      current = pageOf[view] = Math.min(Math.max(page, 1), pages);
       const from = (current - 1) * perPage;
       const shown = ordered.slice(from, from + perPage);
       rows.replaceChildren(...shown.map(({ film, showings }) => filmEntry(film, showings)));
@@ -1077,11 +1075,13 @@
     };
     prev.addEventListener("click", () => turn(-1, prev));
     next.addEventListener("click", () => turn(1, next));
-    show(1);
+    show(pageOf[view]);
     return { ordered, show };
   }
 
-  function render() {
+  // keepPage: a view switch shows that view's page; anything else starts at page 1.
+  function render(keepPage = false) {
+    if (!keepPage) pageOf[view] = 1;
     markActive();
     updateFilterBar();
     const f = currentFilters();
@@ -1096,11 +1096,11 @@
     }
 
     listings.replaceChildren();
-    pagers = [];
+    pager = null;
     if (count) {
       const section = el("section", { class: "listing" }, el("h2", { text: VIEW_HEADINGS[view] }));
       if (viewIsPartial(view)) section.append(el("p", { class: "partial-note", text: PARTIAL_NOTE }));
-      pagers.push(pagedList(section, orderFilms(films, f.sort), 0));
+      pager = pagedList(section, orderFilms(films, f.sort));
       listings.append(section);
     }
 
@@ -1216,7 +1216,7 @@
     view = next;
     document.querySelectorAll(".views button").forEach((b) =>
       b.setAttribute("aria-pressed", String(b.dataset.view === view)));
-    render();
+    render(true);
   }
   document.querySelectorAll(".views button").forEach((button) => {
     button.addEventListener("click", () => setView(button.dataset.view));
