@@ -184,6 +184,9 @@
     min-width: 0;
   }
   .sort select { width: auto; padding-right: 4px; }
+  /* Reverse order (B25): the current field's other direction; restyled in B28. */
+  .filter-panel .reverse { padding: 5px 8px; line-height: 0; }
+  .filter-panel .reverse[aria-pressed="true"] { color: var(--accent); border-color: var(--accent); }
   .filters .active { border-color: var(--label); box-shadow: inset 0 0 0 1px var(--label); }
   /* Type-ahead suggestions (Director, Cinema), under the field. */
   .combo { position: relative; }
@@ -487,12 +490,17 @@
   <div class="filter-bar" id="filter-bar">
     <button type="button" class="filter-toggle" id="filter-toggle" aria-expanded="false" aria-controls="filters"><svg aria-hidden="true" width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round"><path d="M2 3h12L9.5 8.5V13l-3 1.5V8.5L2 3Z"/></svg><span>Filters<span id="filter-count"></span></span></button>
     <div class="active-chips" id="active-chips"></div>
-    <label class="sort">Sort
-      <select name="sort" form="filters" data-default="popular">
+    <div class="sort">
+      <label for="sort-field">Sort</label>
+      <select id="sort-field" name="sort" form="filters" data-default="relevant">
+        <option value="relevant">Relevant</option>
         <option value="popular">Popular</option>
         <option value="az">A–Z</option>
+        <option value="year">Release date</option>
+        <option value="rating">Rating</option>
       </select>
-    </label>
+      <button type="button" class="reverse" id="sort-reverse" aria-label="Reverse order" aria-pressed="false" hidden><svg aria-hidden="true" width="12" height="12" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round"><path d="M5 2v12M2 11l3 3 3-3M11 14V2M8 5l3-3 3 3"/></svg></button>
+    </div>
   </div>
 
   <form class="filters" id="filters" autocomplete="off" hidden>
@@ -619,10 +627,26 @@
   }
   // rank:end
   const byTitle = (a, b) => a.film.title.localeCompare(b.film.title, "en", { sensitivity: "base" });
-  const ORDERS = {
-    popular: (a, b) => b.score - a.score || byTitle(a, b),
-    az: byTitle,
+  // Sort (B25, DECISIONS 2026-11-01): Relevant is the score above and has no
+  // direction; the others start in their own direction and Reverse flips it. Films
+  // with no year (Release date) or no rating (Rating) stay last either way; ties go A–Z.
+  const SORT_KEYS = {
+    popular: { value: (o) => o.film.vote_count || 0, desc: true },
+    year: { value: (o) => o.film.year, desc: true },
+    rating: { value: (o) => o.film.rating, desc: true },
   };
+  function comparer(sort, reversed) {
+    if (sort === "az") return reversed ? (a, b) => byTitle(b, a) : byTitle;
+    const key = SORT_KEYS[sort];
+    if (!key) return (a, b) => b.score - a.score || byTitle(a, b); // Relevant
+    const sign = (key.desc ? -1 : 1) * (reversed ? -1 : 1);
+    return (a, b) => {
+      const x = key.value(a), y = key.value(b);
+      if (x == null || y == null) return (x == null) - (y == null) || byTitle(a, b);
+      return sign * (x - y) || byTitle(a, b);
+    };
+  }
+  let reversed = false; // not remembered: each visit starts in the default direction
 
   // Ranks on all of a film's sessions in the view, whatever the filters (Harvey, B9b, B24).
   function orderFilms(films, sort) {
@@ -631,7 +655,7 @@
         const film = filmsById.get(id);
         return { film, showings, score: rankScore(film, unfiltered.get(view).get(id), thisYear) };
       })
-      .sort(ORDERS[sort] || ORDERS.popular);
+      .sort(comparer(sort, reversed));
   }
 
   // A cinema's full name picks that cinema only; part of a name, any it is part of.
@@ -1195,11 +1219,30 @@
     button.addEventListener("click", () => setView(button.dataset.view));
   });
   form.addEventListener("input", () => data && render());
-  form.elements.sort.addEventListener("input", () => data && render()); // Sort sits outside the form, in the filter bar
+  // Sort sits outside the form, in the filter bar. A new field starts in its own
+  // direction; Reverse is hidden on Relevant, which has none.
+  const reverseButton = $("#sort-reverse");
+  function setReversed(on) {
+    reversed = on;
+    reverseButton.setAttribute("aria-pressed", String(on));
+    reverseButton.hidden = form.elements.sort.value === "relevant";
+  }
+  form.elements.sort.addEventListener("input", () => {
+    setReversed(false);
+    if (data) render();
+  });
+  setReversed(false); // in case the browser kept a Sort choice over a reload
+  reverseButton.addEventListener("click", () => {
+    setReversed(!reversed);
+    if (data) render();
+  });
   form.addEventListener("reset", () => {
     selectedRegions.clear();
     syncChips($("#region-chips"), selectedRegions);
-    setTimeout(() => data && render());
+    setTimeout(() => {
+      setReversed(false); // the reset put Sort back to Relevant
+      if (data) render();
+    });
   });
   form.addEventListener("submit", (e) => e.preventDefault());
 
