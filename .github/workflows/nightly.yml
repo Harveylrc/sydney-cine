@@ -1,5 +1,5 @@
 # Nightly: scrape every venue, match films on TMDB (with Claude when unsure),
-# write public/data.json (and films.json, plus directors.json monthly) and publish
+# write public/data.json (and films.json, plus directors.json once a month) and publish
 # public/ to GitHub Pages.
 #
 # GitHub's cron runs on UTC and Sydney moves between UTC+11 (AEDT) and UTC+10
@@ -82,18 +82,26 @@ jobs:
           ANTHROPIC_API_KEY: ${{ secrets.ANTHROPIC_API_KEY }}
         run: python export.py
 
-      # Director suggestions (B11, ~10 min): rebuilt in Sydney on the 1st of the
-      # month, or when the site has none yet; other nights keep the published list.
+      # Director suggestions (B11, ~10 min): rebuilt once a month. Each rebuild
+      # publishes directors-month.txt ("2026-11", Sydney time) beside the list; a
+      # run whose month matches keeps the published list, so only the month's first
+      # run rebuilds, even with several runs on the 1st. A list published before
+      # the stamp existed (built 2026-11-01) is kept and stamped with this month.
       - name: Director list
         if: steps.clock.outputs.run == 'true'
         env:
           TMDB_API_KEY: ${{ secrets.TMDB_API_KEY }}
         run: |
-          if [ "$(TZ=Australia/Sydney date +%d)" != "01" ] && scripts/fetch_live.sh directors.json; then
-            echo "Kept the published directors.json"
-          elif ! python -m scripts.build_directors; then
+          month=$(TZ=Australia/Sydney date +%Y-%m)
+          if scripts/fetch_live.sh directors-month.txt; then built=$(cat public/directors-month.txt); else built=none; fi
+          if { [ "$built" = "$month" ] || [ "$built" = none ]; } && scripts/fetch_live.sh directors.json; then
+            echo "Kept the published directors.json (built ${built/none/before stamps})"
+            echo "$month" > public/directors-month.txt
+          elif python -m scripts.build_directors; then
+            echo "$month" > public/directors-month.txt
+          else
             echo "::warning::Director list not rebuilt; keeping the published one if there is one"
-            scripts/fetch_live.sh directors.json || true
+            scripts/fetch_live.sh directors.json || true # its old stamp stays, so the next run tries again
           fi
 
       - name: Save lookup cache
