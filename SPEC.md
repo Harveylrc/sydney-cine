@@ -1,4 +1,4 @@
-# SPEC — Sydney Cinema Guide (v2 final, 2026-11-01)
+# SPEC — Sydney Cinema Guide (v2.3, 2026-11-16)
 
 ## Problem
 Finding what's on in Sydney means visiting every cinema's site in turn. Paris has
@@ -6,10 +6,10 @@ a single page for this (Paris Ciné Info); Sydney does not.
 
 ## Product (v2)
 One page, two views in the header nav:
-- **This week ahead** (default): today and the next 6 days, Sydney time, one heading "This week ahead".
-- **All showings**: every session in the 14-day horizon, one flat list, heading "All Showings".
-One row per film per view (poster, title, year · director · rating · runtime, type tag, "N sessions · M cinemas" summed over the view); expanding a row shows day tabs for the days that film has sessions and the sessions beneath, at natural height. Sort: Relevant (default), Popular, A–Z, Release date, Rating, with a reverse control. Pagination by film, 5 / 10 / 20 per page (default 5). Filters: film, director, cinema, type, date, release year, region.
-Look: navy palette, gold accent, nothing boxed except the filter bar and the session box (design mocks in `design/v2/`, DECISIONS 2026-11-01). No footer.
+- **This Week Ahead** (default): today and the next 6 days, Sydney time, one heading "This Week Ahead".
+- **All Showings**: every session in the 14-day horizon, one flat list, heading "All Showings".
+One row per film per view (poster, title, year · director · rating · runtime, type tag, "N sessions · M cinemas" summed over the view); expanding a row shows day tabs for the days that film has sessions and the sessions beneath, at natural height. Sort: Our picks (default; superhero films left out — DECISIONS 2026-11-16), Popular (sessions in the view; ties by number of cinemas, then TMDB votes, then title), A–Z, Release date, with a reverse control on every option. Pagination by film, 5 / 10 / 20 per page (default 10). Filters: film, director, cinema, type, date, release year, region.
+Look: navy page with a gold dot background; two borderless panels (filter bar, list); film titles and times white; gold only for the active nav item, the selected day and the dots (DECISIONS 2026-11-01 v2.2 and 2026-11-16). No footer.
 Dropped: Retrospectives / New-this-week views, day and week grouping, the "Partial" tag and the Wednesday note, the light palette tried on 2026-10-29.
 
 ## Not in v2
