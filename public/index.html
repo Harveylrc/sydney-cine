@@ -14,8 +14,9 @@
 <meta property="og:url" content="https://sydneycinema.com/">
 <meta property="og:type" content="website">
 <style>
-  /* v2 final palette (B27; DECISIONS 2026-11-01 (6)): navy with one gold accent.
-     Colours live only here. */
+  /* v2 final palette (B27; DECISIONS 2026-11-01 (6)), with the v2.3 rules (B42;
+     DECISIONS 2026-11-16 (2)): gold only on the active nav item, the selected day
+     tab and the background dots. Colours live only here (and in .dots). */
   :root {
     --bg: #181D3B;           /* page; session box and poster placeholder in the list panel */
     --inset: #131934;        /* header band, the two panels */
@@ -23,11 +24,10 @@
     --heading: #F2EAF1;      /* page and view headings, body text, cinema names */
     --label: #CAD0E5;        /* nav, labels, year · director · rating */
     --border: #4D5884;       /* lines around things, view heading underline */
-    --accent: #E8B86D;       /* film titles, times, active nav and day */
-    --accent-hover: #F3CD8C;
+    --accent: #E8B86D;       /* gold: active nav item and selected day tab only */
+    --white: #FFFFFF;        /* film titles, session times */
     --muted: #9AA3C7;        /* secondary: counts, notes, type and format tags */
     --shadow: rgba(0, 0, 0, 0.35);
-    --mono: Menlo, Consolas, monospace;
 
     --font: system-ui, -apple-system, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
     --gutter: 32px;
@@ -171,6 +171,7 @@
   .filter-bar button {
     font: inherit;
     font-size: 14px;
+    font-weight: 500;
     color: var(--heading);
     background: none;
     border: 0;
@@ -178,7 +179,7 @@
     padding: 5px 2px;
     cursor: pointer;
   }
-  .filter-bar button:hover { color: var(--accent-hover); }
+  .filter-bar button:hover { color: var(--white); }
   /* A funnel before "Filters" (B22c); aria-expanded carries open/closed. */
   .filter-bar .filter-toggle {
     flex: none;
@@ -186,7 +187,7 @@
     align-items: center;
     gap: 8px;
     padding: 5px 4px;
-    font-weight: 600;
+    font-weight: 500;
     color: var(--label);
   }
   .filter-toggle svg { flex: none; }
@@ -200,7 +201,7 @@
   .active-chips { display: flex; flex-wrap: wrap; align-items: center; gap: 0 6px; min-width: 0; }
   .active-chips button { display: inline-flex; align-items: baseline; gap: 10px; white-space: nowrap; }
   .active-chips .x { font-size: 15px; line-height: 1; color: var(--muted); }
-  .active-chips button:hover .x { color: var(--accent-hover); }
+  .active-chips button:hover .x { color: var(--heading); }
   .sort {
     flex: none;
     display: flex;
@@ -209,11 +210,11 @@
     margin-left: auto;
     white-space: nowrap;
   }
-  .sort-label { font-weight: 600; color: var(--label); }
+  .sort-label { font-size: 14px; font-weight: 500; color: var(--label); }
   .sort-menu-wrap { position: relative; }
   .sort-menu { left: auto; right: 0; min-width: 150px; }
   .sort-menu li { white-space: nowrap; }
-  .sort-menu li[aria-checked="true"] { color: var(--accent); }
+  .sort-menu li[aria-checked="true"] { color: var(--white); font-weight: 600; }
   .sort-menu li:focus { outline: none; background: var(--inset); }
   .filter-bar .reverse {
     display: grid;
@@ -224,8 +225,8 @@
     padding: 0;
     color: var(--muted);
   }
-  .filter-bar .reverse[aria-pressed="true"] { color: var(--accent); }
-  .filter-bar .reverse:hover { color: var(--accent-hover); }
+  .filter-bar .reverse[aria-pressed="true"] { color: var(--white); }
+  .filter-bar .reverse:hover { color: var(--heading); }
   /* Phones: toggle and Sort on the first row (Sort never wraps alone), the chips
      under them; no divider after Filters. */
   @media (max-width: 600px) {
@@ -385,7 +386,7 @@
   .title-line { display: flex; align-items: baseline; gap: 0 16px; }
   .film h3 {
     margin: 0;
-    color: var(--accent);
+    color: var(--white);
     font-size: 16px;
     font-weight: 500;
     line-height: 1.35;
@@ -408,7 +409,7 @@
     text-align: left;
     cursor: pointer;
   }
-  .film-head:hover h3 button { color: var(--accent-hover); }
+  .film-head:hover h3 button { color: var(--label); }
   .count {
     margin-left: auto;
     font-size: 14px;
@@ -418,14 +419,15 @@
   .count::after { content: " ▸"; font-size: 10px; vertical-align: 1px; }
   .film-head.open .count::after { content: " ▾"; }
   .meta { margin: 4px 0 0; font-size: 14px; line-height: 1.4; color: var(--label); }
-  .kind {
-    margin: 6px 0 0;
-    line-height: 1.3;
-    font-size: 12px;
+  /* Type and format tags (B42): the site font, 11px, spaced capitals. */
+  .kind, .sessions .tag {
+    font-size: 11px;
     font-weight: 400;
+    letter-spacing: 0.08em;
     color: var(--muted);
     text-transform: uppercase;
   }
+  .kind { margin: 6px 0 0; line-height: 1.3; }
   /* Phones: the count drops under a title too long to share its line, at the left. */
   @media (max-width: 480px) {
     .title-line { flex-wrap: wrap; justify-content: space-between; }
@@ -435,23 +437,30 @@
   /* Session box: day tabs over that day's sessions, full width under the row. It
      keeps one height across tabs and scrolls inside, and the tabs scroll sideways
      (Harvey, after B24). */
-  .detail { padding: 12px 0 8px; }
+  /* 4px between the row and the box, 12px under it (B42). */
+  .film-head.open { padding-bottom: 0; }
+  .detail { padding: 4px 0 12px; }
   .box {
+    padding-top: 14px; /* with the tabs' 2px, 16px above the day tabs (B42) */
     background: var(--bg);
     border-radius: 8px;
   }
-  /* Tabs: plain text, no baseline (B38); the chosen day has a 2px underline. */
+  /* Tabs: plain text, no baseline (B38); the chosen day has a 2px underline as wide
+     as its text. The first tab's text and underline start 16px in, in line with the
+     session times below (B42); the 2px padding keeps focus rings inside the scroller. */
   .tabs {
     display: flex;
+    gap: 28px;
     width: fit-content;
     max-width: calc(100% - 28px);
-    margin: 14px 14px 0;
+    margin: 0 14px;
+    padding: 2px;
     overflow-x: auto;
     scrollbar-width: none; /* still scrolls sideways; no bar, as in the mock */
   }
   .detail .tabs button {
     flex: none;
-    padding: 6px 14px;
+    padding: 6px 0;
     font-size: 14px;
     font-weight: 600;
     white-space: nowrap;
@@ -463,7 +472,7 @@
   }
   .detail .tabs button:hover { color: var(--heading); }
   .detail .tabs button[aria-selected="true"] { color: var(--accent); border-bottom-color: var(--accent); }
-  .detail .tabs button:focus-visible { outline-offset: -2px; } /* inside the scroller */
+  .detail .tabs button:focus-visible { outline-offset: 0; }
   .tabs .dot {
     display: inline-block;
     width: 4px;
@@ -488,7 +497,7 @@
   .day-sessions {
     max-height: 320px;
     overflow-y: auto;
-    padding: 12px 14px 10px;
+    padding: 12px 16px 16px;
   }
   @media (max-width: 480px) {
     .day-sessions { max-height: 45vh; }
@@ -508,27 +517,30 @@
   }
   .sessions .when { min-width: 76px; }
   .sessions .time {
-    color: var(--accent);
+    color: var(--white);
     font-size: 16px;
     font-weight: 500;
     font-variant-numeric: tabular-nums;
     text-decoration: none;
   }
-  .sessions a.time:hover { color: var(--accent-hover); text-decoration: underline; }
+  .sessions a.time:hover { color: var(--label); text-decoration: underline; }
   .sessions .late { font-size: 12px; color: var(--muted); }
   .sessions .where { color: var(--heading); }
-  .sessions .tag { font-family: var(--mono); font-size: 12px; color: var(--muted); }
 
   /* Pager (B30, mocks in design/v2): under the list, unboxed. Per-page choice (a
      bare select with its own chevron), range, then previous / next. Right-aligned
-     on desktop; on phones one line, spread edge to edge. */
+     on desktop; on phones one line, spread edge to edge. Everything sits on one
+     20px line, 24px from the last row's content and from the panel's bottom edge
+     (B42: the row's 12px padding and the panel's 8px make up the rest). */
   .pager {
     display: flex;
     align-items: center;
     justify-content: flex-end;
     gap: 28px;
-    padding-top: 39px;
+    margin-top: 12px;
+    padding-bottom: 16px;
     font-size: 14px;
+    line-height: 20px;
     white-space: nowrap;
   }
   .per-page { display: flex; align-items: center; gap: 8px; }
@@ -541,7 +553,8 @@
     background: none;
     border: 0;
     border-radius: 4px;
-    padding: 6px 22px 6px 2px;
+    padding: 0 22px 0 2px;
+    line-height: 20px;
     cursor: pointer;
   }
   .select-wrap svg {
@@ -558,8 +571,8 @@
     display: grid;
     place-items: center;
     flex: none;
-    width: 36px;
-    height: 36px;
+    width: 20px;
+    height: 20px;
     padding: 0;
     color: var(--heading);
     background: none;
@@ -567,15 +580,20 @@
     border-radius: 4px;
     cursor: pointer;
   }
-  .pager .pages button:hover:not(:disabled) { color: var(--accent-hover); }
+  .pager .pages button:hover:not(:disabled) { color: var(--label); }
   .pager .pages button:disabled { color: var(--border); cursor: default; }
-  .pages svg { width: 16px; height: 16px; }
+  .pages svg { width: 14px; height: 14px; }
+  @media (max-width: 600px) {
+    .pager { padding-bottom: 18px; } /* + the list panel's 6px = 24px */
+  }
+  /* Phones: 32px tap areas round the 20px controls; the negative margins keep the
+     line 20px tall. */
   @media (max-width: 480px) {
     .pager { justify-content: space-between; gap: 8px; font-size: 13px; }
     .per-page { gap: 5px; }
-    .pager select { padding-right: 18px; }
-    .pager .pages { gap: 4px; }
-    .pager .pages button { width: 32px; }
+    .pager select { padding: 6px 18px 6px 2px; margin: -6px 0; }
+    .pager .pages { gap: 12px; }
+    .pager .pages button { width: 32px; height: 32px; margin: -6px; }
   }
 
   .empty { margin: 12px 0; color: var(--muted); }
@@ -588,8 +606,8 @@
   <div class="band-inner">
     <h1>Sydney Cinema Guide</h1>
     <nav class="views" aria-label="Views">
-      <button type="button" data-view="week" aria-pressed="true">This week ahead</button>
-      <button type="button" data-view="all" aria-pressed="false">All showings</button>
+      <button type="button" data-view="week" aria-pressed="true">This Week Ahead</button>
+      <button type="button" data-view="all" aria-pressed="false">All Showings</button>
     </nav>
   </div>
 </header>
@@ -1010,15 +1028,15 @@
   const POSTER = "https://image.tmdb.org/t/p/w92";
   let details = {};
 
-  // Views (DECISIONS 2026-11-01): "This week ahead" is today and the next 6 days,
+  // Views (DECISIONS 2026-11-01): "This Week Ahead" is today and the next 6 days,
   // "All showings" the whole 14-day horizon. Both go by a session's display day.
   // Dates are ISO strings read as UTC so no time zone shifts them.
   const WEEK_DAYS = 7;
   const addDays = (iso, n) => new Date(Date.parse(iso + "T00:00:00Z") + n * 864e5).toISOString().slice(0, 10);
   const HORIZON_DAYS = 14; // as export.py
   let firstDay = null; // today, the first day of both views
-  let weekEnd = null; // the last day of "This week ahead"
-  const VIEW_HEADINGS = { week: "This week ahead", all: "All Showings" };
+  let weekEnd = null; // the last day of "This Week Ahead"
+  const VIEW_HEADINGS = { week: "This Week Ahead", all: "All Showings" };
   const inView = (s, v) => v === "all" || s.day <= weekEnd;
 
   const PARTIAL_NOTE = "Most cinemas publish the following week's sessions on Wednesday.";
