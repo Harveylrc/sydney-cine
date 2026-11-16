@@ -501,3 +501,20 @@ def test_one_failing_scraper_is_skipped(caplog):
 def test_all_scrapers_failing_is_fatal():
     with pytest.raises(SystemExit):
         scrape_all([FakeScraper("ritz", RuntimeError("down"))])
+
+
+# --- superhero films (B39) ----------------------------------------------------
+
+
+def test_films_carry_the_superhero_flag():
+    shows = [
+        showing("Superman", at(LAUNCH, 19), tmdb_id=1061474),
+        showing("Possession", at(LAUNCH, 21), tmdb_id=21484),
+        showing("Untitled", at(LAUNCH, 22)),
+    ]
+    data = build_data(shows, None, LAUNCH, superhero={1061474: True, 21484: False})
+    assert {f["title"]: f["superhero"] for f in data["films"]} == {
+        "Superman": True,
+        "Possession": False,
+        "Untitled": False,
+    }

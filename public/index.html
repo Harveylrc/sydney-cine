@@ -604,9 +604,9 @@
       <span class="sort-label" id="sort-label">Sort</span>
       <span class="sort-menu-wrap">
         <button type="button" class="sort-field" id="sort-field" aria-haspopup="menu" aria-expanded="false"
-          aria-controls="sort-menu" aria-labelledby="sort-label sort-field">Relevant</button>
+          aria-controls="sort-menu" aria-labelledby="sort-label sort-field">Our picks</button>
         <ul class="suggestions sort-menu" id="sort-menu" role="menu" aria-label="Sort by" hidden>
-          <li role="menuitemradio" tabindex="-1" data-sort="relevant" aria-checked="true">Relevant</li>
+          <li role="menuitemradio" tabindex="-1" data-sort="picks" aria-checked="true">Our picks</li>
           <li role="menuitemradio" tabindex="-1" data-sort="popular" aria-checked="false">Popular</li>
           <li role="menuitemradio" tabindex="-1" data-sort="az" aria-checked="false">A–Z</li>
           <li role="menuitemradio" tabindex="-1" data-sort="year" aria-checked="false">Release date</li>
@@ -743,17 +743,17 @@
   // rank:end
   const byTitle = (a, b) => a.film.title.localeCompare(b.film.title, "en", { sensitivity: "base" });
   // Sort (B25, B35; DECISIONS 2026-11-01 v2.1.1 (5)): each field starts in its own
-  // direction and Reverse flips it, Relevant included (lowest score first). Popular
+  // direction and Reverse flips it, Our picks included (lowest score first). Popular
   // is the film's sessions in the view, as its row counts them (after filters).
   // Films with no year (Release date) stay last either way; ties go A–Z.
   const SORT_KEYS = {
-    relevant: { value: (o) => o.score, desc: true },
+    picks: { value: (o) => o.score, desc: true },
     popular: { value: (o) => o.showings.length, desc: true },
     year: { value: (o) => o.film.year, desc: true },
   };
   function comparer(sort, reversed) {
     if (sort === "az") return reversed ? (a, b) => byTitle(b, a) : byTitle;
-    const key = SORT_KEYS[sort] || SORT_KEYS.relevant;
+    const key = SORT_KEYS[sort] || SORT_KEYS.picks;
     const sign = (key.desc ? -1 : 1) * (reversed ? -1 : 1);
     return (a, b) => {
       const x = key.value(a), y = key.value(b);
@@ -1104,9 +1104,14 @@
   };
 
   // #film=<id>: open that film's row and bring it into view, turning to the page it
-  // is on; a film not on this week ahead opens in All showings.
+  // is on; a film not on this week ahead opens in All showings. A superhero film
+  // isn't in Our picks, so that visit switches Sort to Popular (B39).
   function openFromHash() {
     const id = hashFilm();
+    if (sortField === "picks" && filmsById.get(id)?.superhero) {
+      setSort("popular");
+      render();
+    }
     const find = () => {
       const at = id && pager ? pager.ordered.findIndex((o) => o.film.id === id) : -1;
       if (at < 0) return null;
@@ -1213,6 +1218,7 @@
     for (const s of data.showings) {
       const film = filmsById.get(s.film);
       if (!film || !inView(s, view) || !matches(s, film, f)) continue;
+      if (f.sort === "picks" && film.superhero) continue; // no superhero films in Our picks (B39)
       count++;
       if (!films.has(s.film)) films.set(s.film, []);
       films.get(s.film).push(s);
@@ -1349,7 +1355,7 @@
   // A new field starts in its own direction; Reverse is there for every field. The
   // menu: ↑ ↓ Home End move, Enter or Space picks,
   // Esc or Tab closes; a click elsewhere closes it.
-  let sortField = "relevant";
+  let sortField = "picks";
   const sortButton = $("#sort-field");
   const sortMenu = $("#sort-menu");
   const sortItems = [...sortMenu.querySelectorAll("li")];
@@ -1413,7 +1419,7 @@
   form.addEventListener("reset", () => {
     selectedRegions.clear();
     syncChips($("#region-chips"), selectedRegions);
-    setSort("relevant"); // Clear filters also puts Sort back to Relevant
+    setSort("picks"); // Clear filters also puts Sort back to Our picks
     setTimeout(() => data && render());
   });
   form.addEventListener("submit", (e) => e.preventDefault());

@@ -28,6 +28,8 @@ Rules from DECISIONS.md:
   loads the first time a row is opened, so data.json stays small. No synopsis.
 - Venue health (B32): a venue at 0 sessions, or below a quarter of last night's,
   keeps last night's sessions for one night (health.py), flagged "stale".
+- Superhero films (B39): each film carries "superhero" (enrich.superhero_flags());
+  the page leaves them out of the "Our picks" sort.
 First-seen dates are carried forward from the previous data.json.
 """
 
@@ -93,9 +95,12 @@ def build_data(
     previous: dict | None,
     today: date,
     venue_info: dict[str, dict] | None = None,
+    superhero: dict[int, bool] | None = None,
 ) -> dict:
-    """venue_info: slug -> venues.yaml entry (load_venues())."""
+    """venue_info: slug -> venues.yaml entry (load_venues()); superhero: tmdb id ->
+    flag (enrich.superhero_flags())."""
     previous = previous or {}
+    superhero = superhero or {}
     venue_info = venue_info or {}
     today_iso = today.isoformat()
 
@@ -126,6 +131,7 @@ def build_data(
                 "director": s.director,
                 "rating": s.rating,
                 "vote_count": s.vote_count,
+                "superhero": superhero.get(s.tmdb_id, False),
             },
         )
         rows.append(
@@ -254,8 +260,10 @@ if __name__ == "__main__":
         enrich,
         film_details,
         load_overrides,
+        load_superhero_overrides,
         load_token,
         report,
+        superhero_flags,
     )
     from scrapers import (
         event,
@@ -293,13 +301,15 @@ if __name__ == "__main__":
     showings = enrich(scraped, client, cache, load_overrides(), chooser)
     report(chooser)
     details = film_details((s.tmdb_id for s in showings if s.tmdb_id), client, cache)
+    tmdb_ids = {s.tmdb_id for s in showings if s.tmdb_id}
+    superhero = superhero_flags(tmdb_ids, client, cache, load_superhero_overrides())
     venue_info = load_venues()
     for slug in unplaced_venues(showings, venue_info):
         log.warning("Venue %s is not in venues.yaml: no region", slug)
     previous = load_previous()
     previous_details = load_previous(FILMS_PATH) or {}  # last night's films.json, if downloaded
     today = datetime.now(SYDNEY).date()
-    data = build_data(showings, previous, today, venue_info)
+    data = build_data(showings, previous, today, venue_info, superhero)
     # Coverage counts tonight's sessions only: a broken venue is uncovered (B7).
     data["coverage"] = coverage(venue_info, data["showings"])
     last_day = (today + timedelta(days=HORIZON_DAYS - 1)).isoformat()
@@ -321,5 +331,7 @@ if __name__ == "__main__":
         f"Wrote {DATA_PATH}: {len(data['showings'])} showings, "
         f"{len(data['films'])} films, {new} new this week"
     )
+    flagged = sorted(f"{f['title']} ({f['year']})" for f in data["films"] if f.get("superhero"))
+    print(f"Superhero films, left out of Our picks: {', '.join(flagged) or 'none'}")
     by_venue = Counter(row["venue"] for row in data["showings"] if not row.get("stale"))
     print("Sessions per venue: " + ", ".join(f"{v} {n}" for v, n in sorted(by_venue.items())))
