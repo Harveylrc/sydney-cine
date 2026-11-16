@@ -26,7 +26,7 @@ A hit's rating and vote count are re-fetched when older than RATING_MAX_AGE (its
 TMDB id, year and director are kept).
 film_details() adds what the page's film panel shows (poster, overview, runtime),
 cached per TMDB id and re-fetched on the same schedule.
-superhero_flags() says which films are superhero films, left out of the page's
+superhero_flags() says which films are superhero films, ranked down in the page's
 "Our picks" sort (DECISIONS 2026-11-16 (1)): TMDB keyword SUPERHERO_KEYWORD or a
 company in SUPERHERO_COMPANIES, unless superhero_overrides.csv says otherwise.
 The keyword and company ids are cached per TMDB id on the same schedule.
