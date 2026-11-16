@@ -744,26 +744,37 @@
     return film.superhero ? score * SUPERHERO_FACTOR : score;
   }
   // rank:end
+  // sort:start — tests/test_sort.py runs this block in node.
   const byTitle = (a, b) => a.film.title.localeCompare(b.film.title, "en", { sensitivity: "base" });
   // Sort (B25, B35; DECISIONS 2026-11-01 v2.1.1 (5)): each field starts in its own
   // direction and Reverse flips it, Our picks included (lowest score first). Popular
-  // is the film's sessions in the view, as its row counts them (after filters).
-  // Films with no year (Release date) stay last either way; ties go A–Z.
+  // is the film's sessions in the view, as its row counts them (after filters); ties
+  // go to the film at more cinemas, then with more TMDB votes (B40; DECISIONS
+  // 2026-11-16), and Reverse flips all three. Films with no year (Release date) stay
+  // last either way; remaining ties go A–Z in both directions.
   const SORT_KEYS = {
-    picks: { value: (o) => o.score, desc: true },
-    popular: { value: (o) => o.showings.length, desc: true },
-    year: { value: (o) => o.film.year, desc: true },
+    picks: { values: (o) => [o.score], desc: true },
+    popular: {
+      values: (o) => [o.showings.length, new Set(o.showings.map((s) => s.venue)).size, o.film.vote_count || 0],
+      desc: true,
+    },
+    year: { values: (o) => [o.film.year], desc: true },
   };
   function comparer(sort, reversed) {
     if (sort === "az") return reversed ? (a, b) => byTitle(b, a) : byTitle;
     const key = SORT_KEYS[sort] || SORT_KEYS.picks;
     const sign = (key.desc ? -1 : 1) * (reversed ? -1 : 1);
     return (a, b) => {
-      const x = key.value(a), y = key.value(b);
-      if (x == null || y == null) return (x == null) - (y == null) || byTitle(a, b);
-      return sign * (x - y) || byTitle(a, b);
+      const xs = key.values(a), ys = key.values(b);
+      for (let i = 0; i < xs.length; i++) {
+        const x = xs[i], y = ys[i];
+        if (x == null || y == null) return (x == null) - (y == null) || byTitle(a, b);
+        if (x !== y) return sign * (x - y);
+      }
+      return byTitle(a, b);
     };
   }
+  // sort:end
   let reversed = false; // not remembered: each visit starts in the default direction
 
   // Ranks on all of a film's sessions in the view, whatever the filters (Harvey, B9b, B24).
