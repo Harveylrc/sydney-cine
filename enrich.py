@@ -26,6 +26,10 @@ A hit's rating and vote count are re-fetched when older than RATING_MAX_AGE (its
 TMDB id, year and director are kept).
 film_details() adds what the page's film panel shows (poster, overview, runtime),
 cached per TMDB id and re-fetched on the same schedule.
+superhero_flags() says which films are superhero films, left out of the page's
+"Our picks" sort (DECISIONS 2026-11-16 (1)): TMDB keyword SUPERHERO_KEYWORD or a
+company in SUPERHERO_COMPANIES, unless superhero_overrides.csv says otherwise.
+The keyword and company ids are cached per TMDB id on the same schedule.
 Unmatched showings are logged and returned unchanged, never dropped.
 """
 
@@ -52,6 +56,7 @@ API = "https://api.themoviedb.org/3"
 DB_PATH = Path(__file__).resolve().parent / "cache" / "tmdb.sqlite"
 ENV_PATH = Path(__file__).resolve().parent / ".env"
 OVERRIDES_PATH = Path(__file__).resolve().parent / "tmdb_overrides.csv"
+SUPERHERO_PATH = Path(__file__).resolve().parent / "superhero_overrides.csv"
 DROP = "drop"  # tmdb_overrides.csv value: not a film, leave it off the page
 
 CLAUDE_MODEL = "claude-sonnet-5-5"
@@ -61,6 +66,14 @@ CLAUDE_MAX_TOKENS = 2000  # room to think before the final "Answer:" line
 OVERVIEW_CHARS = 300
 SYNOPSIS_CHARS = 800
 RATING_MAX_AGE = timedelta(days=30)  # ratings move; ids, years and directors don't
+
+# Superhero films (ids checked on TMDB 2026-11-16; DECISIONS 2026-11-16 (1)).
+SUPERHERO_KEYWORD = 9715  # "superhero"
+SUPERHERO_COMPANIES = {
+    420: "Marvel Studios",
+    184898: "DC Studios",
+    128064: "DC Films",
+}
 
 # No-year tiebreak: these showings prefer an exact match from the last 3 years.
 RECENT_YEARS = 3
@@ -193,7 +206,9 @@ class TMDBClient:
 
     def movie(self, tmdb_id: int) -> dict:
         if tmdb_id not in self._movies:
-            self._movies[tmdb_id] = self._get(f"/movie/{tmdb_id}", append_to_response="credits")
+            self._movies[tmdb_id] = self._get(
+                f"/movie/{tmdb_id}", append_to_response="credits,keywords"
+            )
         return self._movies[tmdb_id]
 
     def details(self, tmdb_id: int) -> Match:
@@ -347,6 +362,11 @@ class Cache:
                 poster_path TEXT, overview TEXT, runtime INTEGER,
                 fetched TEXT
             );
+            CREATE TABLE IF NOT EXISTS traits (  -- per TMDB id, for superhero_flags()
+                tmdb_id INTEGER PRIMARY KEY,
+                keyword_ids TEXT, company_ids TEXT,  -- comma-separated TMDB ids
+                fetched TEXT
+            );
             CREATE TABLE IF NOT EXISTS lookups (
                 -- "vista:<chain>:HO000…", "title:<title>|<year>[|recent]" or "tmdb:<id>"
                 key TEXT PRIMARY KEY,
@@ -409,6 +429,30 @@ class Cache:
                 details["poster_path"],
                 details["overview"],
                 details["runtime"],
+                (today or date.today()).isoformat(),
+            ),
+        )
+        self.db.commit()
+
+    def get_traits(self, tmdb_id: int, today: date | None = None) -> dict | None:
+        """{keyword_ids, company_ids} as sets, or None when missing or older than
+        RATING_MAX_AGE."""
+        row = self.db.execute(
+            "SELECT keyword_ids, company_ids, fetched FROM traits WHERE tmdb_id = ?", (tmdb_id,)
+        ).fetchone()
+        if not row or date.fromisoformat(row[2]) < (today or date.today()) - RATING_MAX_AGE:
+            return None
+        ids = [{int(i) for i in text.split(",") if i} for text in row[:2]]
+        return dict(zip(("keyword_ids", "company_ids"), ids, strict=True))
+
+    def put_traits(self, tmdb_id: int, traits: dict, today: date | None = None) -> None:
+        self.db.execute(
+            "INSERT OR REPLACE INTO traits (tmdb_id, keyword_ids, company_ids, fetched)"
+            " VALUES (?, ?, ?, ?)",
+            (
+                tmdb_id,
+                ",".join(map(str, sorted(traits["keyword_ids"]))),
+                ",".join(map(str, sorted(traits["company_ids"]))),
                 (today or date.today()).isoformat(),
             ),
         )
@@ -573,6 +617,52 @@ def film_details(
             cache.put_details(tmdb_id, details, today)
         found[tmdb_id] = details
     return found
+
+
+def load_superhero_overrides(path: Path = SUPERHERO_PATH) -> dict[int, bool]:
+    """tmdb_id -> True ("yes": a superhero film TMDB misses) or False ("no": a false hit)."""
+    if not path.exists():
+        return {}
+    with path.open(encoding="utf-8", newline="") as f:
+        return {
+            int(row["tmdb_id"]): row["superhero"].strip().lower() == "yes"
+            for row in csv.DictReader(f)
+        }
+
+
+def superhero_flags(
+    tmdb_ids,
+    client: TMDBClient,
+    cache: Cache,
+    overrides: dict[int, bool] | None = None,
+    today: date | None = None,
+) -> dict[int, bool]:
+    """tmdb id -> superhero film or not. The override wins either way; otherwise the
+    TMDB keyword "superhero" or a company in SUPERHERO_COMPANIES makes it one. A film
+    TMDB can't answer for is not flagged tonight (and not cached, so it is tried again)."""
+    overrides = overrides or {}
+    flags = {}
+    for tmdb_id in sorted(set(tmdb_ids)):
+        if tmdb_id in overrides:
+            flags[tmdb_id] = overrides[tmdb_id]
+            continue
+        traits = cache.get_traits(tmdb_id, today)
+        if traits is None:
+            try:
+                movie = client.movie(tmdb_id)
+            except requests.RequestException as error:  # e.g. an entry TMDB has deleted
+                log.warning("No superhero check for TMDB %d: %s", tmdb_id, error)
+                flags[tmdb_id] = False
+                continue
+            traits = {
+                "keyword_ids": {k["id"] for k in movie.get("keywords", {}).get("keywords", [])},
+                "company_ids": {c["id"] for c in movie.get("production_companies", [])},
+            }
+            cache.put_traits(tmdb_id, traits, today)
+        flags[tmdb_id] = SUPERHERO_KEYWORD in traits["keyword_ids"] or bool(
+            traits["company_ids"] & SUPERHERO_COMPANIES.keys()
+        )
+    return flags
 
 
 def load_env(name: str, env_path: Path = ENV_PATH) -> str | None:

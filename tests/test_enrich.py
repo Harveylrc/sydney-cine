@@ -3,6 +3,7 @@ from datetime import date, datetime
 from zoneinfo import ZoneInfo
 
 import pytest
+import requests
 
 from enrich import (
     OVERRIDES_PATH,
@@ -14,8 +15,10 @@ from enrich import (
     enrich,
     film_details,
     load_overrides,
+    load_superhero_overrides,
     lookup_key,
     search_terms,
+    superhero_flags,
 )
 from models import Showing
 
@@ -951,3 +954,60 @@ def test_film_details_refetched_after_30_days(tmdb, cache):
 def test_film_details_missing_fields_are_none(tmdb, cache):
     [details] = film_details([101], TMDBClient("token", session=tmdb), cache).values()
     assert details == {"poster_path": None, "overview": None, "runtime": None}
+
+
+# --- superhero films (B39) -------------------------------------------------------
+
+CAPED = dict(LEON, id=301, keywords={"keywords": [{"id": 9715, "name": "superhero"}]})
+STUDIO = dict(LEON, id=302, production_companies=[{"id": 420, "name": "Marvel Studios"}])
+PLAIN = dict(LEON, id=303, keywords={"keywords": [{"id": 1, "name": "hitman"}]})
+
+
+def flags(tmdb, cache, overrides=None, today=date(2026, 11, 16)):
+    for movie in (CAPED, STUDIO, PLAIN):
+        tmdb.movies[movie["id"]] = movie
+    client = TMDBClient("token", session=tmdb, this_year=2026)
+    return superhero_flags([301, 302, 303], client, cache, overrides, today)
+
+
+def test_superhero_keyword_flags_a_film(tmdb, cache):
+    assert flags(tmdb, cache)[301] is True
+    assert flags(tmdb, cache)[303] is False
+
+
+def test_superhero_studio_flags_a_film(tmdb, cache):
+    assert flags(tmdb, cache)[302] is True
+
+
+def test_superhero_override_no_beats_the_keyword(tmdb, cache):
+    assert flags(tmdb, cache, {301: False})[301] is False
+
+
+def test_superhero_override_yes_flags_a_film_with_neither(tmdb, cache):
+    assert flags(tmdb, cache, {303: True})[303] is True
+
+
+def test_superhero_traits_cached_then_refetched_after_30_days(tmdb, cache):
+    flags(tmdb, cache, today=date(2026, 10, 1))
+    fresh = TMDBClient("token", session=FakeTMDB(), this_year=2026)  # would fail if asked
+    assert superhero_flags([301], fresh, cache, today=date(2026, 10, 20)) == {301: True}
+    tmdb.movies[301] = dict(CAPED, keywords={"keywords": []})
+    client = TMDBClient("token", session=tmdb, this_year=2026)
+    assert superhero_flags([301], client, cache, today=date(2026, 11, 16)) == {301: False}
+
+
+def test_superhero_check_skips_a_film_tmdb_cannot_find(tmdb, cache):
+    def not_found(*args, **kwargs):
+        raise requests.HTTPError("404 Client Error: Not Found")
+
+    client = TMDBClient("token", session=tmdb, this_year=2026)
+    client._get = not_found
+    assert superhero_flags([999], client, cache) == {999: False}
+    assert cache.get_traits(999) is None
+
+
+def test_superhero_overrides_file(tmp_path):
+    path = tmp_path / "superhero_overrides.csv"
+    path.write_text("tmdb_id,superhero,note\n1,yes,missed\n2,no,false hit\n")
+    assert load_superhero_overrides(path) == {1: True, 2: False}
+    assert load_superhero_overrides(tmp_path / "missing.csv") == {}
