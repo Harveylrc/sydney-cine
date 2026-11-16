@@ -29,7 +29,7 @@ Rules from DECISIONS.md:
 - Venue health (B32): a venue at 0 sessions, or below a quarter of last night's,
   keeps last night's sessions for one night (health.py), flagged "stale".
 - Superhero films (B39): each film carries "superhero" (enrich.superhero_flags());
-  the page leaves them out of the "Our picks" sort.
+  the page ranks them down in the "Our picks" sort.
 First-seen dates are carried forward from the previous data.json.
 """
 
@@ -332,6 +332,6 @@ if __name__ == "__main__":
         f"{len(data['films'])} films, {new} new this week"
     )
     flagged = sorted(f"{f['title']} ({f['year']})" for f in data["films"] if f.get("superhero"))
-    print(f"Superhero films, left out of Our picks: {', '.join(flagged) or 'none'}")
+    print(f"Superhero films, ranked down in Our picks: {', '.join(flagged) or 'none'}")
     by_venue = Counter(row["venue"] for row in data["showings"] if not row.get("stale"))
     print("Sessions per venue: " + ", ".join(f"{v} {n}" for v, n in sorted(by_venue.items())))

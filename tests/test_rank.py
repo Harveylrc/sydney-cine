@@ -77,3 +77,13 @@ def test_caps_and_independent_bump():
     assert more == capped
     assert indie == pytest.approx(0.15 * 9 + 0.3 * 5)
     assert unknown == pytest.approx(0.15)
+
+
+def test_superhero_film_scores_well_below_the_same_film_unflagged():
+    plain, caped = scores(
+        [
+            [film(2026, 7.8, 3000), sessions(80)],
+            [dict(film(2026, 7.8, 3000), superhero=True), sessions(80)],
+        ]
+    )
+    assert caped == pytest.approx(plain * 0.4)
